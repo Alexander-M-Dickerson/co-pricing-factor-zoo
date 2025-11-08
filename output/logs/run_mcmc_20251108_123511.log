@@ -1,9 +1,0 @@
-### Log file: output/logs/run_mcmc_20251108_123511.log 
-### Started at: 2025-11-08 12:35:11 
-
-[2025-11-08 12:35:11] INFO: Starting Bayesian MCMC estimation 
-[2025-11-08 12:35:11] INFO: Log file: output/logs/run_mcmc_20251108_123511.log 
-[2025-11-08 12:35:11] INFO: Main path: /Users/ASUS/Dropbox/DJM_replication 
-[2025-11-08 12:35:11] INFO: Output folder: output 
-[2025-11-08 12:35:11] INFO: Sourcing project code... 
-[2025-11-08 12:35:11] INFO: Starting MCMC run... 

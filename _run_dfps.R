@@ -21,7 +21,7 @@ gc()
 ###############################################################################
 
 #### 1.1 Paths ----------------------------------------------------------------
-main_path      <- "/Users/ASUS/Dropbox/DJM_replication"   # Project root
+main_path      <- "/Users/ASUS/Documents/GitHub/co-pricing-factor-zoo" # Project root
 data_folder    <- "data"                                  # Your data subfolder
 output_folder  <- "output"                                # Results folder
 code_folder    <- "code_base"                             # Helper scripts folder
@@ -113,7 +113,6 @@ log_message(logger, "Output folder: ", output_folder)
 
 #### 2.3 Source Project Code --------------------------------------------------
 log_message(logger, "Sourcing project code...")
-source(file.path(code_folder, "validate_and_align_dates.R"))
 source(file.path(code_folder, "run_bayesian_mcmc.R"), chdir = TRUE)
 
 #### 2.4 Run MCMC -------------------------------------------------------------
