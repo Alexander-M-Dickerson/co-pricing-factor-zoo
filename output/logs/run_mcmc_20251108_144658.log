@@ -1,0 +1,12 @@
+### Log file: output/logs/run_mcmc_20251108_144658.log 
+### Started at: 2025-11-08 14:46:58 
+
+[2025-11-08 14:46:58] INFO: Starting Bayesian MCMC estimation 
+[2025-11-08 14:46:58] INFO: Log file: output/logs/run_mcmc_20251108_144658.log 
+[2025-11-08 14:46:58] INFO: Main path: /Users/ASUS/Dropbox/DJM_replication 
+[2025-11-08 14:46:58] INFO: Output folder: output 
+[2025-11-08 14:46:58] INFO: Sourcing project code... 
+[2025-11-08 14:46:58] INFO: Starting MCMC run... 
+[2025-11-08 14:46:59] ERROR: ERROR: $ operator is invalid for atomic vectors 
+
+### Finished at: 2025-11-08 14:46:59 

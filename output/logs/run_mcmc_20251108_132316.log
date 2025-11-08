@@ -1,0 +1,12 @@
+### Log file: output/logs/run_mcmc_20251108_132316.log 
+### Started at: 2025-11-08 13:23:16 
+
+[2025-11-08 13:23:16] INFO: Starting Bayesian MCMC estimation 
+[2025-11-08 13:23:16] INFO: Log file: output/logs/run_mcmc_20251108_132316.log 
+[2025-11-08 13:23:16] INFO: Main path: /Users/ASUS/Dropbox/DJM_replication 
+[2025-11-08 13:23:16] INFO: Output folder: output 
+[2025-11-08 13:23:16] INFO: Sourcing project code... 
+[2025-11-08 13:23:16] INFO: Starting MCMC run... 
+[2025-11-08 13:23:25] ERROR: ERROR: task 3 failed - "the leading minor of order 3 is not positive" 
+
+### Finished at: 2025-11-08 13:23:25 

@@ -1,0 +1,12 @@
+### Log file: output/logs/run_mcmc_20251108_122807.log 
+### Started at: 2025-11-08 12:28:07 
+
+[2025-11-08 12:28:07] INFO: Starting Bayesian MCMC estimation 
+[2025-11-08 12:28:07] INFO: Log file: output/logs/run_mcmc_20251108_122807.log 
+[2025-11-08 12:28:07] INFO: Main path: /Users/ASUS/Dropbox/DJM_replication 
+[2025-11-08 12:28:07] INFO: Output folder: output 
+[2025-11-08 12:28:07] INFO: Sourcing project code... 
+[2025-11-08 12:28:07] INFO: Starting MCMC run... 
+[2025-11-08 12:28:08] ERROR: ERROR: f1 (non-traded factors) file not found: data/nontraded_factors.csv 
+
+### Finished at: 2025-11-08 12:28:08 

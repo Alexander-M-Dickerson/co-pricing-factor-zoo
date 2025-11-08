@@ -1,0 +1,15 @@
+### Log file: output/logs/run_mcmc_20251108_123700.log 
+### Started at: 2025-11-08 12:37:00 
+
+[2025-11-08 12:37:00] INFO: Starting Bayesian MCMC estimation 
+[2025-11-08 12:37:00] INFO: Log file: output/logs/run_mcmc_20251108_123700.log 
+[2025-11-08 12:37:00] INFO: Main path: /Users/ASUS/Dropbox/DJM_replication 
+[2025-11-08 12:37:00] INFO: Output folder: output 
+[2025-11-08 12:37:00] INFO: Sourcing project code... 
+[2025-11-08 12:37:00] INFO: Starting MCMC run... 
+[2025-11-08 12:37:00] ERROR: ERROR: No overlapping dates found across datasets. Check date ranges:
+  f1: -709252 to -707852
+  f2: -709252 to -707852
+  R: 5874 to 19357 
+
+### Finished at: 2025-11-08 12:37:00 

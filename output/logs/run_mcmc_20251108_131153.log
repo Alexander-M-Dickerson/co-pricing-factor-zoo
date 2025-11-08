@@ -1,0 +1,12 @@
+### Log file: output/logs/run_mcmc_20251108_131153.log 
+### Started at: 2025-11-08 13:11:53 
+
+[2025-11-08 13:11:53] INFO: Starting Bayesian MCMC estimation 
+[2025-11-08 13:11:53] INFO: Log file: output/logs/run_mcmc_20251108_131153.log 
+[2025-11-08 13:11:53] INFO: Main path: /Users/ASUS/Dropbox/DJM_replication 
+[2025-11-08 13:11:53] INFO: Output folder: output 
+[2025-11-08 13:11:53] INFO: Sourcing project code... 
+[2025-11-08 13:11:53] INFO: Starting MCMC run... 
+[2025-11-08 13:11:54] ERROR: ERROR: unused arguments (f1 = f1, f2 = f2, type = "OLS", sim_length = 1) 
+
+### Finished at: 2025-11-08 13:11:54 

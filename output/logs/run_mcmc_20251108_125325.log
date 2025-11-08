@@ -1,0 +1,12 @@
+### Log file: output/logs/run_mcmc_20251108_125325.log 
+### Started at: 2025-11-08 12:53:25 
+
+[2025-11-08 12:53:25] INFO: Starting Bayesian MCMC estimation 
+[2025-11-08 12:53:25] INFO: Log file: output/logs/run_mcmc_20251108_125325.log 
+[2025-11-08 12:53:25] INFO: Main path: /Users/ASUS/Dropbox/DJM_replication 
+[2025-11-08 12:53:25] INFO: Output folder: output 
+[2025-11-08 12:53:25] INFO: Sourcing project code... 
+[2025-11-08 12:53:25] INFO: Starting MCMC run... 
+[2025-11-08 12:53:26] ERROR: ERROR: error in evaluating the argument 'x' in selecting a method for function 'as.matrix': $ operator is invalid for atomic vectors 
+
+### Finished at: 2025-11-08 12:53:26 

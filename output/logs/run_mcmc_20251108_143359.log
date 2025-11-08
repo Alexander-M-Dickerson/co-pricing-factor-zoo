@@ -1,0 +1,12 @@
+### Log file: output/logs/run_mcmc_20251108_143359.log 
+### Started at: 2025-11-08 14:33:59 
+
+[2025-11-08 14:33:59] INFO: Starting Bayesian MCMC estimation 
+[2025-11-08 14:33:59] INFO: Log file: output/logs/run_mcmc_20251108_143359.log 
+[2025-11-08 14:33:59] INFO: Main path: /Users/ASUS/Dropbox/DJM_replication 
+[2025-11-08 14:33:59] INFO: Output folder: output 
+[2025-11-08 14:33:59] INFO: Sourcing project code... 
+[2025-11-08 14:33:59] INFO: Starting MCMC run... 
+[2025-11-08 14:34:00] ERROR: ERROR: Dataset 'f2': Date column must be character, factor, or numeric. Got: Date 
+
+### Finished at: 2025-11-08 14:34:00 

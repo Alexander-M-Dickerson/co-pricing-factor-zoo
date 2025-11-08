@@ -1,0 +1,15 @@
+### Log file: output/logs/run_mcmc_20251108_135526.log 
+### Started at: 2025-11-08 13:55:26 
+
+[2025-11-08 13:55:26] INFO: Starting Bayesian MCMC estimation 
+[2025-11-08 13:55:26] INFO: Log file: output/logs/run_mcmc_20251108_135526.log 
+[2025-11-08 13:55:26] INFO: Main path: /Users/ASUS/Dropbox/DJM_replication 
+[2025-11-08 13:55:26] INFO: Output folder: output 
+[2025-11-08 13:55:26] INFO: Sourcing project code... 
+[2025-11-08 13:55:26] INFO: Starting MCMC run... 
+[2025-11-08 13:55:27] ERROR: ERROR: ERROR: Missing required factors in frequentist_models:
+  Model 'CAPM' requires: MKT
+
+Available factors: UNC, UNCf, UNCr, VIX, INFLV, INFLC, CPTL, LVL, YSP, LIQNT, EPU, EPUT, IVOL, CREDIT, BAB, CMA, CMAs, CPTLT, FIN, HML, HML_DEV, HMLs, LIQ, LTREV, MGMT, MKTS, MKTSs, MOMS, PEAD, PERF, QMJ, RMW, RMWs, R_IA, R_ROE, SMB, SMBs, STREV 
+
+### Finished at: 2025-11-08 13:55:27 

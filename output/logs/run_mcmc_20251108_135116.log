@@ -1,0 +1,14 @@
+### Log file: output/logs/run_mcmc_20251108_135116.log 
+### Started at: 2025-11-08 13:51:16 
+
+[2025-11-08 13:51:16] INFO: Starting Bayesian MCMC estimation 
+[2025-11-08 13:51:16] INFO: Log file: output/logs/run_mcmc_20251108_135116.log 
+[2025-11-08 13:51:16] INFO: Main path: /Users/ASUS/Dropbox/DJM_replication 
+[2025-11-08 13:51:16] INFO: Output folder: output 
+[2025-11-08 13:51:16] INFO: Sourcing project code... 
+[2025-11-08 13:51:16] INFO: Starting MCMC run... 
+[2025-11-08 13:51:29] INFO: MCMC completed successfully 
+[2025-11-08 13:51:29] INFO: Results saved to: output/excess_treasury_alpha.w=1_beta.w=1_kappa=0_baseline.Rdata 
+[2025-11-08 13:51:29] INFO: Script completed 
+
+### Finished at: 2025-11-08 13:51:29 
