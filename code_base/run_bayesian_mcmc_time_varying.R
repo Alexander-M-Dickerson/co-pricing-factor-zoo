@@ -1,7 +1,7 @@
-#' Run Bayesian Asset-Pricing MCMC - Public Release (Extensible Version)
+#' Run Bayesian Asset-Pricing MCMC - Time-Varying Version
 #'
-#' Maximum extensibility with NO hard-coded data. Users provide their own data
-#' files and specify all models for comparison.
+#' Optimized version for expanding/rolling window estimation. Returns only
+#' lambdas, scaled lambdas, weights, and gammas (no full MCMC draws).
 #'
 #' @param main_path      Root folder of the project
 #' @param data_folder    Sub-folder containing user's data files
@@ -37,47 +37,25 @@
 #' @param alpha.w,beta.w Beta-prior hyper-parameters
 #' @param kappa          Factor tilt parameter (default 0)
 #' @param kappa_fac      Factor-specific kappa values (optional)
-#' @param tag            Label for output files (default "baseline")
+#' @param tag            Label for output files (default "ExpandingForward")
 #' @param num_cores      Number of CPU cores for parallel processing
 #' @param seed           RNG seed
 #' @param intercept      Include linear intercept?
-#' @param save_flag      Save full workspace?
+#' @param save_flag      Save IS_AP results to .Rdata?
 #' @param verbose        Print progress messages?
 #' @param fac_to_drop    List of factor names to exclude (optional)
 #' @param weighting      Weighting scheme: "GLS" or "OLS"
 #'
-#' @return Invisible list containing results, IS_AP, and output path
+#' @return Invisible list containing IS_AP (lambdas, scaled_lambdas, weights, gammas)
 #'
-#' @examples
-#' \dontrun{
-#' # Single file mode
-#' res <- run_bayesian_mcmc(
-#'   main_path = "/path/to/project",
-#'   data_folder = "my_data",
-#'   f1 = "nontraded_factors.csv",
-#'   f2 = "traded_factors.csv",
-#'   R = "test_assets.csv",
-#'   model_type = "bond",
-#'   return_type = "excess",
-#'   frequentist_models = list(
-#'     CAPM = "MKT",
-#'     FF5 = c("MKT", "SMB", "HML", "RMW", "CMA")
-#'   )
-#' )
-#' 
-#' # Multi-file mode for bond_stock_with_sp
-#' res <- run_bayesian_mcmc(
-#'   main_path = "/path/to/project",
-#'   f1 = "nontraded.csv",
-#'   f2 = c("traded_bond.csv", "traded_equity.csv"),  # First file = bonds
-#'   R = c("bond_portfolios.csv", "stock_portfolios.csv"),
-#'   model_type = "bond_stock_with_sp",
-#'   # n_bond_factors auto-inferred from first f2 file!
-#'   frequentist_models = list(CAPM = "MKT")
-#' )
-#' }
+#' @details
+#' Differences from run_bayesian_mcmc():
+#'   - Uses estimate_kns_oos_ts() instead of estimate_kns_oos()
+#'   - Calls insample_asset_pricing_time_varying() with date_end
+#'   - Saves only IS_AP output (not full workspace)
+#'   - Filename format: SS_{return_type}_{model_type}_alpha.w={alpha.w}_beta.w={beta.w}_SRscale={tag}{date_end}.Rdata
 
-run_bayesian_mcmc <- function(
+run_bayesian_mcmc_time_varying <- function(
     # Paths
   main_path,
   data_folder   = "data",
@@ -111,7 +89,7 @@ run_bayesian_mcmc <- function(
   kappa_fac     = NULL,
   
   # Other settings
-  tag           = "baseline",
+  tag           = "ExpandingForward",
   num_cores     = 4,
   seed          = 234,
   intercept     = TRUE,
@@ -481,7 +459,7 @@ run_bayesian_mcmc <- function(
   # Treasury models have f2=NULL (no-SP), others have f2 present (SP)
   
   if (is.null(f2)) {
-    ## No-self-pricing variants (treasury) 
+    ## ──────────── No-self-pricing variants (treasury) ────────────────────────
     f_all <- f1
     use_kappa_no_sp <- !is.null(kappa) && any(kappa != 0)
     
@@ -534,7 +512,7 @@ run_bayesian_mcmc <- function(
     }
     
   } else {
-    ## â”â”â”â” Self-pricing variants (bond, stock, bond_stock_with_sp) â”â”â”â”â”â”â”â”â”â”â”â”
+    ## ──────────── Self-pricing variants (bond, stock, bond_stock_with_sp) ────
     use_multi_asset <- !is.null(kappa) && any(kappa != 0)
     
     CJ_ss <- if (use_multi_asset) {
@@ -596,24 +574,24 @@ run_bayesian_mcmc <- function(
   }
   
   ## ---- 12. Post-estimation: KNS and RP-PCA ---------------------------------
-  # KNS estimation
-  if (exists("estimate_kns_oos", mode = "function")) {
-    if (verbose) message("Running Kozak-Nagel-Shanken OOS procedure ...")
+  # KNS estimation with time-varying function
+  if (exists("estimate_kns_oos_ts", mode = "function")) {
+    if (verbose) message("Running Kozak-Nagel-Shanken OOS procedure (time-varying) ...")
     
-    kns_out <- estimate_kns_oos(
+    kns_out <- estimate_kns_oos_ts(
       R  = R_matrix,
       f2 = f2,
       verbose = verbose
     )
   } else {
-    warning("Function 'estimate_kns_oos()' not found after sourcing -- KNS step skipped.")
+    warning("Function 'estimate_kns_oos_ts()' not found after sourcing -- KNS step skipped.")
     kns_out <- NULL
   }
   
   # RP-PCA estimation
   if (exists("estim_rppca", mode = "function")) {
     if (verbose) message("Running RP-PCA ...")
-    rp_out <- estim_rppca(
+    rp_out <- estim_rppca_ts(
       R      = R_matrix,
       f2     = f2,
       kappa  = 20,
@@ -625,8 +603,13 @@ run_bayesian_mcmc <- function(
     rp_out <- NULL
   }
   
-  ## ---- 13. In-Sample Asset Pricing -----------------------------------------
-  IS_AP <- insample_asset_pricing(
+  ## ---- 13. In-Sample Asset Pricing (Time-Varying) --------------------------
+  if (verbose) message("Computing time-varying asset pricing metrics...")
+  
+  # Extract date_end from aligned data
+  estimation_date_end <- aligned$date_range["end"]
+  
+  IS_AP <- insample_asset_pricing_time_varying(
     results   = results,
     f_all     = f_all_raw,
     R         = R_matrix,
@@ -636,52 +619,34 @@ run_bayesian_mcmc <- function(
     kns_out   = kns_out,
     intercept = intercept,
     frequentist_models = frequentist_models,
-    fac_freq  = fac_freq_matrix
+    fac_freq  = fac_freq_matrix,
+    date_end  = estimation_date_end
   )
   
-  ## ---- 14. Save workspace ---------------------------------------------------
+  ## ---- 14. Save IS_AP output only ------------------------------------------
   saved_path <- NULL
   if (save_flag) {
-    kappa_str <- if (all(kappa == 0)) {
-      "0"
-    } else {
-      paste(format(kappa, digits = 3, trim = TRUE), collapse = "_")
-    }
+    # Build filename: SS_{return_type}_{model_type}_alpha.w={alpha.w}_beta.w={beta.w}_SRscale={tag}{date_end}.Rdata
+    # Format date_end without dashes
+    date_str <- gsub("-", "", as.character(estimation_date_end))
     
-    kappa_label <- if (nchar(kappa_str) > 10) "weighted" else kappa_str
-    
-    # Build filename: {return_type}_{model_type}_alpha.w={alpha.w}_beta.w={beta.w}_kappa={kappa}_{tag}
-    fname_parts <- c(
+    fname <- sprintf(
+      "SS_%s_%s_alpha.w=%g_beta.w=%g_SRscale=%s%s.Rdata",
       return_type,
       model_type,
-      sprintf("alpha.w=%g", trunc(alpha.w)),
-      sprintf("beta.w=%g", trunc(beta.w)),
-      sprintf("kappa=%s", kappa_label)
+      trunc(alpha.w),
+      trunc(beta.w),
+      tag,
+      date_str
     )
-    
-    if (!isTRUE(intercept)) {
-      fname_parts <- c(fname_parts, "no_intercept")
-    }
-    
-    if (nzchar(tag)) {
-      fname_parts <- c(fname_parts, tag)
-    }
-    
-    fname <- paste0(paste(fname_parts, collapse = "_"), ".Rdata")
     
     saved_path <- path_out(fname)
     
-    save(list = ls(envir = environment()),
-         file = saved_path,
-         compress = TRUE,
-         envir = environment())
+    # Save only IS_AP (not full workspace)
+    save(IS_AP, file = saved_path, compress = TRUE)
     
-    if (verbose) message("Workspace saved to: ", saved_path)
+    if (verbose) message("IS_AP results saved to: ", saved_path)
   }
   
-  invisible(list(
-    results = results,
-    IS_AP = IS_AP,
-    saved_path = saved_path
-  ))
+  invisible(IS_AP)
 }
