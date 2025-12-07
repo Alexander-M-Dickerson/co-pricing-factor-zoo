@@ -151,55 +151,37 @@ run_sr_decomposition_multi <- function(results_path,
       next
     }
 
-    ## ---- 3e. Set up factor name vectors in the environment -----------------
-    # sr_decomposition() expects these in the calling environment
-    # We need to determine nontraded vs traded factors
-    f1_local <- get("f1", envir = load_env)
-    f2_local <- if (exists("f2", envir = load_env)) get("f2", envir = load_env) else NULL
-
-    # Assign to load_env for sr_decomposition to find
-    load_env$nontraded_names <- colnames(f1_local)
-
-    if (!is.null(f2_local)) {
-      # For bond_stock_with_sp, we need to split bond vs stock factors
-      # This is model-specific logic
-      f2_names <- colnames(f2_local)
-
-      if (model_type == "bond_stock_with_sp") {
-        # Heuristic: bond factors typically have certain naming patterns
-        # User may need to customize this
-        load_env$bond_names <- f2_names[grepl("^(TERM|DEF|CORP|GOV|BOND|YLD|DUR)", f2_names, ignore.case = TRUE)]
-        load_env$stock_names <- setdiff(f2_names, load_env$bond_names)
-
-        # If heuristic didn't work, just split evenly or use all as stock
-        if (length(load_env$bond_names) == 0 && length(load_env$stock_names) == 0) {
-          load_env$stock_names <- f2_names
-        }
-      } else if (model_type == "bond") {
-        load_env$bond_names <- f2_names
-        load_env$stock_names <- character(0)
-      } else if (model_type == "stock") {
-        load_env$bond_names <- character(0)
-        load_env$stock_names <- f2_names
-      } else {
-        # Default: all are stock factors
-        load_env$stock_names <- f2_names
-        load_env$bond_names <- character(0)
-      }
-    } else {
-      load_env$bond_names <- character(0)
-      load_env$stock_names <- character(0)
-    }
+    ## ---- 3e. Verify factor name vectors exist in the loaded data ------------
+    # sr_decomposition() expects nontraded_names, bond_names, stock_names
+    # These should already be in the .Rdata file from the MCMC run
+    # DO NOT overwrite them - just verify they exist
 
     if (verbose) {
-      message("  Nontraded factors: ", length(load_env$nontraded_names))
-      message("  Bond factors: ", length(load_env$bond_names))
-      message("  Stock factors: ", length(load_env$stock_names))
+      # Report what's in the loaded data
+      n_nontraded <- if (exists("nontraded_names", envir = load_env)) {
+        length(get("nontraded_names", envir = load_env))
+      } else 0
+      n_bond <- if (exists("bond_names", envir = load_env)) {
+        length(get("bond_names", envir = load_env))
+      } else 0
+      n_stock <- if (exists("stock_names", envir = load_env)) {
+        length(get("stock_names", envir = load_env))
+      } else 0
+
+      message("  Nontraded factors: ", n_nontraded)
+      message("  Bond factors: ", n_bond)
+      message("  Stock factors: ", n_stock)
     }
 
     ## ---- 3f. Run sr_decomposition in the load environment ------------------
     # We need to evaluate sr_decomposition in the context of load_env
-    # so it can find f1, f2, intercept, etc.
+    # so it can find f1, f2, intercept, nontraded_names, bond_names, stock_names
+
+    # Make function arguments and sr_decomposition available in load_env
+    load_env$factor_lists <- factor_lists
+    load_env$prior_labels <- prior_labels
+    load_env$top_factors <- top_factors
+    load_env$sr_decomposition <- sr_decomposition
 
     tryCatch({
       # Run sr_decomposition with the loaded environment
