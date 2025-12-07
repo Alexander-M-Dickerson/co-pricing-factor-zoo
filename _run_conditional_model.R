@@ -81,7 +81,7 @@ frequentist_models <- list(
 )
 
 #### 1.7 MCMC Parameters ------------------------------------------------------
-ndraws         <- 15000                      # MCMC iterations (use 1000 for testing, 50000 for production)
+ndraws         <- 50000                      # MCMC iterations (use 1000 for testing, 50000 for production)
 drop_draws_pct <- 0
 SRscale        <- c(0.20, 0.40, 0.60, 0.80) # Prior SR multipliers
 alpha.w        <- 1                         # Beta prior hyperparameter

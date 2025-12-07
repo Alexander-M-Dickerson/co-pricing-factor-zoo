@@ -19,7 +19,7 @@ gc()
 ###############################################################################
 
 #### 1.1 Paths ----------------------------------------------------------------
-main_path      <- "/home/aldi/DJM_replication_2"  # Project root
+main_path      <- "C:/Users/ASUS/Documents/GitHub/co-pricing-factor-zoo"  # Project root
 data_folder    <- "data"                                  # Your data subfolder
 output_folder  <- "output"                                # Results folder
 code_folder    <- "code_base"                             # Helper scripts folder
