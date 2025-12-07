@@ -76,7 +76,8 @@ cat("Window type    : ", window_type, "\n\n")
 frequentist_models <- list(
   CAPM  = "MKTS",
   CAPMB = "MKTB",
-  FF5   = c("MKTS","SMB","HML","DEF","TERM")
+  FF5   = c("MKTS","SMB","HML","DEF","TERM"),
+  HKM   = c("MKTS","CPTLT")
 )
 
 #### 1.7 MCMC Parameters ------------------------------------------------------
