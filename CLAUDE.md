@@ -224,6 +224,8 @@ Each element contains:
 |-------|-------------|------------|
 | `gamma_path` | Posterior inclusion indicators (0/1) for each factor | `ndraws × N` |
 | `lambda_path` | Market prices of risk | `ndraws × (1+N)` or `ndraws × N` |
+| `sdf_path` | Stochastic discount factor paths | `ndraws × T` |
+| `bma_sdf` | Bayesian model-averaged SDF | `T × 1` |
 
 **gamma_path (Posterior Probabilities)**
 - Binary matrix: each row is one MCMC draw, each column is one factor
@@ -236,6 +238,14 @@ Each element contains:
 - When `intercept = FALSE`: has `N` columns (same as gamma)
 - `colMeans(lambda_path)` gives posterior mean risk prices
 - Typically annualized by multiplying by `sqrt(12)` for monthly data
+
+**sdf_path (SDF Paths)**
+- Each row is one MCMC draw, each column is one time period
+- Dimensions: `ndraws × T` where T is the number of observations
+
+**bma_sdf (Model-Averaged SDF)**
+- Bayesian model-averaged stochastic discount factor
+- Vector of length T (one value per time period)
 
 ### Shrinkage Levels (SRscale)
 
@@ -254,7 +264,6 @@ The `SRscale` parameter controls the prior Sharpe ratio shrinkage:
 | `R_matrix` | Test asset returns matrix |
 | `intercept` | Logical: whether intercept was included |
 | `IS_AP` | In-sample asset pricing results |
-| `metadata` | Run configuration parameters |
 | `kns_out` | Kozak-Nagel-Shanken OOS results |
 | `rp_out` | RP-PCA results |
 

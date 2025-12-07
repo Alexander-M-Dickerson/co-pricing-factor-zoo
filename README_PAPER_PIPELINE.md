@@ -111,12 +111,11 @@ The following objects are expected when loading MCMC results:
 
 | Object | Description | Used By |
 |--------|-------------|---------|
-| `results` | MCMC results list (gamma_path, lambda_path per prior) | Figure 2, Table A.2 |
+| `results` | MCMC results list (gamma_path, lambda_path, sdf_path, bma_sdf per prior) | Figure 2, Table A.2 |
 | `f1` | Non-traded factors matrix (T × N1) | Figure 2, Table A.2 |
 | `f2` | Traded factors matrix (T × N2), NULL for treasury | Figure 2, Table A.2 |
 | `intercept` | Whether intercept was included | Figure 2, Table A.2 |
 | `IS_AP` | In-sample asset pricing results | Future tables |
-| `metadata` | Run configuration and metadata | Header info |
 | `kns_out` | Kozak-Nagel-Shanken results | Comparison tables |
 | `rp_out` | RP-PCA results | Comparison tables |
 
@@ -136,6 +135,13 @@ Each element contains:
 - Dimensions: `ndraws × (1+N)` when `intercept = TRUE`, else `ndraws × N`
 - First column is the intercept/constant when included
 - `colMeans(lambda_path) * sqrt(12)` = annualized risk prices (for monthly data)
+
+**`sdf_path`** - Stochastic discount factor paths
+- Dimensions: `ndraws × T` (T = number of time periods)
+- Each row is one MCMC draw, each column is one time period
+
+**`bma_sdf`** - Bayesian model-averaged SDF
+- Vector of length T (one value per time period)
 
 ### Shrinkage Levels
 
@@ -159,8 +165,7 @@ If you get "Results file not found":
 If objects are missing from loaded data:
 
 1. The MCMC run may have used different settings
-2. Check `metadata` object for run configuration
-3. Re-run MCMC if needed with `save_flag = TRUE`
+2. Re-run MCMC if needed with `save_flag = TRUE`
 
 ## Development Notes
 
