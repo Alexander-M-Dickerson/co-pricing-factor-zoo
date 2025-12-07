@@ -80,9 +80,10 @@ if (verbose) message("Sourcing helper functions...")
 # Source all required helper files from code_base
 # Add new helper sources here as needed
 helper_files <- c(
- # "table_helpers.R",
- # "figure_helpers.R",
- # "latex_helpers.R"
+  "pp_figure_table.R"
+  # Add more helper files as needed:
+  # "table_helpers.R",
+  # "figure_helpers.R"
 )
 
 for (helper in helper_files) {
@@ -141,8 +142,12 @@ if (verbose) {
 # List of objects expected from the .Rdata file
 # Add to this list as you discover what's needed
 required_objects <- c(
-  # "IS_AP",        # In-sample asset pricing results
- # "metadata"      # Run metadata
+  "res",          # MCMC results list (for pp_figure_table)
+  "f1",           # Non-traded factors matrix
+  "f2",           # Traded factors matrix (may be NULL for treasury)
+  "intercept"     # Whether intercept was included
+  # "IS_AP",      # In-sample asset pricing results
+  # "metadata"    # Run metadata
 )
 
 missing_objects <- required_objects[!required_objects %in% ls()]
@@ -152,6 +157,14 @@ if (length(missing_objects) > 0) {
     paste(missing_objects, collapse = ", "),
     "\nSome tables/figures may fail to generate."
   )
+}
+
+# Print summary of loaded data
+if (verbose) {
+  message("\nData summary:")
+  if (exists("f1")) message("  f1: ", nrow(f1), " obs x ", ncol(f1), " factors")
+  if (exists("f2") && !is.null(f2)) message("  f2: ", nrow(f2), " obs x ", ncol(f2), " factors")
+  if (exists("res")) message("  res: ", length(res), " prior specifications")
 }
 
 
@@ -201,10 +214,40 @@ if (verbose) {
 if (verbose) message("Figure 1: [Not yet implemented]")
 
 
-#### Figure 2: [Description] --------------------------------------------------
-# TODO: Add Figure 2 generation code
+#### Figure 2 + Table A.2: Posterior Probabilities ----------------------------
+# Generates: Figure 2 (posterior probability plot) and Table A.2 (LaTeX table)
+# Source: code_base/pp_figure_table.R
 
-if (verbose) message("Figure 2: [Not yet implemented]")
+if (verbose) message("Figure 2 + Table A.2: Posterior Probabilities")
+
+# Check that required objects exist from loaded .Rdata
+if (!exists("res")) {
+  warning("Object 'res' not found. Skipping Figure 2 / Table A.2.")
+} else {
+  # Call pp_figure_table() with metadata parameters
+  # Note: f1, f2, intercept must exist in the environment (loaded from .Rdata)
+  fig2_result <- pp_figure_table(
+    results       = res,
+    # Metadata for filenames
+    return_type   = return_type,
+    model_type    = model_type,
+    tag           = tag,
+    # Prior parameters (for prob_thresh calculation)
+    alpha.w       = alpha.w,
+    beta.w        = beta.w,
+    # Output paths
+    main_path     = paper_output,
+    output_folder = "figures",
+    table_folder  = "tables",
+    # Display options
+    verbose       = verbose
+  )
+
+  if (verbose) {
+    message("  Figure saved: ", fig2_result$fig_file)
+    message("  Table saved:  ", fig2_result$tex_file)
+  }
+}
 
 
 #### Figure 3: [Description] --------------------------------------------------
