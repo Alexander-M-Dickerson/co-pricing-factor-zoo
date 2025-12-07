@@ -103,7 +103,7 @@ Add the table/figure to the index below.
 |--------|-------------|--------|-----------------|
 | 1 | TBD | Not implemented | - |
 | 2 | Posterior probability plot | **Implemented** | `pp_figure_table()` |
-| 3 | TBD | Not implemented | - |
+| 3 | Number of factors & Sharpe ratio distributions | **Implemented** | `plot_nfac_sr()` |
 
 ## Expected Objects in .Rdata
 
@@ -111,7 +111,7 @@ The following objects are expected when loading MCMC results:
 
 | Object | Description | Used By |
 |--------|-------------|---------|
-| `results` | MCMC results list (gamma_path, lambda_path, sdf_path, bma_sdf per prior) | Figure 2, Table A.2 |
+| `results` | MCMC results list (gamma_path, lambda_path, sdf_path, bma_sdf per prior) | Figure 2, Figure 3, Table A.2 |
 | `f1` | Non-traded factors matrix (T × N1) | Figure 2, Table A.2 |
 | `f2` | Traded factors matrix (T × N2), NULL for treasury | Figure 2, Table A.2 |
 | `intercept` | Whether intercept was included | Figure 2, Table A.2 |
@@ -142,6 +142,21 @@ Each element contains:
 
 **`bma_sdf`** - Bayesian model-averaged SDF
 - Vector of length T (one value per time period)
+
+### Figure 3: Number of Factors & Sharpe Ratio
+
+Figure 3 uses `gamma_path` and `sdf_path` to show:
+
+**Panel (A): Posterior distribution of number of factors**
+- Histogram of `rowSums(gamma_path)` - counts included factors per MCMC draw
+- Shows posterior median and 95% credible interval
+- Horizontal dashed line = prior distribution (uniform = 1/N)
+
+**Panel (B): Posterior distribution of SDF-implied Sharpe ratio**
+- Density of `sd(sdf_path) * sqrt(12)` - annualized SR from SDF volatility
+- Shaded region = 90% credible interval (5th to 95th percentile)
+
+By default, Figure 3 uses the highest shrinkage level (80% prior SR).
 
 ### Shrinkage Levels
 
