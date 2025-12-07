@@ -20,7 +20,14 @@ The pipeline consists of:
                                  │
                                  ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│  2. Generate Paper Results                                      │
+│  2. Generate Intermediate Data                                  │
+│     run_sr_decomposition_multi()  →  data/sr_decomposition_results.rds │
+│     (Runs SR decomposition across bond, stock, bond_stock_with_sp)     │
+└─────────────────────────────────────────────────────────────────┘
+                                 │
+                                 ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  3. Generate Paper Results                                      │
 │     _run_paper_results.R  →  output/paper/tables/*.csv          │
 │                           →  output/paper/figures/*.pdf         │
 └─────────────────────────────────────────────────────────────────┘
@@ -93,9 +100,11 @@ Add the table/figure to the index below.
 
 | Table | Description | Status | Helper Function |
 |-------|-------------|--------|-----------------|
-| 1 | TBD | Not implemented | - |
+| 1 | Top 5 factor contributions to SDF | **Data ready** | `sr_decomposition()` |
 | A.2 | Posterior probabilities and risk prices | **Implemented** | `pp_figure_table()` |
 | 3 | TBD | Not implemented | - |
+| 4 | BMA-SDF dimensionality & SR by factor type | **Data ready** | `sr_decomposition()` |
+| 5 | Discount rate vs cash-flow news | **Data ready** | `sr_decomposition()` |
 
 ## Figures Index
 
@@ -111,10 +120,10 @@ The following objects are expected when loading MCMC results:
 
 | Object | Description | Used By |
 |--------|-------------|---------|
-| `results` | MCMC results list (gamma_path, lambda_path, sdf_path, bma_sdf per prior) | Figure 2, Figure 3, Table A.2 |
-| `f1` | Non-traded factors matrix (T × N1) | Figure 2, Table A.2 |
-| `f2` | Traded factors matrix (T × N2), NULL for treasury | Figure 2, Table A.2 |
-| `intercept` | Whether intercept was included | Figure 2, Table A.2 |
+| `results` | MCMC results list (gamma_path, lambda_path, sdf_path, bma_sdf per prior) | Figure 2, Figure 3, Tables 1/4/5, Table A.2 |
+| `f1` | Non-traded factors matrix (T × N1) | Figure 2, Tables 1/4/5, Table A.2 |
+| `f2` | Traded factors matrix (T × N2), NULL for treasury | Figure 2, Tables 1/4/5, Table A.2 |
+| `intercept` | Whether intercept was included | Figure 2, Tables 1/4/5, Table A.2 |
 | `IS_AP` | In-sample asset pricing results | Future tables |
 | `kns_out` | Kozak-Nagel-Shanken results | Comparison tables |
 | `rp_out` | RP-PCA results | Comparison tables |
@@ -157,6 +166,91 @@ Figure 3 uses `gamma_path` and `sdf_path` to show:
 - Shaded region = 90% credible interval (5th to 95th percentile)
 
 By default, Figure 3 uses the highest shrinkage level (80% prior SR).
+
+### SR Decomposition (Tables 1, 4, 5)
+
+The `sr_decomposition()` function decomposes the SDF Sharpe ratio by factor groups.
+This is the foundation for Tables 1, 4, and 5.
+
+#### Mathematical Background
+
+The stochastic discount factor (SDF) is constructed as:
+
+```
+m_t = 1 - (f_t - E[f])' · (λ / σ_f)
+```
+
+where:
+- `f_t` = factor realizations at time t (T × K matrix)
+- `λ` = market prices of risk from MCMC posterior
+- `σ_f` = factor standard deviations
+
+For a subset of factors S ⊆ {1, ..., K}, the **group-specific SDF** is:
+
+```
+m_S,t = 1 - (f_S,t - E[f_S])' · (λ_S / σ_S)
+```
+
+The **annualized Sharpe ratio** for group S is:
+
+```
+SR_S = √12 · σ(m_S)
+```
+
+The **squared SR contribution ratio** measures the fraction of total SDF variance
+explained by factors in group S:
+
+```
+SR²_S / SR²_m = Var(m_S) / Var(m)
+```
+
+#### Output Metrics
+
+For each factor group and shrinkage level, `sr_decomposition()` computes:
+
+| Metric | Description | Formula |
+|--------|-------------|---------|
+| `Mean` | Expected number of included factors | E[|S|] |
+| `5%`, `95%` | 90% credible interval for |S| | Quantiles of Σγ_j |
+| `E[SR_f\|data]` | Posterior mean group Sharpe ratio | E[SR_S] |
+| `E[SR²_f/SR²_m\|data]` | Posterior mean SR² contribution | E[Var(m_S)/Var(m)] |
+
+#### Factor Groups
+
+The decomposition analyzes these factor groups:
+
+| Group | Description |
+|-------|-------------|
+| Nontraded factors | Factors in f1 (macro, sentiment, etc.) |
+| Tradable factors | Factors in f2 (bond + stock) |
+| Bond tradable factors | Bond-related tradable factors |
+| Stock tradable factors | Stock-related tradable factors |
+| DR factors | Discount rate news factors |
+| CF factors | Cash-flow news factors |
+| Top N Factors | Highest posterior probability factors |
+| All factors | Complete factor set |
+
+#### Wrapper Function: `run_sr_decomposition_multi()`
+
+Runs `sr_decomposition()` across multiple model types and saves combined results:
+
+```r
+res_tbl_top <- run_sr_decomposition_multi(
+  results_path = "output/unconditional",
+  data_path    = "data",
+  model_types  = c("bond_stock_with_sp", "stock", "bond"),
+  top_factors  = 5
+)
+```
+
+Output structure:
+```r
+res_tbl_top$bond_stock_with_sp  # tibble for combined model
+res_tbl_top$stock               # tibble for stock-only model
+res_tbl_top$bond                # tibble for bond-only model
+```
+
+Saved to: `data/sr_decomposition_results.rds`
 
 ### Shrinkage Levels
 
