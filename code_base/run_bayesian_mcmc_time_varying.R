@@ -102,7 +102,10 @@ run_bayesian_mcmc_time_varying <- function(
 ) {
   
   library(doRNG)
-  
+
+  # Set random seed for reproducibility
+  set.seed(seed)
+
   ## ---- 0. Sanity checks -----------------------------------------------------
   if (!dir.exists(main_path)) {
     stop("`main_path` does not exist: ", main_path)
