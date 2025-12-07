@@ -37,6 +37,9 @@ paper_output   <- "output/paper"
 # Code folder containing helper functions
 code_folder    <- "code_base"
 
+# Data folder (for intermediate results like variance decomposition)
+data_folder    <- "data"
+
 #### 1.2 Model Configuration --------------------------------------------------
 # These parameters determine which .Rdata file to load
 model_type     <- "bond_stock_with_sp"   # Options: "bond", "stock", "bond_stock_with_sp", "treasury"
@@ -81,10 +84,11 @@ if (verbose) message("Sourcing helper functions...")
 # Add new helper sources here as needed
 helper_files <- c(
   "pp_figure_table.R",
-  "plot_nfac_sr.R"
+  "plot_nfac_sr.R",
+  "sr_decomposition.R",
+  "run_sr_decomposition_multi.R"
   # Add more helper files as needed:
-  # "table_helpers.R",
-  # "figure_helpers.R"
+  # "table_helpers.R"
 )
 
 for (helper in helper_files) {
@@ -170,6 +174,59 @@ if (verbose) {
 
 
 ###############################################################################
+## SECTION 2.5: INTERMEDIATE DATA GENERATION
+###############################################################################
+# Generate intermediate results needed for multiple tables.
+# These are computed once and saved to data/ for reuse.
+
+if (verbose) {
+
+  message("\n", strrep("=", 60))
+  message("GENERATING INTERMEDIATE DATA")
+  message(strrep("=", 60), "\n")
+}
+
+#### SR Decomposition (for Tables 1, 4, 5) ------------------------------------
+# Runs sr_decomposition() across all model types and saves combined results.
+# Required for: Table 1 (Top 5 factors), Table 4 (SR by factor type),
+#               Table 5 (DR vs CF decomposition)
+
+if (verbose) message("SR Decomposition: Computing for all model types...")
+
+# Check if we should regenerate or use cached results
+sr_decomp_file <- file.path(data_folder, "sr_decomposition_results.rds")
+regenerate_sr_decomp <- TRUE  # Set to FALSE to use cached results
+
+if (file.exists(sr_decomp_file) && !regenerate_sr_decomp) {
+  if (verbose) message("  Loading cached SR decomposition results...")
+  res_tbl_top <- readRDS(sr_decomp_file)
+} else {
+  # Run SR decomposition across all model types
+  res_tbl_top <- run_sr_decomposition_multi(
+    results_path  = results_path,
+    data_path     = data_folder,
+    model_types   = c("bond_stock_with_sp", "stock", "bond"),
+    return_type   = return_type,
+    alpha.w       = alpha.w,
+    beta.w        = beta.w,
+    kappa         = kappa,
+    tag           = tag,
+    top_factors   = 5,
+    prior_labels  = c("20%", "40%", "60%", "80%"),
+    save_output   = TRUE,
+    output_path   = data_folder,
+    output_name   = "sr_decomposition_results.rds",
+    verbose       = verbose
+  )
+}
+
+if (verbose && !is.null(res_tbl_top)) {
+  message("  SR decomposition results available for: ",
+          paste(names(res_tbl_top)[!sapply(res_tbl_top, is.null)], collapse = ", "))
+}
+
+
+###############################################################################
 ## SECTION 3: TABLES
 ###############################################################################
 
@@ -179,11 +236,15 @@ if (verbose) {
   message(strrep("=", 60), "\n")
 }
 
-#### Table 1: [Description] ---------------------------------------------------
-# TODO: Add Table 1 generation code
-# Source: code_base/[table_script].R or inline
+#### Table 1: Top 5 Factor Contributions to SDF -------------------------------
+# Shows the most likely (top 5) factors by posterior probability and their
+# contribution to the SDF Sharpe ratio.
+# Source: res_tbl_top from SR decomposition
 
-if (verbose) message("Table 1: [Not yet implemented]")
+if (verbose) message("Table 1: Top 5 Factor Contributions [Data ready, table generation pending]")
+
+# TODO: Extract "Top 5 Factors" group from res_tbl_top and format for LaTeX
+# Example access: res_tbl_top$bond_stock_with_sp %>% filter(factor_type == "Top 5 Factors")
 
 
 #### Table 2: [Description] ---------------------------------------------------
@@ -196,6 +257,26 @@ if (verbose) message("Table 2: [Not yet implemented]")
 # TODO: Add Table 3 generation code
 
 if (verbose) message("Table 3: [Not yet implemented]")
+
+
+#### Table 4: BMA-SDF Dimensionality & SR by Factor Type ----------------------
+# Shows SDF dimensionality and Sharpe ratio decomposition by factor type
+# (nontraded, tradable, bond, stock).
+# Source: res_tbl_top from SR decomposition
+
+if (verbose) message("Table 4: SR Decomposition by Factor Type [Data ready, table generation pending]")
+
+# TODO: Extract factor type groups from res_tbl_top and format for LaTeX
+# Groups: "Nontraded factors", "Tradable factors", "Bond tradable factors", "Stock tradable factors"
+
+
+#### Table 5: Discount Rate vs Cash-Flow News ---------------------------------
+# Shows decomposition into discount rate (DR) and cash-flow (CF) factors.
+# Source: res_tbl_top from SR decomposition (DR factors, CF factors groups)
+
+if (verbose) message("Table 5: DR vs CF Decomposition [Data ready, table generation pending]")
+
+# TODO: Extract "DR factors" and "CF factors" groups from res_tbl_top and format for LaTeX
 
 
 ###############################################################################

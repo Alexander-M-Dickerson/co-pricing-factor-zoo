@@ -1,3 +1,61 @@
+# =========================================================================
+#  sr_decomposition()   ---  Sharpe Ratio Decomposition by Factor Groups
+# =========================================================================
+# Decomposes the SDF Sharpe ratio contribution by factor type/group.
+#
+# Mathematical Background
+# -----------------------
+# The stochastic discount factor (SDF) is:
+#
+#   m_t = 1 - (f_t - E[f])' * (lambda / sigma_f)
+#
+# where:
+#   f_t       = factor realizations at time t
+#   lambda    = market prices of risk (from MCMC)
+#   sigma_f   = factor standard deviations
+#
+# The SDF Sharpe ratio for a subset of factors S is:
+#
+#   SR_S = sqrt(12) * sd(m_S)
+#
+# where m_S is the SDF constructed using only factors in set S.
+#
+# The squared SR contribution ratio is:
+#
+#   SR^2_S / SR^2_m = Var(m_S) / Var(m)
+#
+# This measures how much of the full SDF variance is explained by
+# factors in group S.
+#
+# Output Metrics
+# --------------
+# For each factor group and shrinkage level, computes:
+#   - Mean:               E[|S|] = expected number of included factors
+#   - 5%, 95%:            90% credible interval for |S|
+#   - E[SR_f|data]:       Posterior mean Sharpe ratio for group
+#   - E[SR^2_f/SR^2_m|data]: Posterior mean squared SR contribution
+#
+# Required Objects in Calling Environment
+# ---------------------------------------
+#   f1              Non-traded factors matrix (T x N1)
+#   f2              Traded factors matrix (T x N2), can be NULL
+#   intercept       Logical: whether intercept was included
+#   nontraded_names Factor names classified as non-traded (optional)
+#   bond_names      Factor names classified as bond factors (optional)
+#   stock_names     Factor names classified as stock factors (optional)
+#
+# Parameters
+# ----------
+#   results         MCMC results list from run_bayesian_mcmc()
+#   prior_labels    Labels for shrinkage levels (default: 20/40/60/80%)
+#   dr_cf_decomp    List with DR_factors and CF_factors vectors (optional)
+#   top_factors     Integer N for top-N analysis, or character vector
+#
+# Returns
+# -------
+#   Tibble with columns: shrinkage, factor_type, metric, value
+# =========================================================================
+
 sr_decomposition <- function(results,
                              prior_labels = c("20%","40%","60%","80%"),
                              dr_cf_decomp = NULL,
@@ -145,4 +203,12 @@ sr_decomposition <- function(results,
   
   dplyr::bind_rows(out) %>%
     dplyr::select(shrinkage, factor_type, metric, value)
+}
+
+
+# =========================================================================
+#  Helper: Null-coalescing operator (if not already defined)
+# =========================================================================
+if (!exists("%||%", mode = "function")) {
+  `%||%` <- function(x, y) if (is.null(x)) y else x
 }
