@@ -1,0 +1,40 @@
+\begin{table}[tb!]
+\begin{center}
+\caption{Discount rate vs. cash-flow news}\label{tab:table-model-dim1-dr-cf}\vspace{-2mm}
+\scalebox{.8}{
+\begin{tabular}{lcccccccccc} \toprule
+  & \multicolumn{4}{c}{Discount rate news} &  & \multicolumn{4}{c}{Cash-flow news} \\\cmidrule(lr){2-5} \cmidrule(lr){7-10}
+ & \multicolumn{4}{c}{Total prior SR} &  & \multicolumn{4}{c}{Total prior SR} \\ 
+ & 20\% & 40\% & 60\% & 80\% &  & 20\% & 40\% & 60\% & 80\% \\ 
+\midrule
+\multicolumn{10}{c}{\textbf{Panel A}: Co-pricing BMA-SDF, tradable bond and stock factors} \\ \midrule
+Mean & 9.81 & 9.60 & 9.28 & 8.20 &  & 9.71 & 9.18 & 8.56 & 7.31 \\
+5\% & 6 & 6 & 6 & 5 &  & 6 & 6 & 5 & 4 \\
+95\% & 14 & 13 & 13 & 12 &  & 13 & 13 & 12 & 11 \\ 
+$\mathbb{E}[SR_f|\text{data}]$ & 0.65 & 1.19 & 1.70 & 2.10 &  & 0.60 & 1.06 & 1.45 & 1.77 \\
+$\mathbb{E}\big[\frac{SR^2_f}{SR^2_m}|\text{data}\big]$ & 0.59 & 0.67 & 0.75 & 0.75 &  & 0.51 & 0.55 & 0.57 & 0.56 \\
+\midrule
+\multicolumn{10}{c}{\textbf{Panel B}: Bond BMA-SDF, tradable bond factors} \\ \midrule
+Mean & 4.97 & 5.05 & 4.94 & 4.43 &  & 2.85 & 2.72 & 2.44 & 1.98 \\
+5\% & 2 & 3 & 2 & 2 &  & 1 & 1 & 1 & 0 \\
+95\% & 8 & 8 & 7 & 7 &  & 5 & 5 & 4 & 4 \\ 
+$\mathbb{E}[SR_f|\text{data}]$ & 0.44 & 0.85 & 1.21 & 1.43 &  & 0.28 & 0.50 & 0.64 & 0.69 \\
+$\mathbb{E}\big[\frac{SR^2_f}{SR^2_m}|\text{data}\big]$ & 0.67 & 0.74 & 0.75 & 0.65 &  & 0.35 & 0.33 & 0.28 & 0.21 \\
+ \midrule
+\multicolumn{10}{c}{\textbf{Panel C}: Stock BMA-SDF, tradable stock factors} \\ \midrule
+Mean & 5.01 & 4.91 & 4.79 & 4.38 &  & 6.81 & 6.63 & 6.31 & 5.43 \\
+5\% & 2 & 2 & 2 & 2 &  & 4 & 4 & 3 & 2 \\
+95\% & 8 & 7 & 7 & 7 &  & 10 & 10 & 9 & 9 \\ 
+$\mathbb{E}[SR_f|\text{data}]$ & 0.37 & 0.73 & 1.11 & 1.48 &  & 0.47 & 0.83 & 1.16 & 1.44 \\
+$\mathbb{E}\big[\frac{SR^2_f}{SR^2_m}|\text{data}\big]$ & 0.44 & 0.54 & 0.65 & 0.72 &  & 0.65 & 0.66 & 0.69 & 0.68 \\
+\bottomrule	
+\end{tabular}
+}
+\end{center}
+\begin{spacing}{1}
+	{\footnotesize 
+The table reports posterior means of number of factors (along with the $90\%$ confidence intervals), implied Sharpe ratios $\mathbb{E}[SR_f|\text{data}]$, and the ratio of $SR_f^2$ to the total SDF-implied squared Sharpe ratio $\mathbb{E}\big[SR^2_f/SR^2_m|\text{data}\big]$ for discount rate and cash-flow news driven tradable factors, respectively. The discount rate vs. cash-flow news  decomposition follows \cite{Vuolteenaho_2002} and is detailed in Internet Appendix \ref{app:cf_dr}. Panels A, B and C report, respectively, results for the co-pricing, bond-only, and stock-only BMA-SDFs, using the corresponding factor zoos.
+}
+\end{spacing}
+\vspace{-4mm}
+\end{table} 
