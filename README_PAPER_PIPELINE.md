@@ -111,7 +111,7 @@ The following objects are expected when loading MCMC results:
 
 | Object | Description | Used By |
 |--------|-------------|---------|
-| `res` | MCMC results list (gamma_path, lambda_path per prior) | Figure 2, Table A.2 |
+| `results` | MCMC results list (gamma_path, lambda_path per prior) | Figure 2, Table A.2 |
 | `f1` | Non-traded factors matrix | Figure 2, Table A.2 |
 | `f2` | Traded factors matrix | Figure 2, Table A.2 |
 | `intercept` | Whether intercept was included | Figure 2, Table A.2 |

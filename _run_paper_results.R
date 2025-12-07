@@ -142,7 +142,7 @@ if (verbose) {
 # List of objects expected from the .Rdata file
 # Add to this list as you discover what's needed
 required_objects <- c(
-  "res",          # MCMC results list (for pp_figure_table)
+  "results",      # MCMC results list (for pp_figure_table)
   "f1",           # Non-traded factors matrix
   "f2",           # Traded factors matrix (may be NULL for treasury)
   "intercept"     # Whether intercept was included
@@ -164,7 +164,7 @@ if (verbose) {
   message("\nData summary:")
   if (exists("f1")) message("  f1: ", nrow(f1), " obs x ", ncol(f1), " factors")
   if (exists("f2") && !is.null(f2)) message("  f2: ", nrow(f2), " obs x ", ncol(f2), " factors")
-  if (exists("res")) message("  res: ", length(res), " prior specifications")
+  if (exists("results")) message("  results: ", length(results), " prior specifications")
 }
 
 
@@ -221,13 +221,13 @@ if (verbose) message("Figure 1: [Not yet implemented]")
 if (verbose) message("Figure 2 + Table A.2: Posterior Probabilities")
 
 # Check that required objects exist from loaded .Rdata
-if (!exists("res")) {
-  warning("Object 'res' not found. Skipping Figure 2 / Table A.2.")
+if (!exists("results")) {
+  warning("Object 'results' not found. Skipping Figure 2 / Table A.2.")
 } else {
   # Call pp_figure_table() with metadata parameters
   # Note: f1, f2, intercept must exist in the environment (loaded from .Rdata)
   fig2_result <- pp_figure_table(
-    results       = res,
+    results       = results,
     # Metadata for filenames
     return_type   = return_type,
     model_type    = model_type,
