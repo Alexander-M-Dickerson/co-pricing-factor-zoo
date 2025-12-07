@@ -210,3 +210,68 @@ Core packages used in this project:
 - `Matrix` - Sparse matrix operations
 
 Always check package availability before use with `requireNamespace()`.
+
+## MCMC Results Structure
+
+The `.Rdata` files produced by `run_bayesian_mcmc()` contain the following key objects:
+
+### `results` - MCMC Output List
+
+A list with one element per prior shrinkage level (default: 0.20, 0.40, 0.60, 0.80).
+Each element contains:
+
+| Field | Description | Dimensions |
+|-------|-------------|------------|
+| `gamma_path` | Posterior inclusion indicators (0/1) for each factor | `ndraws × N` |
+| `lambda_path` | Market prices of risk | `ndraws × (1+N)` or `ndraws × N` |
+
+**gamma_path (Posterior Probabilities)**
+- Binary matrix: each row is one MCMC draw, each column is one factor
+- `colMeans(gamma_path)` gives the posterior probability that factor j is included
+- Always has N columns (one per factor)
+
+**lambda_path (Market Prices of Risk)**
+- Continuous matrix: each row is one MCMC draw
+- When `intercept = TRUE`: has `1 + N` columns (first column is the intercept/constant)
+- When `intercept = FALSE`: has `N` columns (same as gamma)
+- `colMeans(lambda_path)` gives posterior mean risk prices
+- Typically annualized by multiplying by `sqrt(12)` for monthly data
+
+### Shrinkage Levels (SRscale)
+
+The `SRscale` parameter controls the prior Sharpe ratio shrinkage:
+- Values like `c(0.20, 0.40, 0.60, 0.80)` represent percentages of the maximum attainable SR
+- Lower values = more shrinkage toward zero (more conservative)
+- Higher values = less shrinkage (more aggressive factor selection)
+- Results are indexed by these levels: `results[[1]]` = 20%, `results[[2]]` = 40%, etc.
+
+### Other Objects in .Rdata
+
+| Object | Description |
+|--------|-------------|
+| `f1` | Non-traded factors matrix (T × N1) |
+| `f2` | Traded factors matrix (T × N2), NULL for treasury models |
+| `R_matrix` | Test asset returns matrix |
+| `intercept` | Logical: whether intercept was included |
+| `IS_AP` | In-sample asset pricing results |
+| `metadata` | Run configuration parameters |
+| `kns_out` | Kozak-Nagel-Shanken OOS results |
+| `rp_out` | RP-PCA results |
+
+### Example: Extracting Posterior Probabilities
+
+```r
+# Load results
+load("output/excess_stock_alpha.w=1_beta.w=1_kappa=0_baseline.Rdata")
+
+# Get factor names
+factor_names <- colnames(cbind(f1, f2))
+
+# Compute posterior probabilities for each shrinkage level
+prob_mat <- sapply(results, function(r) colMeans(r$gamma_path))
+rownames(prob_mat) <- factor_names
+colnames(prob_mat) <- c("20%", "40%", "60%", "80%")
+
+# Average probability across all shrinkage levels
+avg_prob <- rowMeans(prob_mat)
+```

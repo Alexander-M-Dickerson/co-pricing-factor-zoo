@@ -166,9 +166,10 @@ pp_figure_table <- function(results,
 
   print(g)
 
-  ## ---- 5b. Build LaTeX table: merge & sort by highest prior ----------------
-  # Sort by highest-prob in last prior column
-  sort_idx <- order(prob_mat[, length(prior_labels)], decreasing = TRUE)
+  ## ---- 5b. Build LaTeX table: merge & sort by AVERAGE probability ----------
+  # Sort by average posterior probability across all priors (not just the last one)
+  avg_probs <- rowMeans(prob_mat)
+  sort_idx <- order(avg_probs, decreasing = TRUE)
   prob_mat <- prob_mat[sort_idx, ]
   risk_mat <- risk_mat[sort_idx, ]
   

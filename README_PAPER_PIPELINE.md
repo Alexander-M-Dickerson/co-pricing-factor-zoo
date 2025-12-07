@@ -112,13 +112,37 @@ The following objects are expected when loading MCMC results:
 | Object | Description | Used By |
 |--------|-------------|---------|
 | `results` | MCMC results list (gamma_path, lambda_path per prior) | Figure 2, Table A.2 |
-| `f1` | Non-traded factors matrix | Figure 2, Table A.2 |
-| `f2` | Traded factors matrix | Figure 2, Table A.2 |
+| `f1` | Non-traded factors matrix (T × N1) | Figure 2, Table A.2 |
+| `f2` | Traded factors matrix (T × N2), NULL for treasury | Figure 2, Table A.2 |
 | `intercept` | Whether intercept was included | Figure 2, Table A.2 |
 | `IS_AP` | In-sample asset pricing results | Future tables |
 | `metadata` | Run configuration and metadata | Header info |
 | `kns_out` | Kozak-Nagel-Shanken results | Comparison tables |
 | `rp_out` | RP-PCA results | Comparison tables |
+
+### Results Structure Detail
+
+The `results` object is a list with one element per prior shrinkage level (default: 20%, 40%, 60%, 80%).
+
+Each element contains:
+
+**`gamma_path`** - Posterior inclusion indicators (posterior probabilities)
+- Dimensions: `ndraws × N` (N = number of factors)
+- Binary 0/1 values for each MCMC draw
+- `colMeans(gamma_path)` = posterior probability factor j is included
+- Tables are sorted by **average** probability across all shrinkage levels
+
+**`lambda_path`** - Market prices of risk
+- Dimensions: `ndraws × (1+N)` when `intercept = TRUE`, else `ndraws × N`
+- First column is the intercept/constant when included
+- `colMeans(lambda_path) * sqrt(12)` = annualized risk prices (for monthly data)
+
+### Shrinkage Levels
+
+The `SRscale` parameter (e.g., `c(0.20, 0.40, 0.60, 0.80)`) controls prior Sharpe ratio shrinkage:
+- Values represent % of maximum attainable SR
+- Lower = more conservative, Higher = more aggressive factor selection
+- `results[[1]]` = 20%, `results[[2]]` = 40%, etc.
 
 ## Troubleshooting
 
