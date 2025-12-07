@@ -80,7 +80,8 @@ if (verbose) message("Sourcing helper functions...")
 # Source all required helper files from code_base
 # Add new helper sources here as needed
 helper_files <- c(
-  "pp_figure_table.R"
+  "pp_figure_table.R",
+  "plot_nfac_sr.R"
   # Add more helper files as needed:
   # "table_helpers.R",
   # "figure_helpers.R"
@@ -250,10 +251,44 @@ if (!exists("results")) {
 }
 
 
-#### Figure 3: [Description] --------------------------------------------------
-# TODO: Add Figure 3 generation code
+#### Figure 3: Number of Factors & Sharpe Ratio Distributions -----------------
+# Generates: Figure 3 (two-panel: posterior n_factors + SR distribution)
+# Source: code_base/plot_nfac_sr.R
 
-if (verbose) message("Figure 3: [Not yet implemented]")
+if (verbose) message("Figure 3: Number of Factors & Sharpe Ratio Distributions")
+
+# Check that required objects exist from loaded .Rdata
+if (!exists("results")) {
+  warning("Object 'results' not found. Skipping Figure 3.")
+} else if (is.null(results[[1]]$sdf_path)) {
+  warning("results$sdf_path not found. Skipping Figure 3 (requires SDF tracking).")
+} else {
+  # Call plot_nfac_sr() with metadata parameters
+  fig3_result <- plot_nfac_sr(
+    results       = results,
+    # Metadata for filenames
+    return_type   = return_type,
+    model_type    = model_type,
+    tag           = tag,
+    # Prior selection (use highest shrinkage by default)
+    prior_labels  = c("20%", "40%", "60%", "80%"),
+    prior_choice  = "80%",
+    # Output paths
+    main_path     = paper_output,
+    output_folder = "figures",
+    # Display options
+    verbose       = verbose
+  )
+
+  if (verbose) {
+    message("  Figure saved: ", fig3_result$fig_file)
+    message("  Prior used: ", fig3_result$prior_used)
+    message("  N factors [2.5%, 50%, 97.5%]: ",
+            paste(round(fig3_result$n_factors_summary, 1), collapse = ", "))
+    message("  SR [5%, 95%]: ",
+            paste(round(fig3_result$sr_summary, 3), collapse = ", "))
+  }
+}
 
 
 ###############################################################################
