@@ -45,6 +45,8 @@
 #' @param verbose        Print progress messages?
 #' @param fac_to_drop    List of factor names to exclude (optional)
 #' @param weighting      Weighting scheme: "GLS" or "OLS"
+#' @param parallel_type  Parallel backend: "auto" (detect best), "PSOCK", "FORK", or "sequential"
+#' @param cluster_timeout Seconds to wait for cluster creation before fallback (default: 30)
 #'
 #' @return Invisible list containing results, IS_AP, and output path
 #'
@@ -119,7 +121,9 @@ run_bayesian_mcmc <- function(
   save_flag     = TRUE,
   verbose       = TRUE,
   fac_to_drop   = NULL,
-  weighting     = "GLS"
+  weighting     = "GLS",
+  parallel_type = "auto",
+  cluster_timeout = 30
 ) {
   
   library(doRNG)
@@ -509,12 +513,20 @@ run_bayesian_mcmc <- function(
   thread_vars <- c("OMP_NUM_THREADS", "MKL_NUM_THREADS",
                    "OPENBLAS_NUM_THREADS", "VECLIB_MAXIMUM_THREADS")
   old_threads <- Sys.getenv(thread_vars, unset = NA)
-  
-  ## ---- 10. Parallel backend setup (hardened for RStudio Server) --------------
-  # Avoid nested threading that can look like a hang
-  Sys.setenv(OMP_NUM_THREADS = "1", MKL_NUM_THREADS = "1",
-             OPENBLAS_NUM_THREADS = "1", VECLIB_MAXIMUM_THREADS = "1")
-  
+
+  ## ---- 10. Parallel backend setup (platform-aware) --------------------------
+  # Source parallel helpers if not already loaded
+  if (!exists("detect_parallel_backend", mode = "function")) {
+    source(file.path(code_folder, "parallel_helpers.R"))
+  }
+
+  # Detect best parallel backend for current environment
+  backend <- detect_parallel_backend(
+    num_cores = num_cores,
+    preferred = parallel_type,
+    verbose = verbose
+  )
+
   # We will compile locally but send a plain function to workers (cmpfun on PSOCK can be brittle)
   make_CJ_ss <- function(use_multi_asset, use_kappa_no_sp) {
     if (is.null(f2)) {
@@ -533,7 +545,7 @@ run_bayesian_mcmc <- function(
       }
     }
   }
-  
+
   CJ_ss_plain <- if (is.null(f2)) {
     make_CJ_ss(use_multi_asset = FALSE,
                use_kappa_no_sp = (!is.null(kappa) && any(kappa != 0)))
@@ -541,54 +553,23 @@ run_bayesian_mcmc <- function(
     make_CJ_ss(use_multi_asset = (!is.null(kappa) && any(kappa != 0)),
                use_kappa_no_sp = FALSE)
   }
-  
-  # Fallback-friendly cluster start
-  has_cluster <- FALSE
-  if (num_cores > 1L) {
-    # RStudio Server: keep worker output away from the console (can block handshake)
-    # outfile = "" routes to master; outfile = NULL routes to /dev/null (safer here)
-    cl_try <- try({
-      cl <- parallel::makeCluster(num_cores, type = "PSOCK", outfile = NULL)
-      has_cluster <- TRUE
-      
-      # Make workers look like master environment enough to run
-      parallel::clusterEvalQ(cl, {
-        # clamp threads inside workers too
-        Sys.setenv(OMP_NUM_THREADS = "1", MKL_NUM_THREADS = "1",
-                   OPENBLAS_NUM_THREADS = "1", VECLIB_MAXIMUM_THREADS = "1")
-        library(BayesianFactorZoo)
-        library(MASS)
-        NULL
-      })
-      
-      # Export all objects used inside the foreach body explicitly
-      parallel::clusterExport(cl, varlist = c(
-        "CJ_ss_plain", "f1", "f2", "R_matrix", "ndraws",
-        "alpha.w", "beta.w", "weighting", "intercept",
-        "kappa", "kappa_fac"
-      ), envir = environment())
-      
-      doParallel::registerDoParallel(cl)
-      # Ensure we tear it down even on error
-      on.exit({
-        try(doParallel::stopImplicitCluster(), silent = TRUE)
-        try(parallel::stopCluster(cl), silent = TRUE)
-      }, add = TRUE)
-    }, silent = TRUE)
-    
-    if (inherits(cl_try, "try-error")) {
-      if (verbose) message("Parallel cluster failed to start; falling back to sequential. Error: ",
-                           conditionMessage(attr(cl_try, "condition")))
-      has_cluster <- FALSE
-    } else {
-      if (verbose) message("Parallel backend registered with ", num_cores, " cores")
-    }
-  }
-  
-  if (!has_cluster) {
-    foreach::registerDoSEQ()
-    if (verbose) message("Running sequential backend (no cluster).")
-  }
+
+  # Create parallel cluster with timeout protection
+  cluster_info <- create_parallel_cluster(
+    backend = backend,
+    timeout_seconds = cluster_timeout,
+    exports = c(
+      "CJ_ss_plain", "f1", "f2", "R_matrix", "ndraws",
+      "alpha.w", "beta.w", "weighting", "intercept",
+      "kappa", "kappa_fac"
+    ),
+    export_env = environment(),
+    packages = c("BayesianFactorZoo", "MASS"),
+    verbose = verbose
+  )
+
+  # Register cleanup on exit
+  on.exit(cluster_info$cleanup(), add = TRUE)
   ## ---- 11. MCMC estimation --------------------------------------------------
   # Determine self-pricing vs no-self-pricing based on f2 presence
   # Treasury models have f2=NULL (no-SP), others have f2 present (SP)
@@ -710,15 +691,7 @@ run_bayesian_mcmc <- function(
   
   
   ## ---- 11.x Restore BLAS threading for post-MCMC work --------------------
-  for (i in seq_along(thread_vars)) {
-    val <- old_threads[[i]]
-    nm  <- thread_vars[[i]]
-    if (is.na(val) || val == "") {
-      Sys.unsetenv(nm)
-    } else {
-      Sys.setenv(structure(val, names = nm))
-    }
-  }
+  restore_thread_env(old_threads)
   ## ---- 12. Post-estimation: KNS and RP-PCA ---------------------------------
   # KNS estimation
   if (exists("estimate_kns_oos_ts", mode = "function")) {
