@@ -82,24 +82,7 @@ run_sr_decomposition_multi <- function(results_path,
     }
   }
 
-  ## ---- 2. Source sr_decomposition function ---------------------------------
-  # Assume it's already sourced or source it
-  sr_decomp_path <- file.path(dirname(results_path), "code_base", "sr_decomposition.R")
-  if (!exists("sr_decomposition", mode = "function")) {
-    if (file.exists(sr_decomp_path)) {
-      source(sr_decomp_path)
-    } else {
-      # Try relative to current working directory
-      alt_path <- "code_base/sr_decomposition.R"
-      if (file.exists(alt_path)) {
-        source(alt_path)
-      } else {
-        stop("sr_decomposition.R not found. Please source it before calling this function.")
-      }
-    }
-  }
-
-  ## ---- 3. Process each model type ------------------------------------------
+  ## ---- 2. Process each model type ------------------------------------------
   if (verbose) {
     message("\n", strrep("=", 60))
     message("RUNNING SR DECOMPOSITION ACROSS MODEL TYPES")
@@ -114,7 +97,7 @@ run_sr_decomposition_multi <- function(results_path,
       message("\n--- Processing: ", model_type, " ---")
     }
 
-    ## ---- 3a. Construct .Rdata filename -------------------------------------
+    ## ---- 2a. Construct .Rdata filename -------------------------------------
     rdata_filename <- sprintf(
       "%s_%s_alpha.w=%s_beta.w=%s_kappa=%s_%s.Rdata",
       return_type,
@@ -127,45 +110,44 @@ run_sr_decomposition_multi <- function(results_path,
 
     rdata_path <- file.path(results_path, model_type, rdata_filename)
 
-    ## ---- 3b. Check if file exists ------------------------------------------
+    ## ---- 2b. Check if file exists ------------------------------------------
     if (!file.exists(rdata_path)) {
       warning("Results file not found for ", model_type, ": ", rdata_path)
       res_tbl_top[[model_type]] <- NULL
       next
     }
 
-    ## ---- 3c. Load .Rdata into a fresh environment --------------------------
-    # Use a local environment to avoid polluting global namespace
-    load_env <- new.env()
-    load(rdata_path, envir = load_env)
+    ## ---- 2c. Load .Rdata directly into global environment ------------------
+    # sr_decomposition() uses inherits=TRUE to find variables,
+    # so we must load into global environment for it to work correctly.
+    # Save any existing variables we might overwrite, then restore after.
+
+    vars_to_save <- c("results", "f1", "f2", "intercept",
+                      "nontraded_names", "bond_names", "stock_names")
+    saved_vars <- list()
+    for (v in vars_to_save) {
+      if (exists(v, envir = .GlobalEnv)) {
+        saved_vars[[v]] <- get(v, envir = .GlobalEnv)
+      }
+    }
+
+    # Load the .Rdata file
+    load(rdata_path, envir = .GlobalEnv)
 
     if (verbose) {
       message("  Loaded: ", rdata_filename)
-      message("  Objects: ", paste(ls(load_env), collapse = ", "))
     }
 
-    ## ---- 3d. Check required objects exist ----------------------------------
-    if (!exists("results", envir = load_env)) {
-      warning("'results' object not found in ", rdata_filename)
-      res_tbl_top[[model_type]] <- NULL
-      next
-    }
-
-    ## ---- 3e. Verify factor name vectors exist in the loaded data ------------
-    # sr_decomposition() expects nontraded_names, bond_names, stock_names
-    # These should already be in the .Rdata file from the MCMC run
-    # DO NOT overwrite them - just verify they exist
-
+    ## ---- 2d. Report factor counts from loaded data -------------------------
     if (verbose) {
-      # Report what's in the loaded data
-      n_nontraded <- if (exists("nontraded_names", envir = load_env)) {
-        length(get("nontraded_names", envir = load_env))
+      n_nontraded <- if (exists("nontraded_names", envir = .GlobalEnv)) {
+        length(get("nontraded_names", envir = .GlobalEnv))
       } else 0
-      n_bond <- if (exists("bond_names", envir = load_env)) {
-        length(get("bond_names", envir = load_env))
+      n_bond <- if (exists("bond_names", envir = .GlobalEnv)) {
+        length(get("bond_names", envir = .GlobalEnv))
       } else 0
-      n_stock <- if (exists("stock_names", envir = load_env)) {
-        length(get("stock_names", envir = load_env))
+      n_stock <- if (exists("stock_names", envir = .GlobalEnv)) {
+        length(get("stock_names", envir = .GlobalEnv))
       } else 0
 
       message("  Nontraded factors: ", n_nontraded)
@@ -173,35 +155,19 @@ run_sr_decomposition_multi <- function(results_path,
       message("  Stock factors: ", n_stock)
     }
 
-    ## ---- 3f. Run sr_decomposition in the load environment ------------------
-    # We need to evaluate sr_decomposition in the context of load_env
-    # so it can find f1, f2, intercept, nontraded_names, bond_names, stock_names
-
-    # Make function arguments and sr_decomposition available in load_env
-    load_env$factor_lists <- factor_lists
-    load_env$prior_labels <- prior_labels
-    load_env$top_factors <- top_factors
-    load_env$sr_decomposition <- sr_decomposition
-
+    ## ---- 2e. Run sr_decomposition ------------------------------------------
     tryCatch({
-      # Run sr_decomposition with the loaded environment
-      result_tbl <- eval(
-        expr = quote(
-          sr_decomposition(
-            results      = results,
-            prior_labels = prior_labels,
-            dr_cf_decomp = factor_lists,
-            top_factors  = top_factors
-          )
-        ),
-        envir = load_env
+      result_tbl <- sr_decomposition(
+        results      = results,
+        prior_labels = prior_labels,
+        dr_cf_decomp = factor_lists,
+        top_factors  = top_factors
       )
 
       res_tbl_top[[model_type]] <- result_tbl
 
       if (verbose) {
-        message("  SR decomposition complete: ",
-                nrow(result_tbl), " rows")
+        message("  SR decomposition complete: ", nrow(result_tbl), " rows")
       }
 
     }, error = function(e) {
@@ -209,12 +175,22 @@ run_sr_decomposition_multi <- function(results_path,
       res_tbl_top[[model_type]] <<- NULL
     })
 
-    # Clean up
-    rm(load_env)
+    ## ---- 2f. Restore saved variables ---------------------------------------
+    # Remove loaded variables
+    for (v in vars_to_save) {
+      if (exists(v, envir = .GlobalEnv)) {
+        rm(list = v, envir = .GlobalEnv)
+      }
+    }
+    # Restore previously saved variables
+    for (v in names(saved_vars)) {
+      assign(v, saved_vars[[v]], envir = .GlobalEnv)
+    }
+
     gc(verbose = FALSE)
   }
 
-  ## ---- 4. Save combined results --------------------------------------------
+  ## ---- 3. Save combined results --------------------------------------------
   if (save_output) {
     if (!dir.exists(output_path)) {
       dir.create(output_path, recursive = TRUE, showWarnings = FALSE)
@@ -233,7 +209,7 @@ run_sr_decomposition_multi <- function(results_path,
     }
   }
 
-  ## ---- 5. Return results ---------------------------------------------------
+  ## ---- 4. Return results ---------------------------------------------------
   invisible(res_tbl_top)
 }
 
