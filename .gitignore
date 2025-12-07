@@ -1,0 +1,49 @@
+# Data files - exclude from version control
+*.Rdata
+*.RData
+*.Rds
+*.rds
+*.csv
+*.parquet
+
+# R session files
+.Rhistory
+.RData
+.Rproj.user/
+
+# R package build artifacts
+*.Rcheck/
+*.tar.gz
+
+# IDE and editor files
+.vscode/
+*.swp
+*.swo
+*~
+.idea/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+
+# Output directories (may contain large generated files)
+output/
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# Quarto/RMarkdown outputs
+*.html
+*.pdf
+!README.pdf
+
+# Cache directories
+__pycache__/
+.cache/
