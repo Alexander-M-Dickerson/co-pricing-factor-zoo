@@ -8,42 +8,69 @@
 # --------
 #   results          list returned by run_bayesian_mcmc()
 #
+# Metadata (for filename construction)
+# ------------------------------------
+#   return_type      "excess" or "duration"
+#   model_type       "bond", "stock", "bond_stock_with_sp", "treasury"
+#   tag              run identifier (e.g., "baseline")
+#
 # Optional (with sensible defaults)
 # ---------------------------------
+#   alpha.w, beta.w  Beta prior hyperparameters (used to compute prob_thresh)
+#   prob_thresh      y-intercept of dashed reference line (default: alpha.w/(alpha.w+beta.w))
 #   prior_labels     labels for priors            (default 20/40/60/80 %)
 #   top_n            number of top factors to emphasise (default 5)
 #   linetypes_top    vector of linetypes for those top_n factors
 #   legend_cols      columns in the rectangle legend (default 8)
-#   prob_thresh      y-intercept of dashed reference line (default .50)
 #   legend_rows      rows in legend (if you prefer rows; default 4)
 #   main_path        root folder (cross-platform)  (default current ".")
 #   output_folder    sub-folder for figures        (default "figures")
-#   fig_name         file name of PDF             (default "posterior_probs.pdf")
+#   table_folder     sub-folder for tables         (default "tables")
 #   width, height    inches of saved figure       (default 12x7)
-#   verbose          print “Plot exported ..."       (default TRUE)
+#   verbose          print "Plot exported ..."       (default TRUE)
 #
 # Returns
 # -------
-#   Invisible list(plot = <ggplot>, table = <tibble>, file = <path>)
+#   Invisible list(plot = <ggplot>, table = <tibble>, fig_file = <path>, tex_file = <path>)
 # =========================================================================
 
 pp_figure_table <- function(results,
+                            # Metadata for filename
+                            return_type   = "excess",
+                            model_type    = "bond_stock_with_sp",
+                            tag           = "baseline",
+                            # Prior parameters (for prob_thresh calculation)
+                            alpha.w       = 1,
+                            beta.w        = 1,
+                            # Optional overrides
+                            prob_thresh   = NULL,
                             prior_labels  = c("20%","40%","60%","80%"),
                             top_n         = 5,
                             linetypes_top = c("solid","dashed","dotted",
                                               "dotdash","longdash"),
                             legend_cols   = 8,
-                            prob_thresh   = 0.50,
                             legend_rows   = 4,
                             main_path     = ".",
                             output_folder = "figures",
-                            fig_name      = "posterior_probs.pdf",
+                            table_folder  = "tables",
                             width         = 12,
                             height        = 7,
-                            legend_font   =12,
+                            legend_font   = 12,
                             verbose       = TRUE) {
-  
-  ## ---- 0.  Factor names ---------------------------------------------------
+
+  ## ---- 0a. Compute prob_thresh from alpha.w/beta.w if not provided --------
+ if (is.null(prob_thresh)) {
+    prob_thresh <- alpha.w / (alpha.w + beta.w)
+    if (verbose) message("  prob_thresh computed from priors: ", round(prob_thresh, 3))
+  }
+
+  ## ---- 0b. Construct filename with metadata --------------------------------
+  fig_basename <- sprintf("figure_2_posterior_probs_%s_%s_%s",
+                          return_type, model_type, tag)
+  fig_name <- paste0(fig_basename, ".pdf")
+  tex_name <- paste0(fig_basename, ".tex")
+
+  ## ---- 0c.  Factor names ---------------------------------------------------
   if (!exists("f1", inherits = TRUE))
     stop("`f1` (and optionally `f2`) must exist in the calling environment.")
   f1 <- get("f1", inherits = TRUE)
@@ -131,32 +158,16 @@ pp_figure_table <- function(results,
               hjust = -0.3, vjust = 0.5, show.legend = FALSE) +
     coord_cartesian(clip = "off")
   
-  ## ---- 5.  Save -----------------------------------------------------------
+  ## ---- 5.  Save figure -----------------------------------------------------
   save_file <- file.path(main_path, output_folder, fig_name)
   dir.create(dirname(save_file), recursive = TRUE, showWarnings = FALSE)
   ggsave(save_file, g, width = width, height = height, units = "in")
   if (verbose) message("Plot exported → ", normalizePath(save_file))
-  
+
   print(g)
-  invisible(list(plot = g, table = tidy_tab, file = save_file))
-  
-  ## ---- 3.  merge & sort by 80 % -------------------------------------------
-  risk_mat_renamed <- risk_mat
-  colnames(risk_mat_renamed) <- paste0(colnames(risk_mat), " λ")   # unique names
-  
-  sort_idx <- order(prob_mat[, length(prior_labels)], decreasing = TRUE)
-  
-  tab_df <- cbind(prob_mat, " " = NA_real_, risk_mat_renamed)[sort_idx, ] |>
-    tibble::as_tibble(rownames = "Factor", .name_repair = "minimal")
-  
-  ## ---- 4.  round numeric columns -------------------------------------------
-  tab_df <- tab_df |>
-    dplyr::mutate(dplyr::across(where(is.numeric), ~ round(.x, 3)))
-  
-  
-  ## ---- 5.  LaTeX table ----------------------------------------------------
-  
-  # 1. merge & sort by highest-prob in last prior column
+
+  ## ---- 5b. Build LaTeX table: merge & sort by highest prior ----------------
+  # Sort by highest-prob in last prior column
   sort_idx <- order(prob_mat[, length(prior_labels)], decreasing = TRUE)
   prob_mat <- prob_mat[sort_idx, ]
   risk_mat <- risk_mat[sort_idx, ]
@@ -241,18 +252,19 @@ pp_figure_table <- function(results,
     "\\end{table}"
   )
   
-  tex_path <- file.path(main_path, "tables",
-                        sub("\\.pdf$", ".tex", fig_name))
-  
+  tex_path <- file.path(main_path, table_folder, tex_name)
+
   # ---- ensure target folder exists -----------------------------------------
-  if (!dir.exists(dirname(tex_path))) {
-    stop("Export failed: ‘", dirname(tex_path),
-         "’ does not exist. Please create a “tables” folder inside ‘",
-         normalizePath(main_path), "’.")
-  }
-  
+  dir.create(dirname(tex_path), recursive = TRUE, showWarnings = FALSE)
+
   writeLines(latex_lines, tex_path)
-  if (verbose) message("LaTeX table exported ---> ", normalizePath(tex_path))
-  
-  
+  if (verbose) message("LaTeX table exported → ", normalizePath(tex_path))
+
+  ## ---- 6. Return results ---------------------------------------------------
+  invisible(list(
+    plot     = g,
+    table    = tidy_tab,
+    fig_file = save_file,
+    tex_file = tex_path
+  ))
 }

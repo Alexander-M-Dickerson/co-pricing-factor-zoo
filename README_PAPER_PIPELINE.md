@@ -94,7 +94,7 @@ Add the table/figure to the index below.
 | Table | Description | Status | Helper Function |
 |-------|-------------|--------|-----------------|
 | 1 | TBD | Not implemented | - |
-| 2 | TBD | Not implemented | - |
+| A.2 | Posterior probabilities and risk prices | **Implemented** | `pp_figure_table()` |
 | 3 | TBD | Not implemented | - |
 
 ## Figures Index
@@ -102,7 +102,7 @@ Add the table/figure to the index below.
 | Figure | Description | Status | Helper Function |
 |--------|-------------|--------|-----------------|
 | 1 | TBD | Not implemented | - |
-| 2 | TBD | Not implemented | - |
+| 2 | Posterior probability plot | **Implemented** | `pp_figure_table()` |
 | 3 | TBD | Not implemented | - |
 
 ## Expected Objects in .Rdata
@@ -111,9 +111,12 @@ The following objects are expected when loading MCMC results:
 
 | Object | Description | Used By |
 |--------|-------------|---------|
-| `IS_AP` | In-sample asset pricing results | Tables, Figures |
+| `res` | MCMC results list (gamma_path, lambda_path per prior) | Figure 2, Table A.2 |
+| `f1` | Non-traded factors matrix | Figure 2, Table A.2 |
+| `f2` | Traded factors matrix | Figure 2, Table A.2 |
+| `intercept` | Whether intercept was included | Figure 2, Table A.2 |
+| `IS_AP` | In-sample asset pricing results | Future tables |
 | `metadata` | Run configuration and metadata | Header info |
-| `res` | Raw MCMC results | Advanced analysis |
 | `kns_out` | Kozak-Nagel-Shanken results | Comparison tables |
 | `rp_out` | RP-PCA results | Comparison tables |
 
