@@ -10,6 +10,7 @@
 .Rhistory
 .RData
 .Rproj.user/
+*.out
 
 # R package build artifacts
 *.Rcheck/
