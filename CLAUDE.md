@@ -263,9 +263,40 @@ The `SRscale` parameter controls the prior Sharpe ratio shrinkage:
 | `f2` | Traded factors matrix (T × N2), NULL for treasury models |
 | `R_matrix` | Test asset returns matrix |
 | `intercept` | Logical: whether intercept was included |
+| `nontraded_names` | Character vector of non-traded factor names (from f1) |
+| `bond_names` | Character vector of bond tradable factor names |
+| `stock_names` | Character vector of stock tradable factor names |
 | `IS_AP` | In-sample asset pricing results |
 | `kns_out` | Kozak-Nagel-Shanken OOS results |
 | `rp_out` | RP-PCA results |
+
+### Factor Name Vectors (IMPORTANT)
+
+The .Rdata files contain pre-computed factor classification vectors that **must not be overwritten**:
+
+```r
+# These are ALREADY in the .Rdata - DO NOT recreate them
+nontraded_names  # Character vector: names of factors in f1
+bond_names       # Character vector: bond tradable factor names
+stock_names      # Character vector: stock tradable factor names
+```
+
+**Typical counts for bond_stock_with_sp model:**
+- `nontraded_names`: 14 factors (macro, sentiment, etc.)
+- `bond_names`: 16 factors (bond tradable factors)
+- `stock_names`: 24 factors (stock tradable factors)
+- **Total**: 54 factors
+
+**WARNING**: When loading .Rdata into an environment, these variables are already correctly set.
+Do NOT attempt to infer or recreate them - just use the existing values.
+
+```r
+# WRONG - do not do this:
+load_env$bond_names <- colnames(f2)[grepl("BOND", colnames(f2))]  # BAD!
+
+# CORRECT - use what's already there:
+bond_names <- get("bond_names", envir = load_env)  # Already correct
+```
 
 ### Example: Extracting Posterior Probabilities
 
