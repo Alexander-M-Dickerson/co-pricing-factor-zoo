@@ -120,6 +120,15 @@ run_pricing_multi <- function(results_path,
         bond_oos_file <- file.path(data_path, "bond_oosample_all_excess.csv")
         stock_oos_file <- file.path(data_path, "equity_os_77.csv")
 
+        # Check if required OOS files exist
+        if (model_type == "bond_stock_with_sp" && (!file.exists(bond_oos_file) || !file.exists(stock_oos_file))) {
+          warning("  OOS files missing for combined model: ", bond_oos_file, " and/or ", stock_oos_file)
+        } else if (model_type == "bond" && !file.exists(bond_oos_file)) {
+          warning("  OOS file missing for bond model: ", bond_oos_file)
+        } else if (model_type == "stock" && !file.exists(stock_oos_file)) {
+          warning("  OOS file missing for stock model: ", stock_oos_file)
+        }
+
         R_oos_data <- NULL
 
         if (model_type == "bond_stock_with_sp") {
@@ -363,6 +372,12 @@ generate_table_3 <- function(pricing_results,
   if (verbose) message("Generating Table 3: Out-of-sample Pricing...")
 
   os_results <- pricing_results$os_results
+
+  # Check if OS results are empty
+  if (is.null(os_results) || all(sapply(os_results, is.null))) {
+    warning("  No OS pricing results available! Table 3 will be empty.")
+    warning("  To regenerate: delete data/pricing_results.rds or set regenerate_pricing <- TRUE")
+  }
 
   # Model columns in order (matching table header)
   model_cols <- c("BMA-20%", "BMA-40%", "BMA-60%", "BMA-80%",
