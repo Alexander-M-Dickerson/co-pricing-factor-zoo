@@ -181,7 +181,7 @@ plot_mean_vs_cov <- function(
   }
 
   ## ---- 7. Plot factory -----------------------------------------------------
-  make_plot <- function(v, title_suffix = "") {
+  make_plot <- function(v) {
 
     df <- data.frame(minus_cov = v$minus_cov, meansR = v$meansR)
 
@@ -228,8 +228,7 @@ plot_mean_vs_cov <- function(
                label  = sprintf("Fitted slope: %.2f", slope),
                size   = 4) +
       labs(x = expression(-cov(M, R)),
-           y = expression(E(R)),
-           subtitle = title_suffix) +
+           y = expression(E(R))) +
       theme_minimal(base_family = "sans") +
       theme(
         panel.grid.minor = element_blank(),
@@ -239,8 +238,8 @@ plot_mean_vs_cov <- function(
   }
 
   # Generate plots
-  p_in  <- make_plot(vec_in,  title_suffix = "In-Sample")
-  p_oos <- make_plot(vec_oos, title_suffix = "Out-of-Sample")
+  p_in  <- make_plot(vec_in)
+  p_oos <- make_plot(vec_oos)
 
   ## ---- 8. Export PDFs ------------------------------------------------------
   if (!dir.exists(output_path)) {

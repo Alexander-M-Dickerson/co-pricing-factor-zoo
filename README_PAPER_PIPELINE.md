@@ -121,6 +121,9 @@ Add the table/figure to the index below.
 | 5 | Thousands OOS pricing tests (excess) | **Implemented** | `plot_thousands_oos_densities()` |
 | 8 | Thousands OOS pricing tests (duration) | **Implemented** | `plot_thousands_oos_densities()` |
 | 9 | Mean vs Covariance diagnostic plots (Treasury) | **Implemented** | `plot_mean_vs_cov()` |
+| 10 | SDF time series plot (BMA) | **Implemented** | `fit_sdf_models()` |
+| 11 | SDF volatility comparison (BMA vs CAPMB vs FF5) | **Implemented** | `fit_sdf_models()` |
+| 12 | Predictability bar plots (1m and 12m horizons) | **Implemented** | `fit_sdf_models()` |
 
 ## Expected Objects in .Rdata
 
@@ -633,6 +636,133 @@ plot_mean_vs_cov(
 
 - **OOS data** (in `data/`):
   - `treasury_oosample_all_excess.csv`
+
+### Figures 10-12: SDF Time Series Analysis
+
+The `fit_sdf_models.R` module fits ARIMA + GARCH(1,1) models to SDF time series and generates three figures analyzing SDF dynamics and predictability.
+
+#### Mathematical Background
+
+**ARIMA Model for SDF Conditional Mean:**
+
+The SDF time series is modeled using an ARIMA(p,d,q) process, where the order is selected automatically using BIC:
+
+```
+m_t = μ + φ_1 m_{t-1} + ... + φ_p m_{t-p} + θ_1 ε_{t-1} + ... + θ_q ε_{t-q} + ε_t
+```
+
+The fitted values provide the conditional mean E[m_t | I_{t-1}].
+
+**GARCH(1,1) Model for SDF Conditional Volatility:**
+
+Conditional volatility is modeled using a standard GARCH(1,1) specification:
+
+```
+σ²_t = ω + α ε²_{t-1} + β σ²_{t-1}
+```
+
+where:
+- `σ²_t` = conditional variance at time t
+- `ω` = constant term (intercept)
+- `α` = ARCH coefficient (shock persistence)
+- `β` = GARCH coefficient (volatility persistence)
+- `ε_t` = residuals from the ARIMA model
+
+The annualized conditional volatility is: `σ_annual = σ_t × √12`
+
+**Predictability Regressions:**
+
+For each tradable factor j, we regress factor returns on SDF moments:
+
+```
+r_{j,t+h} = α + β_1 (σ²_t × μ_t) + β_2 σ²_t + ε_{t+h}
+```
+
+where:
+- `r_{j,t+h}` = h-period ahead log return on factor j
+- `μ_t` = SDF conditional mean
+- `σ²_t` = SDF conditional variance
+
+For 12-month horizon, Newey-West standard errors (15 lags) are used to account for overlapping observations.
+
+#### Output Files
+
+**Figure 10 (SDF Time Series):**
+- `SDF_Time_Series_BMA.pdf` - BMA-SDF level and conditional mean
+
+**Figure 11 (SDF Volatility):**
+- `SDF_Volatility_BMA_CAPMB_FF5.pdf` - Annualized conditional volatility comparison
+
+**Figure 12 (Predictability):**
+- `Predictability1m_BMA.pdf` - 1-month horizon R² for each factor
+- `Predictability12m_BMA.pdf` - 12-month horizon R² for each factor
+
+#### Plot Elements
+
+**Figure 10 (SDF Time Series):**
+- **Black line**: Raw BMA-SDF time series
+- **Red line**: Conditional mean from ARIMA fit
+- **Light blue shading**: NBER recession periods
+- **Horizontal grey line**: SDF = 1 (normalized level)
+
+**Figure 11 (SDF Volatility):**
+- **Black solid line**: BMA model annualized volatility
+- **Light blue dashed line**: CAPMB model volatility
+- **Purple dot-dash line**: FF5 model volatility
+- **Red circles + labels**: Major financial events (Black Monday, Lehman, Covid, etc.)
+- **Light blue shading**: NBER recession periods
+
+**Figure 12 (Predictability):**
+- **Blue bars**: Bond factor R² values
+- **Red bars**: Equity factor R² values
+- **Bar opacity**: Significance level (solid = p<0.05, medium = p<0.10, faded = p>0.10)
+- **Dashed line**: Median R² across all factors
+- **X-axis labels**: Color-coded by factor type (blue = bond, red = equity)
+
+#### Usage
+
+```r
+# Generate Figures 10, 11, 12 (paper_only = TRUE generates only 4 files)
+result <- fit_sdf_models(
+  results_path = "output/unconditional",
+  model_type   = "bond_stock_with_sp",
+  tag          = "baseline",
+  shrinkage    = 4,           # 80% shrinkage level
+  output_path  = "output/paper/figures",
+  paper_only   = TRUE,        # Only generate paper figures
+  verbose      = TRUE
+)
+
+# Access fitted models and p-values
+result$fits$arima$BMA          # ARIMA fit for BMA
+result$fits$garch$sigma$BMA    # GARCH volatility for BMA
+result$p_values$predictability_pvalues_1m$BMA   # 1-month p-values
+result$p_values$predictability_pvalues_12m$BMA  # 12-month p-values
+```
+
+#### Required Packages
+
+The function requires these packages:
+- `forecast` - ARIMA model fitting
+- `rugarch` - GARCH model fitting
+- `sandwich` - Newey-West robust standard errors
+- `car` - Linear hypothesis tests
+- `zoo` - Rolling window calculations
+- `ggplot2`, `ggtext`, `scales` - Plotting
+- `tibble`, `dplyr`, `tidyr`, `purrr` - Data manipulation
+- `lubridate` - Date handling
+- `glue` - String interpolation
+- `proxyC` - Column standard deviations
+
+#### Required Data Files
+
+- **Rdata file** (in `output/unconditional/{model_type}/`):
+  - `excess_{model_type}_alpha.w=1_beta.w=1_kappa=0_{tag}.Rdata`
+
+The Rdata file must contain:
+- `results` - MCMC results list with `bma_sdf` per shrinkage level
+- `IS_AP` - In-sample asset pricing object with `sdf_mat` and `dates`
+- `fac` - Factor object with `f_all_raw` and factor name vectors (required for Figure 12)
 
 ## Troubleshooting
 
