@@ -508,9 +508,11 @@ fit_sdf_models <- function(
           legend.box.background = ggplot2::element_blank()
         )
 
-      ggplot2::ggsave(
-        file.path(output_path, paste0("Predictability1m_", label, ".pdf")),
-        p_bar, width = ts_width, height = ts_height, units = "in"
+      suppressWarnings(
+        ggplot2::ggsave(
+          file.path(output_path, paste0("Predictability1m_", label, ".pdf")),
+          p_bar, width = ts_width, height = ts_height, units = "in"
+        )
       )
 
       names(f_pv) <- bond_stock
@@ -628,9 +630,11 @@ fit_sdf_models <- function(
           legend.box.background = ggplot2::element_blank()
         )
 
-      ggplot2::ggsave(
-        file.path(output_path, paste0("Predictability12m_", label, ".pdf")),
-        p_bar, width = ts_width, height = ts_height, units = "in"
+      suppressWarnings(
+        ggplot2::ggsave(
+          file.path(output_path, paste0("Predictability12m_", label, ".pdf")),
+          p_bar, width = ts_width, height = ts_height, units = "in"
+        )
       )
 
       names(f_pv_long) <- bond_stock
