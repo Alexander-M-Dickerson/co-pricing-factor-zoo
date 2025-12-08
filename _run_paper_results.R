@@ -85,6 +85,7 @@ if (verbose) message("Sourcing helper functions...")
 helper_files <- c(
   "pp_figure_table.R",
   "plot_nfac_sr.R",
+  "pp_bar_plots.R",
   "sr_decomposition.R",
   "run_sr_decomposition_multi.R",
   "sr_tables.R"
@@ -364,6 +365,46 @@ if (!exists("results")) {
             paste(round(fig3_result$n_factors_summary, 1), collapse = ", "))
     message("  SR [5%, 95%]: ",
             paste(round(fig3_result$sr_summary, 3), collapse = ", "))
+  }
+}
+
+
+#### Figure 4: Posterior Probabilities & Market Prices of Risk ----------------
+# Generates: Figure 4 (two-panel: posterior probabilities + risk prices)
+# Panel A: Posterior inclusion probabilities for each factor
+# Panel B: Posterior mean market prices of risk (annualized)
+# Source: code_base/pp_bar_plots.R
+
+if (verbose) message("Figure 4: Posterior Probabilities & Market Prices of Risk")
+
+# Check that required objects exist from loaded .Rdata
+if (!exists("results")) {
+  warning("Object 'results' not found. Skipping Figure 4.")
+} else {
+  # Call pp_bar_plots() with metadata parameters
+  # Note: f1, f2, nontraded_names, bond_names, stock_names must exist
+  fig4_result <- pp_bar_plots(
+    results       = results,
+    # Metadata for filenames
+    return_type   = return_type,
+    model_type    = model_type,
+    tag           = tag,
+    # Prior selection (use highest shrinkage by default)
+    prior_labels  = c("20%", "40%", "60%", "80%"),
+    prior_choice  = "80%",
+    # Output paths
+    main_path     = paper_output,
+    output_folder = "figures",
+    # Display options
+    verbose       = verbose
+  )
+
+  if (verbose) {
+    message("  Figure saved: ", fig4_result$fig_file)
+    message("  Prior used: ", fig4_result$prior_used)
+    message("  Factor types: ", paste(names(fig4_result$factor_types),
+                                       fig4_result$factor_types,
+                                       sep = "=", collapse = ", "))
   }
 }
 
