@@ -33,6 +33,8 @@ if (length(missing))
 #' @param shrinkage Which shrinkage level to use (1-4, default: 4 = 80%)
 #' @param output_path Output directory for figures
 #' @param paper_only If TRUE, only generate Figures 10, 11, 12 (default: TRUE)
+#' @param adj_1m If FALSE (default), use OLS standard errors for 1-month predictability.
+#'   If TRUE, use Newey-West with lag=15, adjust=FALSE, sandwich=FALSE.
 #' @param verbose Print progress messages (default: TRUE)
 #'
 #' @return List with fitted models, data, and p-values
@@ -57,6 +59,7 @@ fit_sdf_models <- function(
     shrinkage     = 4,
     output_path   = "output/paper/figures",
     paper_only    = TRUE,
+    adj_1m        = FALSE,
     verbose       = TRUE
 ) {
 
@@ -417,18 +420,24 @@ fit_sdf_models <- function(
         # OLS R² (unchanged by SE choice)
         r2[j] <- summary(fit)$r.squared
 
-        # Newey-West (Bartlett kernel) robust F-test for H0: x1 = x2 = 0, 0 lags for monthly
-        nw_vcov <- sandwich::NeweyWest(fit, lag = 0, prewhite = FALSE,
-                                       adjust = TRUE, sandwich = TRUE)
+        if (adj_1m) {
+          # Newey-West (Bartlett kernel) robust F-test, 15 lags
+          nw_vcov <- sandwich::NeweyWest(fit, lag = 15, prewhite = FALSE,
+                                         adjust = FALSE, sandwich = FALSE)
 
-        keep_coef <- intersect(c("x1", "x2"), names(coef(fit))[!is.na(coef(fit))])
+          keep_coef <- intersect(c("x1", "x2"), names(coef(fit))[!is.na(coef(fit))])
 
-        if (length(keep_coef) == 0) {
-          f_pv[j] <- NA_real_
+          if (length(keep_coef) == 0) {
+            f_pv[j] <- NA_real_
+          } else {
+            lh <- car::linearHypothesis(fit, paste0(keep_coef, " = 0"),
+                                        vcov. = nw_vcov, test = "F", singular.ok = TRUE)
+            f_pv[j] <- lh$`Pr(>F)`[2]
+          }
         } else {
-          lh <- car::linearHypothesis(fit, paste0(keep_coef, " = 0"),
-                                      vcov. = nw_vcov, test = "F", singular.ok = TRUE)
-          f_pv[j] <- lh$`Pr(>F)`[2]
+          # Standard OLS F-test
+          fit_sum <- summary(fit)
+          f_pv[j] <- 1 - pf(fit_sum$fstatistic[1], fit_sum$fstatistic[2], fit_sum$fstatistic[3])
         }
       }
 
