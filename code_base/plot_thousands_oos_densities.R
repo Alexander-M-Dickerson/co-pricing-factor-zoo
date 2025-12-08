@@ -182,10 +182,11 @@ plot_thousands_oos_densities <- function(thousands_oos_results,
     # Filter data to x_limits to avoid warnings about removed rows
     long_filtered <- long[long$value >= x_limits[1] & long$value <= x_limits[2], ]
 
-    # Build plot using text labels instead of bquote to avoid is.na() warnings
-    label_cp <- paste0("Co-pricing BMA^", spec$short, " = ", mu["Co-pricing BMA"])
-    label_bond <- paste0("Bond BMA^", spec$short, " = ", mu["Bond BMA"])
-    label_stock <- paste0("Stock BMA^", spec$short, " = ", mu["Stock BMA"])
+    # Build plot using parseable expressions
+    # Single quotes wrap text as literal strings, ~ provides spacing, {} groups superscript
+    label_cp <- paste0("'Co-pricing BMA'^{", spec$short, "}~'='~", mu["Co-pricing BMA"])
+    label_bond <- paste0("'Bond BMA'^{", spec$short, "}~'='~", mu["Bond BMA"])
+    label_stock <- paste0("'Stock BMA'^{", spec$short, "}~'='~", mu["Stock BMA"])
 
     p <- ggplot(long_filtered, aes(x = value, fill = series)) +
       geom_density(alpha = 0.20) +
