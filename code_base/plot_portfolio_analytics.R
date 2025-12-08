@@ -143,28 +143,45 @@ plot_cumret <- function(
   factor_vec <- prep$factor_vec
   color_vec <- prep$color_vec
   line_types_vec <- prep$line_types_vec
-  
+
+  # Define legend label mapping (internal name -> display name)
+  legend_labels <- c(
+    "EqualWeight" = "EW",
+    "RP-PCA"      = "RPPCA"
+  )
+
+  # Helper function to rename portfolio for display
+  rename_portfolio <- function(x) {
+    ifelse(x %in% names(legend_labels), legend_labels[x], x)
+  }
+
+  # Rename factor_vec, color_vec, and line_types_vec for display
+  display_names <- rename_portfolio(factor_vec)
+  names(color_vec) <- display_names
+  names(line_types_vec) <- display_names
+
   if (verbose) cat("Creating cumulative returns plot...\n")
   
   # Compute cumulative returns and order by final value
   plot_data <- df_scaled %>%
     dplyr::select(date, all_of(factor_vec)) %>%
     pivot_longer(-date, names_to = "portfolio", values_to = "ret") %>%
+    mutate(portfolio = rename_portfolio(portfolio)) %>%
     group_by(portfolio) %>%
     arrange(date) %>%
     mutate(dollar = exp(cumsum(ret))) %>%
     ungroup()
-  
+
   # Get ordering by final value
   ordering <- plot_data %>%
     group_by(portfolio) %>%
     slice_tail(n = 1) %>%
     arrange(desc(dollar)) %>%
     pull(portfolio)
-  
+
   plot_data <- plot_data %>%
     mutate(portfolio = factor(portfolio, levels = ordering))
-  
+
   # Reorder colors/linetypes
   color_vec_ordered <- color_vec[ordering]
   line_types_vec_ordered <- line_types_vec[ordering]
@@ -187,7 +204,10 @@ plot_cumret <- function(
     scale_color_manual(values = color_vec_ordered) +
     scale_linetype_manual(values = line_types_vec_ordered) +
     scale_y_log10(breaks = dollar_breaks, labels = dollar_format(accuracy = 1)) +
-    scale_x_date(date_labels = "%Y", date_breaks = "2 years") +
+    scale_x_date(
+      breaks = seq(as.Date("2004-08-01"), as.Date("2023-08-01"), by = "1 year"),
+      labels = format(seq(as.Date("2004-08-01"), as.Date("2023-08-01"), by = "1 year"), "%Y-%m")
+    ) +
     labs(x = NULL, y = "Portfolio Value ($)", title = "Cumulative Returns") +
     get_portfolio_theme() +
     theme(
