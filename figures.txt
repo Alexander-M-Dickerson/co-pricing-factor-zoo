@@ -43,7 +43,7 @@ The prior distribution for the $j^{\text{th}}$ factor inclusion is a Beta(1, 1),
 % Figure 4
 \begin{figure}[tb]%
 \begin{center}
-  \includegraphics[scale=.45, trim = 0cm 0.5cm 0cm 0cm,clip]{Figures/co_pricing_bar.pdf} \\
+  \includegraphics[scale=.45, trim = 0cm 0.5cm 0cm 0cm,clip]{Figures/figure_4_posterior_bars_excess_bond_stock_with_sp_baseline.pdf} \\
 \end{center} 
 \vspace{-4mm}
 \caption{Posterior factor probabilities and risk prices: Joint factor zoo (excess bond returns).}
