@@ -22,7 +22,8 @@ The pipeline consists of:
 ┌─────────────────────────────────────────────────────────────────┐
 │  2. Generate Intermediate Data                                  │
 │     run_sr_decomposition_multi()  →  data/sr_decomposition_results.rds │
-│     (Runs SR decomposition across bond, stock, bond_stock_with_sp)     │
+│     run_pricing_multi()           →  data/pricing_results.rds          │
+│     run_thousands_oos_tests()     →  data/thousands_oos_results.rds    │
 └─────────────────────────────────────────────────────────────────┘
                                  │
                                  ▼
@@ -115,6 +116,7 @@ Add the table/figure to the index below.
 | 2 | Posterior probability plot | **Implemented** | `pp_figure_table()` |
 | 3 | Number of factors & Sharpe ratio distributions | **Implemented** | `plot_nfac_sr()` |
 | 4 | Posterior probabilities & market prices of risk | **Implemented** | `pp_bar_plots()` |
+| 5 | Thousands OOS pricing tests | Data ready, plot pending | `run_thousands_oos_tests()` |
 
 ## Expected Objects in .Rdata
 
@@ -358,6 +360,77 @@ Both tables report four metrics per panel:
 - **MAPE**: Mean absolute pricing error (demeaned)
 - **R²_OLS**: Cross-sectional R² under OLS weighting
 - **R²_GLS**: Cross-sectional R² under GLS weighting
+
+### Thousands OOS Tests: `thousands_outsample_tests.R`
+
+The `thousands_outsample_tests.R` module runs OOS pricing across thousands of test asset subset combinations to assess robustness. This is used for Figure 5.
+
+#### Main Functions
+
+| Function | Description | Output File |
+|----------|-------------|-------------|
+| `run_thousands_oos_tests()` | Master function for all model types | `thousands_oos_results.rds` |
+| `os_pricing_fast()` | Lightweight OOS pricing (no date handling) | - |
+| `prepare_oos_inputs()` | Pre-compute shared objects for speed | - |
+| `run_subset_combos()` | Run all subset combinations in parallel | - |
+
+#### How It Works
+
+1. **Test asset blocks**: OOS assets are divided into contiguous blocks:
+   - Equity: 7 blocks (77 portfolios)
+   - Bond: 7 blocks (77 portfolios)
+   - Co-pricing: 14 blocks (154 portfolios = equity + bond)
+
+2. **Subset combinations**: Every non-empty subset of blocks is tested:
+   - Co-pricing: 2^14 - 1 = 16,383 combinations
+   - Equity only: 2^7 - 1 = 127 combinations
+   - Bond only: 2^7 - 1 = 127 combinations
+
+3. **Parallel execution**: Uses `parallel::mclapply` (fork-based) for speed
+
+4. **Output**: Pricing metrics (RMSE, MAPE, R²_OLS, R²_GLS) for each combination
+
+#### Usage
+
+```r
+# Run thousands of OOS tests
+thousands_oos_results <- run_thousands_oos_tests(
+  results_path   = "output/unconditional",
+  data_path      = "data",
+  model_types    = c("bond_stock_with_sp", "stock", "bond"),
+  n_cores        = parallel::detectCores() - 1,
+  save_output    = TRUE,
+  output_path    = "data",
+  output_name    = "thousands_oos_results.rds"
+)
+```
+
+#### Output Structure
+
+```r
+thousands_oos_results$bond_stock_with_sp  # List with:
+  $co_pricing  # data.table: 16,383 rows × metrics
+  $equity      # data.table: 127 rows × metrics
+  $bond        # data.table: 127 rows × metrics
+
+# Each data.table contains:
+# - metric: RMSEdm, MAPEdm, R2OLS, R2GLS
+# - Model columns: BMA-20%, BMA-40%, ..., KNS, RP-PCA
+# - n_blocks: number of blocks in this subset
+# - n_assets: number of assets in this subset
+# - combo_id: block indices (e.g., "1-3-5")
+```
+
+#### Speed Optimizations
+
+The function is optimized for speed:
+
+1. **`os_pricing_fast()`**: Lightweight pricing without date handling overhead
+2. **`prepare_oos_inputs()`**: Pre-compute factor matrices once per model type
+3. **`parallel::mclapply`**: Fork-based parallelism (faster than `furrr` on Linux)
+4. **No serialization**: Fork-based workers share memory with parent
+
+Typical runtime: ~5-10 minutes per model type on 8+ cores.
 
 ### Shrinkage Levels
 
