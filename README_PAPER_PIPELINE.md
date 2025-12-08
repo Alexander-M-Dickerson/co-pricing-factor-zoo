@@ -109,6 +109,7 @@ Add the table/figure to the index below.
 | 4 | BMA-SDF dimensionality & SR by factor type | **Implemented** | `generate_table_4()` |
 | 5 | Discount rate vs cash-flow news | **Implemented** | `generate_table_5()` |
 | 6 Panel A | In-sample trading performance | **Implemented** | `generate_table_6_panel_a()` |
+| 6 Panel B | Out-of-sample trading performance | **Implemented** | `evaluate_performance_paper()` |
 | A.2 | Posterior probabilities and risk prices | **Implemented** | `pp_figure_table()` |
 
 ## Figures Index
@@ -122,6 +123,7 @@ Add the table/figure to the index below.
 | 5 | Thousands OOS pricing tests (excess) | **Implemented** | `plot_thousands_oos_densities()` |
 | 6a | Top factors over time (expanding forward, by prob) | **Implemented** | `expanding_runs_plots()` |
 | 6b | Top factors over time (expanding backward, by prob) | **Implemented** | `expanding_runs_plots_reverse()` |
+| 7 | Out-of-sample cumulative returns | **Implemented** | `evaluate_performance_paper()` |
 | 8 | Thousands OOS pricing tests (duration) | **Implemented** | `plot_thousands_oos_densities()` |
 | 9 | Mean vs Covariance diagnostic plots (Treasury) | **Implemented** | `plot_mean_vs_cov()` |
 | 10 | SDF time series plot (BMA) | **Implemented** | `fit_sdf_models()` |
@@ -1087,6 +1089,74 @@ expanding_runs_plots_lambda_reverse(
   figure_prefix = "fig_ia_17b"
 )
 ```
+
+### Figure 7 and Table 6 Panel B: Out-of-Sample Trading Performance
+
+The `_run_paper_conditional_results.R` script generates the out-of-sample trading performance outputs from conditional (time-varying) model estimation.
+
+#### Input Data
+
+The script reads from a combined results `.rds` file produced by `run_time_varying_estimation()`:
+
+```
+output/time_varying/bond_stock_with_sp/
+  SS_excess_bond_stock_with_sp_alpha.w=1_beta.w=1_SRscale=ExpandingForward_holding_period=12_f1=TRUE_ALL_RESULTS.rds
+```
+
+#### Output Files
+
+**Figure 7:**
+- `fig7_oos_cumret.pdf` - Cumulative return plot for selected models
+
+**Table 6 Panel B:**
+- `table_6_panel_b_trading.tex` - LaTeX table with performance metrics (Mean, SR, ST, IR, Skew, Kurt)
+
+#### Main Functions
+
+| Function | Description | Location |
+|----------|-------------|----------|
+| `evaluate_performance_paper()` | Slimmed evaluation function for paper outputs | `code_base/evaluate_performance_paper.R` |
+
+#### Usage
+
+Edit the configuration in `_run_paper_conditional_results.R`:
+
+```r
+#### 1.1 Results Location
+output_root    <- "/path/to/output/time_varying"
+
+#### 1.3 Model Specification
+return_type    <- "excess"
+model_type     <- "bond_stock_with_sp"
+tag            <- "ExpandingForward"
+holding_period <- 12
+f1_flag        <- TRUE
+
+#### 1.5 Figure 7 Options
+factor_vec     <- c("BMA-80%", "KNS", "RP-PCA", "EqualWeight", "MKTB", "MKTS")
+color_vec      <- c("red", "#66C2A5", "black", "lightblue", "royalblue4", "purple")
+```
+
+Then run the script:
+
+```r
+source("_run_paper_conditional_results.R")
+```
+
+#### Performance Metrics
+
+Table 6 Panel B includes:
+
+| Metric | Description |
+|--------|-------------|
+| Mean | Annualized mean return (%) |
+| SR | Annualized Sharpe ratio |
+| ST | Annualized Sortino ratio |
+| IR | Information ratio vs EW benchmark |
+| Skew | Return skewness |
+| Kurt | Excess kurtosis |
+
+All portfolios are volatility-scaled to match the benchmark (default: MKTS).
 
 ## Troubleshooting
 
