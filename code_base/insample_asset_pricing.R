@@ -1299,23 +1299,29 @@ insample_asset_pricing_enhanced <- function(results, f_all, R, f1, f2,
   
   Rc_mat <- as.matrix(Rc)
   Rc_names <- colnames(Rc_mat)
+  # For benchmark models (KNS, RP-PCA, PCA), also need Rc_benchmarks
+  Rc_benchmarks_mat <- as.matrix(Rc_benchmarks)
+  Rc_benchmarks_names <- colnames(Rc_benchmarks_mat)
   f2_mat <- if (!is.null(f2)) as.matrix(f2) else NULL
+  # f2_benchmarks for treasury model
+  f2_benchmarks_mat <- if (!is.null(f2_benchmarks)) as.matrix(f2_benchmarks) else NULL
+  f2_benchmarks_names <- if (!is.null(f2_benchmarks)) colnames(f2_benchmarks_mat) else character(0)
   fac_freq_mat <- as.matrix(fac_freq)
   fac_freq_names <- colnames(fac_freq_mat)
-  
+
   sdf_mim_list <- list()
-  
+
   for (model_name in names(weights_out)) {
     w_matrix <- weights_out[[model_name]]
-    
+
     # Skip if weights are empty
     if (ncol(w_matrix) == 0) next
-    
+
     # Extract weight vector (1-row matrix to vector)
     w_vec <- as.vector(w_matrix)
     w_names <- colnames(w_matrix)
     names(w_vec) <- w_names
-    
+
     # Determine which asset universe to use based on weight names
     if (all(w_names %in% Rc_names)) {
       # Combined model - use Rc
@@ -1323,12 +1329,24 @@ insample_asset_pricing_enhanced <- function(results, f_all, R, f1, f2,
       w_aligned <- w_vec[Rc_names]
       w_aligned[is.na(w_aligned)] <- 0
       port_ret <- as.vector(Rc_mat %*% w_aligned)
+    } else if (all(w_names %in% Rc_benchmarks_names)) {
+      # Benchmark model (KNS, RP-PCA, PCA) - use Rc_benchmarks
+      # This handles treasury model where benchmark models use f2_benchmarks
+      w_aligned <- w_vec[Rc_benchmarks_names]
+      w_aligned[is.na(w_aligned)] <- 0
+      port_ret <- as.vector(Rc_benchmarks_mat %*% w_aligned)
     } else if (!is.null(f2_mat) && all(w_names %in% f2_names)) {
       # f2-only model - use f2
       # Align weights to f2 column order
       w_aligned <- w_vec[f2_names]
       w_aligned[is.na(w_aligned)] <- 0
       port_ret <- as.vector(f2_mat %*% w_aligned)
+    } else if (!is.null(f2_benchmarks_mat) && all(w_names %in% f2_benchmarks_names)) {
+      # f2-only benchmark model (KNSf2, RP-PCAf2, PCAf2) - use f2_benchmarks
+      # This handles treasury model where f2 is NULL but f2_benchmarks exists
+      w_aligned <- w_vec[f2_benchmarks_names]
+      w_aligned[is.na(w_aligned)] <- 0
+      port_ret <- as.vector(f2_benchmarks_mat %*% w_aligned)
     } else if (all(w_names %in% fac_freq_names)) {
       # Frequentist model - use fac_freq
       # Align weights to fac_freq column order (only use relevant columns)
@@ -1336,7 +1354,7 @@ insample_asset_pricing_enhanced <- function(results, f_all, R, f1, f2,
       port_ret <- as.vector(fac_freq_sub %*% w_vec)
     } else {
       # Mixed or unknown - skip with warning
-      warning(paste0("Model '", model_name, "': weight names don't match Rc, f2, or fac_freq columns. Skipping."))
+      warning(paste0("Model '", model_name, "': weight names don't match Rc, Rc_benchmarks, f2, f2_benchmarks, or fac_freq columns. Skipping."))
       next
     }
     
