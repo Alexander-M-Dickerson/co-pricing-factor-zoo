@@ -91,7 +91,8 @@ helper_files <- c(
   "sr_tables.R",
   "validate_and_align_dates.R",
   "outsample_asset_pricing.R",
-  "pricing_tables.R"
+  "pricing_tables.R",
+  "thousands_outsample_tests.R"
   # Add more helper files as needed
 )
 
@@ -267,6 +268,48 @@ if (verbose && !is.null(pricing_results)) {
           paste(names(pricing_results$is_results)[!sapply(pricing_results$is_results, is.null)], collapse = ", "))
   message("  OS pricing available for: ",
           paste(names(pricing_results$os_results)[!sapply(pricing_results$os_results, is.null)], collapse = ", "))
+}
+
+
+#### Thousands OOS Tests (for Figure 5) ----------------------------------------
+# Runs OOS pricing across thousands of test asset subset combinations.
+# Required for: Figure 5 (OOS pricing robustness across asset subsets)
+
+if (verbose) message("\nThousands OOS Tests: Running subset combinations...")
+
+# Check if cached results exist
+thousands_oos_file <- file.path(data_folder, "thousands_oos_results.rds")
+regenerate_thousands_oos <- FALSE  # Set to TRUE to force re-computation
+
+if (file.exists(thousands_oos_file) && !regenerate_thousands_oos) {
+  if (verbose) message("  Loading cached results from ", thousands_oos_file)
+  thousands_oos_results <- readRDS(thousands_oos_file)
+} else {
+  if (verbose) message("  Computing thousands OOS tests (this may take several minutes)...")
+  # Run thousands of OOS tests across all model types
+  thousands_oos_results <- run_thousands_oos_tests(
+    results_path   = results_path,
+    data_path      = data_folder,
+    model_types    = c("bond_stock_with_sp", "stock", "bond"),
+    return_type    = return_type,
+    alpha.w        = alpha.w,
+    beta.w         = beta.w,
+    kappa          = kappa,
+    tag            = tag,
+    intercept      = TRUE,
+    bond_oos_file  = "bond_oosample_all_excess.csv",
+    stock_oos_file = "equity_os_77.csv",
+    n_cores        = max(1, parallel::detectCores() - 1),
+    save_output    = TRUE,
+    output_path    = data_folder,
+    output_name    = "thousands_oos_results.rds",
+    verbose        = verbose
+  )
+}
+
+if (verbose && !is.null(thousands_oos_results)) {
+  message("  Thousands OOS results available for: ",
+          paste(names(thousands_oos_results)[!sapply(thousands_oos_results, is.null)], collapse = ", "))
 }
 
 
@@ -464,6 +507,27 @@ if (!exists("results")) {
                                        fig4_result$factor_types,
                                        sep = "=", collapse = ", "))
   }
+}
+
+
+#### Figure 5: Thousands OOS Pricing Tests -------------------------------------
+# Generates: Figure 5 (OOS pricing robustness across asset subset combinations)
+# Shows distribution of pricing metrics (R2, RMSE) across thousands of
+# different test asset subsets.
+# Source: thousands_oos_results from Section 2.5
+
+if (verbose) message("Figure 5: Thousands OOS Pricing Tests")
+
+if (!exists("thousands_oos_results") || is.null(thousands_oos_results)) {
+  warning("thousands_oos_results not available. Skipping Figure 5.")
+} else {
+  # TODO: Implement Figure 5 plotting function
+  # This will visualize the distribution of OOS pricing metrics across
+  # all subset combinations (e.g., boxplots, density plots, CDFs)
+  if (verbose) message("  [Figure 5 plotting not yet implemented]")
+  if (verbose) message("  Data available: ",
+                       sum(sapply(thousands_oos_results, function(x) !is.null(x))),
+                       " model types")
 }
 
 
