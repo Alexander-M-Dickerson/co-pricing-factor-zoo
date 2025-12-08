@@ -754,7 +754,8 @@ run_bayesian_mcmc <- function(
     frequentist_models = frequentist_models,
     drop_draws_pct = drop_draws_pct,
     fac_freq  = fac_freq_matrix,
-    dates     = aligned$data$f2$date
+    dates     = aligned$data$f2$date,
+    f2_benchmarks = f2_benchmarks
   )
   
   

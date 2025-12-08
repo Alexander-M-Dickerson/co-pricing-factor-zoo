@@ -46,7 +46,8 @@ insample_asset_pricing_enhanced <- function(results, f_all, R, f1, f2,
                                             frequentist_models = NULL,
                                             date_end = NULL,
                                             drop_draws_pct = 0,
-                                            dates = NULL
+                                            dates = NULL,
+                                            f2_benchmarks = NULL
 ) {
   
   library(purrr)          # functional helpers
@@ -91,7 +92,11 @@ insample_asset_pricing_enhanced <- function(results, f_all, R, f1, f2,
   #### Combine R with traded assets in f2 (if applicable), f2 can be NULL ####
   Rc <- cbind(R,f2)
   N = dim(Rc)[2]
-  
+
+  # For benchmark models (KNS, RP-PCA, PCA), use f2_benchmarks if provided (treasury model)
+  # This is needed because benchmark models were estimated with f2_benchmarks, not f2
+  Rc_benchmarks <- if (!is.null(f2_benchmarks)) cbind(R, f2_benchmarks) else Rc
+
   # Get f2 column names for filtering (if f2 is not NULL)
   f2_names <- if (!is.null(f2)) colnames(f2) else character(0)
   
@@ -653,15 +658,16 @@ insample_asset_pricing_enhanced <- function(results, f_all, R, f1, f2,
     sum_w <- sum(w_rppca_exact)
     if (abs(sum_w) < 1e-12) warning("RP-PCA combined: sum of weights is ~0; budget-1 normalization may be unstable.")
     w_rppca <- as.vector(w_rppca_exact) / sum_w
-    
-    asset_names <- if (!is.null(colnames(Rc))) {
-      colnames(Rc)
+
+    # Use Rc_benchmarks for asset names since RP-PCA was estimated with f2_benchmarks
+    asset_names <- if (!is.null(colnames(Rc_benchmarks))) {
+      colnames(Rc_benchmarks)
     } else if (!is.null(colnames(R))) {
       colnames(R)
     } else {
       paste0("Asset", seq_len(nrow(Loading_pc)))
     }
-    
+
     weights_out$`RP-PCA` <- matrix(w_rppca, nrow = 1,
                                    dimnames = list(date_label, asset_names))
   } else {
@@ -760,15 +766,16 @@ insample_asset_pricing_enhanced <- function(results, f_all, R, f1, f2,
       sum_w_pca <- sum(w_pca_exact)
       if (abs(sum_w_pca) < 1e-12) warning("PCA combined: sum of weights is ~0; budget-1 normalization may be unstable.")
       w_pca <- as.vector(w_pca_exact) / sum_w_pca
-      
-      asset_names_pca <- if (!is.null(colnames(Rc))) {
-        colnames(Rc)
+
+      # Use Rc_benchmarks for asset names since PCA was estimated with f2_benchmarks
+      asset_names_pca <- if (!is.null(colnames(Rc_benchmarks))) {
+        colnames(Rc_benchmarks)
       } else if (!is.null(colnames(R))) {
         colnames(R)
       } else {
         paste0("Asset", seq_len(nrow(Loading_pc_pca)))
       }
-      
+
       weights_out$PCA <- matrix(w_pca, nrow = 1,
                                 dimnames = list(date_label, asset_names_pca))
     } else {
@@ -858,12 +865,13 @@ insample_asset_pricing_enhanced <- function(results, f_all, R, f1, f2,
   }
   
   if (!is.null(w_kns)) {
-    asset_names <- if (!is.null(colnames(Rc))) {
-      colnames(Rc)
+    # Use Rc_benchmarks for asset names since KNS was estimated with f2_benchmarks
+    asset_names <- if (!is.null(colnames(Rc_benchmarks))) {
+      colnames(Rc_benchmarks)
     } else {
       paste0("Asset", 1:length(w_kns))
     }
-    
+
     weights_out$KNS <- matrix(as.vector(w_kns), nrow = 1,
                               dimnames = list(date_label, asset_names))
   } else {
