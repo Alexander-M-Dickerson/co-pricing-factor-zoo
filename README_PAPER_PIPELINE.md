@@ -108,6 +108,7 @@ Add the table/figure to the index below.
 | 3 | Out-of-sample cross-sectional asset pricing | **Implemented** | `generate_table_3()` |
 | 4 | BMA-SDF dimensionality & SR by factor type | **Implemented** | `generate_table_4()` |
 | 5 | Discount rate vs cash-flow news | **Implemented** | `generate_table_5()` |
+| 6 Panel A | In-sample trading performance | **Implemented** | `generate_table_6_panel_a()` |
 | A.2 | Posterior probabilities and risk prices | **Implemented** | `pp_figure_table()` |
 
 ## Figures Index
@@ -367,6 +368,101 @@ Both tables report four metrics per panel:
 - **MAPE**: Mean absolute pricing error (demeaned)
 - **R²_OLS**: Cross-sectional R² under OLS weighting
 - **R²_GLS**: Cross-sectional R² under GLS weighting
+
+### Table 6: Trading Performance (`trading_table.R`)
+
+The `trading_table.R` module generates Table 6 Panel A: in-sample trading performance of SDF mimicking portfolios and benchmark models.
+
+#### Mathematical Background
+
+**Volatility Scaling:**
+
+All SDF mimicking portfolio returns are scaled to have the same monthly volatility as CAPM:
+
+```
+r̃_j = r_j × (σ_CAPM / σ_j)
+```
+
+where `σ_j` is the monthly standard deviation of portfolio j.
+
+**Sharpe Ratio (annualized):**
+
+```
+SR = (μ / σ) × √12
+```
+
+where `μ` is monthly mean return and `σ` is monthly standard deviation.
+
+**Information Ratio (annualized):**
+
+The IR is computed by regressing each portfolio on the EqualWeight (EW) benchmark:
+
+```
+r_j = α + β × r_EW + ε
+```
+
+```
+IR = (α / σ_ε) × √12
+```
+
+where `α` is the regression intercept and `σ_ε` is the residual standard deviation.
+
+**Skewness and Kurtosis:**
+
+```
+Skew = E[(r - μ)³] / σ³
+Kurt = E[(r - μ)⁴] / σ⁴ - 3  (excess kurtosis)
+```
+
+#### Main Functions
+
+| Function | Description | Output Files |
+|----------|-------------|--------------|
+| `generate_table_6_panel_a()` | In-sample trading performance | `table_6_panel_a_trading.csv`, `table_6_panel_a_trading.tex` |
+
+#### Usage
+
+```r
+# Generate Table 6 Panel A
+result <- generate_table_6_panel_a(
+  IS_AP       = IS_AP,
+  output_path = "output/paper/tables",
+  verbose     = TRUE
+)
+
+# Access results
+result$stats        # Data frame with Mean, SR, IR, Skew, Kurt
+result$scaled_data  # Volatility-scaled returns matrix
+result$target_vol   # CAPM monthly volatility used for scaling
+```
+
+#### Models Included
+
+Table 6 includes these models (in column order):
+- **BMA-SDF**: 20%, 40%, 60%, 80% prior SR levels
+- **TOP γ**: Top factors by posterior probability (80% shrinkage)
+- **TOP λ**: Top factors by absolute market price of risk (80% shrinkage)
+- **KNS**: Kozak-Nagel-Santosh latent factors
+- **RPPCA**: RP-PCA latent factors
+- **FF5**: Fama-French 5 factors
+- **HKM**: He-Kelly-Manela intermediary factor
+- **MKTB**: Bond market (CAPMB)
+- **MKTS**: Stock market (CAPM)
+- **EW**: Equally-weighted portfolio of all tradable factors
+
+#### Metrics
+
+| Metric | Description | Annualized |
+|--------|-------------|------------|
+| Mean | Average return (%) | Yes (×12×100) |
+| SR | Sharpe Ratio | Yes (×√12) |
+| IR | Information Ratio vs EW | Yes (×√12) |
+| Skew | Skewness | No |
+| Kurt | Excess Kurtosis | No |
+
+#### Required Data
+
+The function requires `IS_AP$sdf_mim` which contains monthly returns for each model's SDF mimicking portfolio. The `date` column (if present) is automatically excluded.
 
 ### Thousands OOS Tests: `thousands_outsample_tests.R`
 

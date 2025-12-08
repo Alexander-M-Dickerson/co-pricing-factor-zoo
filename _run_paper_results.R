@@ -95,7 +95,8 @@ helper_files <- c(
   "thousands_outsample_tests.R",
   "plot_thousands_oos_densities.R",
   "plot_mean_vs_cov.R",
-  "fit_sdf_models.R"
+  "fit_sdf_models.R",
+  "trading_table.R"
   # Add more helper files as needed
 )
 
@@ -422,6 +423,32 @@ if (!exists("pricing_results") || is.null(pricing_results)) {
   if (verbose) {
     message("  Generated: table_2_is_pricing.tex")
     message("  Generated: table_3_os_pricing.tex")
+  }
+}
+
+
+#### Table 6 Panel A: Trading Performance --------------------------------------
+# Generated using trading_table.R:
+#   - Table 6 Panel A: In-sample trading performance of SDF mimicking portfolios
+# Computes: Mean, SR, IR, Skewness, Kurtosis
+# All factors scaled to CAPM monthly volatility
+# Source: IS_AP$sdf_mim from loaded .Rdata
+
+if (verbose) message("Table 6 Panel A: Trading Performance")
+
+if (!exists("IS_AP") || is.null(IS_AP$sdf_mim)) {
+  warning("IS_AP$sdf_mim not available. Skipping Table 6 Panel A.")
+} else {
+  # Generate Table 6 Panel A
+  table_6a_result <- generate_table_6_panel_a(
+    IS_AP       = IS_AP,
+    output_path = tables_dir,
+    verbose     = verbose
+  )
+
+  if (verbose) {
+    message("  Generated: table_6_panel_a_trading.csv")
+    message("  Generated: table_6_panel_a_trading.tex")
   }
 }
 
