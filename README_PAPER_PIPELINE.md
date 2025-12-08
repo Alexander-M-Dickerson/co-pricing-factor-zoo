@@ -114,6 +114,7 @@ Add the table/figure to the index below.
 | 1 | TBD | Not implemented | - |
 | 2 | Posterior probability plot | **Implemented** | `pp_figure_table()` |
 | 3 | Number of factors & Sharpe ratio distributions | **Implemented** | `plot_nfac_sr()` |
+| 4 | Posterior probabilities & market prices of risk | **Implemented** | `pp_bar_plots()` |
 
 ## Expected Objects in .Rdata
 
@@ -121,10 +122,13 @@ The following objects are expected when loading MCMC results:
 
 | Object | Description | Used By |
 |--------|-------------|---------|
-| `results` | MCMC results list (gamma_path, lambda_path, sdf_path, bma_sdf per prior) | Figure 2, Figure 3, Tables 1/4/5, Table A.2 |
-| `f1` | Non-traded factors matrix (T × N1) | Figure 2, Tables 1/4/5, Table A.2 |
-| `f2` | Traded factors matrix (T × N2), NULL for treasury | Figure 2, Tables 1/4/5, Table A.2 |
-| `intercept` | Whether intercept was included | Figure 2, Tables 1/4/5, Table A.2 |
+| `results` | MCMC results list (gamma_path, lambda_path, sdf_path, bma_sdf per prior) | Figures 2-4, Tables 1/4/5, Table A.2 |
+| `f1` | Non-traded factors matrix (T × N1) | Figures 2, 4, Tables 1/4/5, Table A.2 |
+| `f2` | Traded factors matrix (T × N2), NULL for treasury | Figures 2, 4, Tables 1/4/5, Table A.2 |
+| `intercept` | Whether intercept was included | Figures 2, 4, Tables 1/4/5, Table A.2 |
+| `nontraded_names` | Character vector of non-traded factor names | Figure 4, Tables 1/4/5 |
+| `bond_names` | Character vector of bond tradable factor names | Figure 4, Tables 1/4/5 |
+| `stock_names` | Character vector of stock tradable factor names | Figure 4, Tables 1/4/5 |
 | `IS_AP` | In-sample asset pricing results | Future tables |
 | `kns_out` | Kozak-Nagel-Shanken results | Comparison tables |
 | `rp_out` | RP-PCA results | Comparison tables |
@@ -167,6 +171,25 @@ Figure 3 uses `gamma_path` and `sdf_path` to show:
 - Shaded region = 90% credible interval (5th to 95th percentile)
 
 By default, Figure 3 uses the highest shrinkage level (80% prior SR).
+
+### Figure 4: Posterior Probabilities & Market Prices of Risk
+
+Figure 4 uses `gamma_path` and `lambda_path` to show bar plots:
+
+**Panel (A): Posterior probabilities**
+- Bar chart of `colMeans(gamma_path)` for each factor
+- Factors ordered by posterior probability (low to high)
+- Dashed line at prior probability threshold (default: 0.50)
+- Colors: Non-traded (dark blue), Bond (light blue), Equity (red)
+
+**Panel (B): Posterior market prices of risk**
+- Bar chart of `colMeans(lambda_path) * sqrt(12)` (annualized)
+- Same factor ordering as Panel A
+- Legend shows factor type categories
+
+By default, Figure 4 uses the highest shrinkage level (80% prior SR).
+
+**Output file:** `figure_4_posterior_bars_{return_type}_{model_type}_{tag}.pdf`
 
 ### SR Decomposition (Tables 1, 4, 5)
 
