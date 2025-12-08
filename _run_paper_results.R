@@ -807,6 +807,72 @@ if (file.exists(fig_ia17a_output_path)) {
 }
 
 
+#### Figure 6 Panel B: Top Factors Over Time (Backward Expanding Window) -------
+# Generates: fig6b_top5_prob_psi80.pdf - Heatmap of top 5 factors by posterior
+#            probability across backward-expanding estimation windows (reversed x-axis).
+# Source: expanding_runs_plots.R
+# Input: Backward time-varying estimation .rds file
+
+if (verbose) message("Figure 6 Panel B: Top Factors Over Time (Backward Expanding)")
+
+# Path to backward expanding window results
+backward_rds_path <- file.path(
+  "output/time_varying/bond_stock_with_sp",
+  "SS_excess_bond_stock_with_sp_alpha.w=1_beta.w=1_SRscale=ExpandingBackward_holding_period=12_f1=TRUE_backward_ALL_RESULTS.rds"
+)
+
+fig6b_output_path <- file.path(figures_dir, "fig6b_top5_prob_psi80.pdf")
+
+if (file.exists(fig6b_output_path)) {
+  if (verbose) message("  Skipping Figure 6b: file already exists")
+} else if (!file.exists(backward_rds_path)) {
+  warning("Backward expanding window .rds not found. Skipping Figure 6b.\n  ", backward_rds_path)
+} else {
+  fig6b_result <- generate_figure_6b(
+    rds_path    = backward_rds_path,
+    psi_level   = 0.8,
+    top_n       = 5,
+    output_path = figures_dir,
+    verbose     = verbose
+  )
+
+  if (verbose) {
+    message("  Generated: fig6b_top5_prob_psi80.pdf")
+    message("  Estimation dates: ", length(fig6b_result$top_factors_prob))
+  }
+}
+
+
+#### Figure IA.17b: Top Factors by Lambda (Backward Expanding Window) ----------
+# Generates: fig_ia_17b_top5_lambda_psi80.pdf - Heatmap of top 5 factors by
+#            absolute market price of risk across backward-expanding windows (reversed x-axis).
+# Source: expanding_runs_plots.R
+# Input: Backward time-varying estimation .rds file
+
+if (verbose) message("Figure IA.17b: Top Factors by Lambda (Backward Expanding)")
+
+fig_ia17b_output_path <- file.path(figures_dir, "fig_ia_17b_top5_lambda_psi80.pdf")
+
+if (file.exists(fig_ia17b_output_path)) {
+  if (verbose) message("  Skipping Figure IA.17b: file already exists")
+} else if (!file.exists(backward_rds_path)) {
+  warning("Backward expanding window .rds not found. Skipping Figure IA.17b.\n  ", backward_rds_path)
+} else {
+  fig_ia17b_result <- generate_figure_ia17b(
+    rds_path    = backward_rds_path,
+    psi_level   = 0.8,
+    top_n       = 5,
+    output_path = figures_dir,
+    verbose     = verbose
+  )
+
+  if (verbose) {
+    message("  Generated: fig_ia_17b_top5_lambda_psi80.pdf")
+    message("  Estimation dates: ", length(fig_ia17b_result$top_factors_lambda))
+  }
+}
+
+
 #### Figures 10-12: SDF Time Series, Volatility, and Predictability -----------
 # Generates:
 #   Figure 10: SDF_Time_Series_BMA.pdf - BMA SDF time series with ARIMA mean

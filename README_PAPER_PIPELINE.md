@@ -120,13 +120,15 @@ Add the table/figure to the index below.
 | 3 | Number of factors & Sharpe ratio distributions | **Implemented** | `plot_nfac_sr()` |
 | 4 | Posterior probabilities & market prices of risk | **Implemented** | `pp_bar_plots()` |
 | 5 | Thousands OOS pricing tests (excess) | **Implemented** | `plot_thousands_oos_densities()` |
-| 6a | Top factors over time (expanding window, by prob) | **Implemented** | `expanding_runs_plots()` |
+| 6a | Top factors over time (expanding forward, by prob) | **Implemented** | `expanding_runs_plots()` |
+| 6b | Top factors over time (expanding backward, by prob) | **Implemented** | `expanding_runs_plots_reverse()` |
 | 8 | Thousands OOS pricing tests (duration) | **Implemented** | `plot_thousands_oos_densities()` |
 | 9 | Mean vs Covariance diagnostic plots (Treasury) | **Implemented** | `plot_mean_vs_cov()` |
 | 10 | SDF time series plot (BMA) | **Implemented** | `fit_sdf_models()` |
 | 11 | SDF volatility comparison (BMA vs CAPMB vs FF5) | **Implemented** | `fit_sdf_models()` |
 | 12 | Predictability bar plots (1m and 12m horizons) | **Implemented** | `fit_sdf_models()` |
-| IA.17a | Top factors over time (expanding window, by lambda) | **Implemented** | `expanding_runs_plots_lambda()` |
+| IA.17a | Top factors over time (expanding forward, by lambda) | **Implemented** | `expanding_runs_plots_lambda()` |
+| IA.17b | Top factors over time (expanding backward, by lambda) | **Implemented** | `expanding_runs_plots_lambda_reverse()` |
 
 ## Expected Objects in .Rdata
 
@@ -992,6 +994,99 @@ The function returns a list with:
 - `plot` - The ggplot object
 - `output_file` - Path to saved PDF
 - `df_long` - Long-format data frame used for plotting
+
+### Figure 6 Panel B: Top Factors Over Time (Backward Expanding Window)
+
+The `expanding_runs_plots_reverse()` function generates heatmaps showing the top factors by posterior probability across backward-expanding estimation windows, with a reversed x-axis.
+
+#### Input Data
+
+The function reads from a combined results `.rds` file produced by `run_time_varying_estimation()` with `reverse_time = TRUE`:
+
+```
+output/time_varying/bond_stock_with_sp/
+  SS_excess_bond_stock_with_sp_alpha.w=1_beta.w=1_SRscale=ExpandingBackward_holding_period=12_f1=TRUE_backward_ALL_RESULTS.rds
+```
+
+The required data is in `combined_results$gammas_panel`, with the same structure as Figure 6a.
+
+#### Output Files
+
+**Figure 6b:**
+- `fig6b_top5_prob_psi80.pdf` - Heatmap of top 5 factors over time (80% shrinkage, reversed x-axis)
+
+#### Key Difference from Figure 6a
+
+The x-axis is **reversed** using `scale_x_reverse()` to show backward-expanding windows. The leftmost point represents the most recent estimation window, and the rightmost point represents the earliest.
+
+#### Main Functions
+
+| Function | Description | Output File |
+|----------|-------------|-------------|
+| `expanding_runs_plots_reverse()` | Generate heatmap with reversed x-axis | Configurable via `figure_prefix` |
+| `generate_figure_6b()` | Convenience wrapper with standard naming | `fig6b_top5_prob_psi80.pdf` |
+
+#### Usage
+
+```r
+# Using the wrapper function
+generate_figure_6b(
+  rds_path    = "output/time_varying/bond_stock_with_sp/SS_..._backward_ALL_RESULTS.rds",
+  psi_level   = 0.8,
+  top_n       = 5,
+  output_path = "output/paper/figures"
+)
+
+# Or using the main function directly
+expanding_runs_plots_reverse(
+  rds_path      = "output/time_varying/bond_stock_with_sp/SS_..._backward_ALL_RESULTS.rds",
+  psi_level     = 0.8,
+  top_n         = 5,
+  output_path   = "output/paper/figures",
+  figure_prefix = "fig6b"
+)
+```
+
+### Figure IA.17b: Top Factors by Lambda Over Time (Backward Expanding Window)
+
+The `expanding_runs_plots_lambda_reverse()` function generates heatmaps showing the top factors by absolute market price of risk (|λ|) across backward-expanding estimation windows, with a reversed x-axis.
+
+#### Input Data
+
+Uses the same backward `.rds` file as Figure 6b, but reads from `combined_results$lambdas_panel`.
+
+#### Output Files
+
+**Figure IA.17b:**
+- `fig_ia_17b_top5_lambda_psi80.pdf` - Heatmap of top 5 factors by |λ| over time (80% shrinkage, reversed x-axis)
+
+#### Main Functions
+
+| Function | Description | Output File |
+|----------|-------------|-------------|
+| `expanding_runs_plots_lambda_reverse()` | Generate heatmap with reversed x-axis | Configurable via `figure_prefix` |
+| `generate_figure_ia17b()` | Convenience wrapper with standard naming | `fig_ia_17b_top5_lambda_psi80.pdf` |
+
+#### Usage
+
+```r
+# Using the wrapper function
+generate_figure_ia17b(
+  rds_path    = "output/time_varying/bond_stock_with_sp/SS_..._backward_ALL_RESULTS.rds",
+  psi_level   = 0.8,
+  top_n       = 5,
+  output_path = "output/paper/figures"
+)
+
+# Or using the main function directly
+expanding_runs_plots_lambda_reverse(
+  rds_path      = "output/time_varying/bond_stock_with_sp/SS_..._backward_ALL_RESULTS.rds",
+  psi_level     = 0.8,
+  top_n         = 5,
+  output_path   = "output/paper/figures",
+  figure_prefix = "fig_ia_17b"
+)
+```
 
 ## Troubleshooting
 
