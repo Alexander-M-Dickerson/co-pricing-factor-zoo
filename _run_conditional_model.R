@@ -18,25 +18,25 @@ gc()
 ###############################################################################
 
 #### 1.1 Paths ----------------------------------------------------------------
-main_path      <- "/home/aldi/DJM_replication_2"          # Project root
+main_path      <- "C:/Users/ASUS/Documents/GitHub/co-pricing-factor-zoo"         # Project root
 data_folder    <- "data"                                  # Your data subfolder
 output_folder  <- "output"                                # Results folder
 code_folder    <- "code_base"                             # Helper scripts folder
 
 #### 1.2 Model Configuration --------------------------------------------------
-model_type     <- "stock"                         # Options: "bond", "stock", "bond_stock_with_sp", "treasury"
+model_type     <-"bond_stock_with_sp"                    # Options: "bond", "stock", "bond_stock_with_sp", "treasury"
 return_type    <- "excess"                        # Options: "excess", "duration"
 
 #### 1.3 Data Files (filenames in data_folder) --------------------------------
-f1             <- NULL                           # Non-traded factors
+f1             <- "nontraded.csv"                           # Non-traded factors
 
 # Multi-file mode
-# f2             <- c("traded_bond_excess.csv", "traded_equity.csv")  # Multiple files
-# R              <- c("bond_insample_test_assets_50_excess.csv",
-#                     "equity_anomalies_composite_33.csv")
+f2             <- c("traded_bond_excess.csv", "traded_equity.csv")  # Multiple files
+R              <- c("bond_insample_test_assets_50_excess.csv",
+                    "equity_anomalies_composite_33.csv")
 
-f2             <- c("jkp_60_test1.csv")  # Multiple files
-R              <- c("jkp_30_test1.csv")
+# f2             <- c("jkp_60_test1.csv")  # Multiple files
+# R              <- c("jkp_30_test1.csv")
 
 # f2             <- c("traded_equity.csv")  # Multiple files
 # R              <- c("equity_anomalies_composite_33.csv")
@@ -69,7 +69,7 @@ holding_period <- 12  # Re-estimate every 12 months
 window_type    <- "expanding"  # Options: "expanding" or "rolling"
 
 # Time direction
-reverse_time   <- FALSE  # If TRUE, expand windows backward from date_end
+reverse_time   <- TRUE  # If TRUE, expand windows backward from date_end
                          # Forward: [1986→2004], [1986→2005], ..., [1986→2022]
                          # Backward: [2004→2022], [2003→2022], ..., [1986→2022]
 
@@ -87,7 +87,7 @@ frequentist_models <- list(
 )
 
 #### 1.7 MCMC Parameters ------------------------------------------------------
-ndraws         <- 50000                      # MCMC iterations (use 1000 for testing, 50000 for production)
+ndraws         <- 100                      # MCMC iterations (use 1000 for testing, 50000 for production)
 drop_draws_pct <- 0
 SRscale        <- c(0.20, 0.40, 0.60, 0.80) # Prior SR multipliers
 alpha.w        <- 1                         # Beta prior hyperparameter
@@ -96,14 +96,14 @@ kappa          <- 0                         # Factor tilt (0 = no tilt)
 kappa_fac      <- NULL                      # Factor-specific kappa
 
 #### 1.8 Other Settings -------------------------------------------------------
-tag            <- "JKP_1"         # Label for output files
+tag            <- "ExpandingBackward"         # Label for output files
 num_cores      <- length(SRscale)            # Parallel processing cores (one per psi)
 seed           <- 234                        # Random seed for reproducibility
 intercept      <- TRUE                       # Include linear intercept?
 save_flag      <- FALSE                      # Save individual window results to .Rdata?
 save_csv_flag  <- FALSE
 verbose        <- TRUE                       # Print progress messages?
-fac_to_drop    <- c("PEAD","PEADB","MOMBS")                       # List of factor names to exclude
+fac_to_drop    <- NULL                       # List of factor names to exclude
 weighting      <- "GLS"                      # "GLS" or "OLS"
 
 ###############################################################################

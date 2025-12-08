@@ -18,15 +18,16 @@ gc()
 
 #### 1.1 Results Location -----------------------------------------------------
 # Root path where time-varying results are saved
-output_root    <- "/home/aldi/DJM_replication_2/output/time_varying"
+output_root    <- "C:/Users/ASUS/Documents/GitHub/co-pricing-factor-zoo/output/time_varying" 
+code_folder_over_ride    <- "C:/Users/ASUS/Documents/GitHub/co-pricing-factor-zoo/code_base"
 
 #### 1.2 Model Specification --------------------------------------------------
 # These parameters identify which results file to load
 return_type    <- "excess"              # "excess" or "duration"
-model_type     <- "stock"  # "bond", "stock", "bond_stock_with_sp"
-tag            <- "JKP_1"    # Tag used during estimation
+model_type     <- "bond_stock_with_sp"  # "bond", "stock", "bond_stock_with_sp"
+tag            <- "ExpandingForward"    # Tag used during estimation
 holding_period <- 12                    # Holding period in months
-f1_flag        <- FALSE                 # TRUE if f1 was used, FALSE otherwise
+f1_flag        <- TRUE                 # TRUE if f1 was used, FALSE otherwise
 alpha.w        <- 1                     # Alpha hyperparameter
 beta.w         <- 1                     # Beta hyperparameter
 
@@ -182,6 +183,7 @@ library(ggrepel)      # For label repelling in scatter plots
 library(patchwork)    # For multi-panel layouts
 
 # Source helper functions (in correct order - validate_and_align_dates first)
+code_folder <- code_folder_over_ride
 source(file.path(code_folder, "validate_and_align_dates.R"))
 source(file.path(code_folder, "data_loading_helpers.R"))
 
