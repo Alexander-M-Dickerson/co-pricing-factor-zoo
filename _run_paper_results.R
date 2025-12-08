@@ -94,7 +94,8 @@ helper_files <- c(
   "pricing_tables.R",
   "thousands_outsample_tests.R",
   "plot_thousands_oos_densities.R",
-  "plot_mean_vs_cov.R"
+  "plot_mean_vs_cov.R",
+  "fit_sdf_models.R"
   # Add more helper files as needed
 )
 
@@ -707,6 +708,60 @@ if (file.exists(fig9_3_path) && file.exists(fig9_4_path)) {
     )
     if (verbose) {
       message("  Generated: fig9_3_stock_is.pdf, fig9_4_stock_os.pdf")
+    }
+  }
+}
+
+
+#### Figures 10-12: SDF Time Series, Volatility, and Predictability -----------
+# Generates:
+#   Figure 10: SDF_Time_Series_BMA.pdf - BMA SDF time series with ARIMA mean
+#   Figure 11: SDF_Volatility_BMA_CAPMB_FF5.pdf - Conditional volatility comparison
+#   Figure 12 Panel A: Predictability1m_BMA.pdf - 1-month return predictability
+#   Figure 12 Panel B: Predictability12m_BMA.pdf - 12-month return predictability
+# Source: fit_sdf_models.R
+
+if (verbose) message("Figures 10-12: SDF Time Series, Volatility, and Predictability")
+
+# Check if all Figure 10-12 outputs already exist
+fig10_path <- file.path(figures_dir, "SDF_Time_Series_BMA.pdf")
+fig11_path <- file.path(figures_dir, "SDF_Volatility_BMA_CAPMB_FF5.pdf")
+fig12a_path <- file.path(figures_dir, "Predictability1m_BMA.pdf")
+fig12b_path <- file.path(figures_dir, "Predictability12m_BMA.pdf")
+
+if (file.exists(fig10_path) && file.exists(fig11_path) &&
+    file.exists(fig12a_path) && file.exists(fig12b_path)) {
+  if (verbose) message("  Skipping Figures 10-12: files already exist")
+} else {
+  # Check if required .Rdata file exists
+  main_rdata_file <- file.path(
+    results_path, model_type,
+    sprintf("%s_%s_alpha.w=%s_beta.w=%s_kappa=%s_%s.Rdata",
+            return_type, model_type, alpha.w, beta.w, kappa, tag)
+  )
+
+  if (!file.exists(main_rdata_file)) {
+    warning("Main .Rdata not found. Skipping Figures 10-12.\n  ", main_rdata_file)
+  } else {
+    fig10_12_result <- fit_sdf_models(
+      results_path = results_path,
+      return_type  = return_type,
+      model_type   = model_type,
+      alpha.w      = alpha.w,
+      beta.w       = beta.w,
+      kappa        = kappa,
+      tag          = tag,
+      shrinkage    = 4,  # 80% shrinkage
+      output_path  = figures_dir,
+      paper_only   = TRUE,
+      verbose      = verbose
+    )
+
+    if (verbose) {
+      message("  Generated: SDF_Time_Series_BMA.pdf")
+      message("  Generated: SDF_Volatility_BMA_CAPMB_FF5.pdf")
+      message("  Generated: Predictability1m_BMA.pdf")
+      message("  Generated: Predictability12m_BMA.pdf")
     }
   }
 }
