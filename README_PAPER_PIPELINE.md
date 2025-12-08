@@ -120,12 +120,13 @@ Add the table/figure to the index below.
 | 3 | Number of factors & Sharpe ratio distributions | **Implemented** | `plot_nfac_sr()` |
 | 4 | Posterior probabilities & market prices of risk | **Implemented** | `pp_bar_plots()` |
 | 5 | Thousands OOS pricing tests (excess) | **Implemented** | `plot_thousands_oos_densities()` |
-| 6a | Top factors over time (expanding window) | **Implemented** | `expanding_runs_plots()` |
+| 6a | Top factors over time (expanding window, by prob) | **Implemented** | `expanding_runs_plots()` |
 | 8 | Thousands OOS pricing tests (duration) | **Implemented** | `plot_thousands_oos_densities()` |
 | 9 | Mean vs Covariance diagnostic plots (Treasury) | **Implemented** | `plot_mean_vs_cov()` |
 | 10 | SDF time series plot (BMA) | **Implemented** | `fit_sdf_models()` |
 | 11 | SDF volatility comparison (BMA vs CAPMB vs FF5) | **Implemented** | `fit_sdf_models()` |
 | 12 | Predictability bar plots (1m and 12m horizons) | **Implemented** | `fit_sdf_models()` |
+| IA.17a | Top factors over time (expanding window, by lambda) | **Implemented** | `expanding_runs_plots_lambda()` |
 
 ## Expected Objects in .Rdata
 
@@ -925,6 +926,69 @@ expanding_runs_plots(
 
 The function returns a list with:
 - `top_factors_prob` - Named list of top factors by date
+- `plot` - The ggplot object
+- `output_file` - Path to saved PDF
+- `df_long` - Long-format data frame used for plotting
+
+### Figure IA.17a: Top Factors by Lambda Over Time (Expanding Window)
+
+The `expanding_runs_plots_lambda()` function generates heatmaps showing the top factors by absolute market price of risk (|λ|) across forward-expanding estimation windows.
+
+#### Input Data
+
+Uses the same `.rds` file as Figure 6a, but reads from `combined_results$lambdas_panel`:
+
+| Column | Description |
+|--------|-------------|
+| `date` | Estimation end date |
+| `model` | Model name (e.g., "BMA-80%") |
+| `model_type` | Model type (e.g., "BMA") |
+| `psi_level` | Shrinkage level (0.2, 0.4, 0.6, 0.8) |
+| `factor` | Factor name |
+| `lambda` | Market price of risk |
+| `scaled_lambda` | Scaled lambda |
+
+#### Output Files
+
+**Figure IA.17a:**
+- `fig_ia_17a_top5_lambda_psi80.pdf` - Heatmap of top 5 factors by |λ| over time (80% shrinkage)
+
+#### Ranking Method
+
+Factors are ranked by **absolute value of lambda** (`abs(lambda)`) at each estimation date. This identifies factors with the largest market prices of risk, regardless of sign.
+
+#### Main Functions
+
+| Function | Description | Output File |
+|----------|-------------|-------------|
+| `expanding_runs_plots_lambda()` | Generate heatmap from .rds file | Configurable via `figure_prefix` |
+| `generate_figure_ia17a()` | Convenience wrapper with standard naming | `fig_ia_17a_top5_lambda_psi80.pdf` |
+
+#### Usage
+
+```r
+# Using the wrapper function
+generate_figure_ia17a(
+  rds_path    = "output/time_varying/bond_stock_with_sp/SS_..._ALL_RESULTS.rds",
+  psi_level   = 0.8,
+  top_n       = 5,
+  output_path = "output/paper/figures"
+)
+
+# Or using the main function directly
+expanding_runs_plots_lambda(
+  rds_path      = "output/time_varying/bond_stock_with_sp/SS_..._ALL_RESULTS.rds",
+  psi_level     = 0.8,
+  top_n         = 5,
+  output_path   = "output/paper/figures",
+  figure_prefix = "fig_ia_17a"
+)
+```
+
+#### Return Value
+
+The function returns a list with:
+- `top_factors_lambda` - Named list of top factors by date
 - `plot` - The ggplot object
 - `output_file` - Path to saved PDF
 - `df_long` - Long-format data frame used for plotting
