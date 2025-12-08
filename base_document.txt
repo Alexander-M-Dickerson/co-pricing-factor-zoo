@@ -96,21 +96,7 @@
 
 \singlespacing
 \title{
-	{\textbf{The Co-Pricing Factor Zoo Replication:\\Tables and Figures}}\thanks{{\scriptsize 
-	We are thankful for comments and suggestions from Nikolai Roussanov (the Co-Editor), an anonymous
-referee, Svetlana Bryzgalova, Mikhail Chernov, Magnus Dahlquist, Jiantao Huang, Byounghyun Jeon, 
-Ian Martin, Mamdouh Medhat, Yoshio Nozawa, 
-Andrew Patton, Paola Pederzoli,
-Lukas Schmid, 
-Patrick Weiss, 
-Paolo Zaffaroni, 
-Irina Zviadadze,  
-and seminar and conference participants at 
-BTM KAIST College of Business, Cancun Derivatives and Asset Pricing Conference 2024, Chinese University of Hong Kong, EFA Bratislava, ESSFM Asset Pricing Gerzensee 2024, FIRS Berlin, 4th Frontiers of Factor Investing Conference Lancaster, Goethe University, HEC Lausanne, INQUIRE Europe Spring Seminar Brussels,  London School of Economics, NTU Taipei, Machine Learning and Finance Conference Oxford,  MFS Oslo,  SFS Cavalcade Atlanta, SFS Cavalcade Asia-Pacific Seoul, Tinbergen Institute, University of Essex, WFA Honolulu, and the XXIV Brazilian Finance Meeting Curitiba. 
-We gratefully acknowledge financial support from  INQUIRE Europe. The companion website to this paper, \href{https://openbondassetpricing.com/}{openbondassetpricing.com}, contains updated corporate bond factor data. An earlier version of this paper circulated under the title ``The Corporate Bond Factor Zoo.'' 
-}
-}  
-}
+	{\textbf{The Co-Pricing Factor Zoo Replication:\\Tables and Figures}}}
 \author{{\normalsize Alexander Dickerson\thanks{{\scriptsize School of Banking \& Finance, The University of New South Wales;  \url{alexander.dickerson1@unsw.edu.au}}}} \and 
 	{\normalsize Christian Julliard\thanks{{\scriptsize Department of Finance, FMG, and SRC, London School of Economics, and CEPR; \url{c.julliard@lse.ac.uk}}}}
 	\and
