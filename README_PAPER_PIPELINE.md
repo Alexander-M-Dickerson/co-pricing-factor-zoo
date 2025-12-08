@@ -120,6 +120,7 @@ Add the table/figure to the index below.
 | 3 | Number of factors & Sharpe ratio distributions | **Implemented** | `plot_nfac_sr()` |
 | 4 | Posterior probabilities & market prices of risk | **Implemented** | `pp_bar_plots()` |
 | 5 | Thousands OOS pricing tests (excess) | **Implemented** | `plot_thousands_oos_densities()` |
+| 6a | Top factors over time (expanding window) | **Implemented** | `expanding_runs_plots()` |
 | 8 | Thousands OOS pricing tests (duration) | **Implemented** | `plot_thousands_oos_densities()` |
 | 9 | Mean vs Covariance diagnostic plots (Treasury) | **Implemented** | `plot_mean_vs_cov()` |
 | 10 | SDF time series plot (BMA) | **Implemented** | `fit_sdf_models()` |
@@ -859,6 +860,74 @@ The Rdata file must contain:
 - `results` - MCMC results list with `bma_sdf` per shrinkage level
 - `IS_AP` - In-sample asset pricing object with `sdf_mat` and `dates`
 - `fac` - Factor object with `f_all_raw` and factor name vectors (required for Figure 12)
+
+### Figure 6 Panel A: Top Factors Over Time (Expanding Window)
+
+The `expanding_runs_plots.R` module generates heatmaps showing the top factors by posterior probability across forward-expanding estimation windows.
+
+#### Input Data
+
+The function reads from a combined results `.rds` file produced by `run_time_varying_estimation()`:
+
+```
+output/time_varying/bond_stock_with_sp/
+  SS_excess_bond_stock_with_sp_alpha.w=1_beta.w=1_SRscale=ExpandingForward_holding_period=12_f1=TRUE_ALL_RESULTS.rds
+```
+
+The required data is in `combined_results$gammas_panel`, a data frame with columns:
+- `date` - Estimation end date
+- `factor` - Factor name
+- `psi_level` - Shrinkage level (0.2, 0.4, 0.6, 0.8)
+- `prob` - Posterior inclusion probability
+
+#### Output Files
+
+**Figure 6a:**
+- `fig6a_top5_prob_psi80.pdf` - Heatmap of top 5 factors over time (80% shrinkage)
+
+#### Plot Elements
+
+The heatmap shows:
+- **Y-axis**: Factors ordered by frequency of appearance in top 5 (most frequent at top)
+- **X-axis**: Estimation dates (years)
+- **Color**: Rank (1 = dark blue = highest probability, 5 = light blue = lowest)
+- **Tiles**: Each tile indicates a factor was in the top 5 at that date
+
+#### Main Functions
+
+| Function | Description | Output File |
+|----------|-------------|-------------|
+| `expanding_runs_plots()` | Generate heatmap from .rds file | Configurable via `figure_prefix` |
+| `generate_figure_6a()` | Convenience wrapper with standard naming | `fig6a_top5_prob_psi80.pdf` |
+
+#### Usage
+
+```r
+# Using the wrapper function
+generate_figure_6a(
+  rds_path    = "output/time_varying/bond_stock_with_sp/SS_..._ALL_RESULTS.rds",
+  psi_level   = 0.8,
+  top_n       = 5,
+  output_path = "output/paper/figures"
+)
+
+# Or using the main function directly
+expanding_runs_plots(
+  rds_path      = "output/time_varying/bond_stock_with_sp/SS_..._ALL_RESULTS.rds",
+  psi_level     = 0.8,
+  top_n         = 5,
+  output_path   = "output/paper/figures",
+  figure_prefix = "fig6a"
+)
+```
+
+#### Return Value
+
+The function returns a list with:
+- `top_factors_prob` - Named list of top factors by date
+- `plot` - The ggplot object
+- `output_file` - Path to saved PDF
+- `df_long` - Long-format data frame used for plotting
 
 ## Troubleshooting
 

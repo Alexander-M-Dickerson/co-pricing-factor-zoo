@@ -96,7 +96,8 @@ helper_files <- c(
   "plot_thousands_oos_densities.R",
   "plot_mean_vs_cov.R",
   "fit_sdf_models.R",
-  "trading_table.R"
+  "trading_table.R",
+  "expanding_runs_plots.R"
   # Add more helper files as needed
 )
 
@@ -736,6 +737,42 @@ if (file.exists(fig9_3_path) && file.exists(fig9_4_path)) {
     if (verbose) {
       message("  Generated: fig9_3_stock_is.pdf, fig9_4_stock_os.pdf")
     }
+  }
+}
+
+
+#### Figure 6 Panel A: Top Factors Over Time (Expanding Window) ---------------
+# Generates: fig6a_top5_prob_psi80.pdf - Heatmap of top 5 factors by posterior
+#            probability across forward-expanding estimation windows.
+# Source: expanding_runs_plots.R
+# Input: Time-varying estimation .rds file from run_time_varying_estimation()
+
+if (verbose) message("Figure 6 Panel A: Top Factors Over Time (Expanding Window)")
+
+# Path to expanding window results
+expanding_rds_path <- file.path(
+  "output/time_varying/bond_stock_with_sp",
+  "SS_excess_bond_stock_with_sp_alpha.w=1_beta.w=1_SRscale=ExpandingForward_holding_period=12_f1=TRUE_ALL_RESULTS.rds"
+)
+
+fig6a_output_path <- file.path(figures_dir, "fig6a_top5_prob_psi80.pdf")
+
+if (file.exists(fig6a_output_path)) {
+  if (verbose) message("  Skipping Figure 6a: file already exists")
+} else if (!file.exists(expanding_rds_path)) {
+  warning("Expanding window .rds not found. Skipping Figure 6a.\n  ", expanding_rds_path)
+} else {
+  fig6a_result <- generate_figure_6a(
+    rds_path    = expanding_rds_path,
+    psi_level   = 0.8,
+    top_n       = 5,
+    output_path = figures_dir,
+    verbose     = verbose
+  )
+
+  if (verbose) {
+    message("  Generated: fig6a_top5_prob_psi80.pdf")
+    message("  Estimation dates: ", length(fig6a_result$top_factors_prob))
   }
 }
 
