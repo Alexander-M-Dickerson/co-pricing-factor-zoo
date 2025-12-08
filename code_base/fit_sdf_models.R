@@ -412,13 +412,28 @@ fit_sdf_models <- function(
 
       for (j in seq_along(bond_stock)) {
         y   <- log1p(ws_env$fac$f_all_raw[, bond_stock[j]])
-        fit <- summary(lm(y ~ x1 + x2))
-        r2[j]   <- fit$r.squared
-        f_pv[j] <- 1 - pf(fit$fstatistic[1], fit$fstatistic[2], fit$fstatistic[3])
+        fit <- lm(y ~ x1 + x2)
+
+        # OLS R² (unchanged by SE choice)
+        r2[j] <- summary(fit)$r.squared
+
+        # Newey-West (Bartlett kernel) robust F-test for H0: x1 = x2 = 0, 15 lags
+        nw_vcov <- sandwich::NeweyWest(fit, lag = 15, prewhite = FALSE,
+                                       adjust = TRUE, sandwich = TRUE)
+
+        keep_coef <- intersect(c("x1", "x2"), names(coef(fit))[!is.na(coef(fit))])
+
+        if (length(keep_coef) == 0) {
+          f_pv[j] <- NA_real_
+        } else {
+          lh <- car::linearHypothesis(fit, paste0(keep_coef, " = 0"),
+                                      vcov. = nw_vcov, test = "F", singular.ok = TRUE)
+          f_pv[j] <- lh$`Pr(>F)`[2]
+        }
       }
 
       sig_flag <- cut(f_pv, breaks = c(-Inf, .05, .1, Inf),
-                      labels = c("p < .05", "p < .10", "p > .10"))
+                      labels = c("p < .05", "p < .10", "p > .10"), include.lowest = TRUE)
 
       factor_type <- ifelse(bond_stock %in% ws_env$fac$bond_names,
                             "Bond factors", "Equity factors")
