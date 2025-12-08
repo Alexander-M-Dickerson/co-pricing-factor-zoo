@@ -101,8 +101,8 @@ Add the table/figure to the index below.
 | Table | Description | Status | Helper Function |
 |-------|-------------|--------|-----------------|
 | 1 | Top 5 factor contributions to SDF | **Implemented** | `generate_table_1()` |
-| 2 | TBD | Not implemented | - |
-| 3 | TBD | Not implemented | - |
+| 2 | In-sample cross-sectional asset pricing | **Implemented** | `generate_table_2()` |
+| 3 | Out-of-sample cross-sectional asset pricing | **Implemented** | `generate_table_3()` |
 | 4 | BMA-SDF dimensionality & SR by factor type | **Implemented** | `generate_table_4()` |
 | 5 | Discount rate vs cash-flow news | **Implemented** | `generate_table_5()` |
 | A.2 | Posterior probabilities and risk prices | **Implemented** | `pp_figure_table()` |
@@ -311,6 +311,53 @@ generate_table_5(res_tbl_top, output_path = "output/paper/tables")
 - `extract_block()` - Extract and pivot a factor group block from sr_decomposition output
 - `format_latex_value()` - Format numeric values for LaTeX (handles integers vs decimals)
 - `build_latex_row()` - Build a single LaTeX table row with proper formatting
+
+### Pricing Tables: `pricing_tables.R`
+
+The `pricing_tables.R` module generates LaTeX tables for asset pricing performance.
+
+#### Main Functions
+
+| Function | Description | Output File |
+|----------|-------------|-------------|
+| `run_pricing_multi()` | Collect IS/OS pricing across model types | `pricing_results.rds` |
+| `generate_table_2()` | In-sample pricing performance | `table_2_is_pricing.tex` |
+| `generate_table_3()` | Out-of-sample pricing performance | `table_3_os_pricing.tex` |
+| `generate_pricing_tables()` | Generate both Tables 2 & 3 | All above |
+
+#### Usage
+
+```r
+# Step 1: Collect pricing results across model types
+pricing_results <- run_pricing_multi(
+  results_path = "output/unconditional",
+  data_path    = "data",
+  model_types  = c("bond_stock_with_sp", "stock", "bond"),
+  run_oos      = TRUE
+)
+
+# Step 2: Generate tables
+generate_pricing_tables(
+  pricing_results = pricing_results,
+  output_path     = "output/paper/tables",
+  tables          = c(2, 3)
+)
+```
+
+#### Models Included
+
+Tables 2 and 3 include these models (in order):
+- BMA-20%, BMA-40%, BMA-60%, BMA-80%
+- CAPM, CAPMB, FF5, HKM
+- TOP (Top-80%-All), KNS, RPPCA (RP-PCA)
+
+#### Metrics
+
+Both tables report four metrics per panel:
+- **RMSE**: Root mean squared pricing error (demeaned)
+- **MAPE**: Mean absolute pricing error (demeaned)
+- **R²_OLS**: Cross-sectional R² under OLS weighting
+- **R²_GLS**: Cross-sectional R² under GLS weighting
 
 ### Shrinkage Levels
 

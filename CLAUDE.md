@@ -270,6 +270,52 @@ The `SRscale` parameter controls the prior Sharpe ratio shrinkage:
 | `kns_out` | Kozak-Nagel-Shanken OOS results |
 | `rp_out` | RP-PCA results |
 
+### IS_AP Object Structure
+
+The `IS_AP` object contains in-sample pricing information for all models. Key components:
+
+**Pricing Metrics: `IS_AP$is_pricing_result`**
+- Data frame with 4 rows (metrics) and columns for each model
+- Metrics: `RMSEdm`, `MAPEdm`, `R2OLS`, `R2GLS`
+- Models include: BMA-20/40/60/80%, CAPM, CAPMB, FF5, HKM, Top-*, KNS, RP-PCA, etc.
+
+```r
+# Example: extract IS pricing results
+IS_AP$is_pricing_result
+#   metric   BMA-20%   BMA-40%  ...  CAPM  KNS  RP-PCA
+# 1 RMSEdm   0.214     0.203   ...  0.260 0.166 0.214
+# 2 MAPEdm   0.167     0.154   ...  0.194 0.126 0.144
+# 3 R2OLS    0.155     0.240   ...  -0.24 0.489 0.152
+# 4 R2GLS    0.106     0.168   ...  0.078 0.176 0.220
+```
+
+**Other IS_AP Components:**
+
+| Component | Description |
+|-----------|-------------|
+| `lambdas` | List of market prices of risk per model (1×P matrices) |
+| `scaled_lambdas` | Lambdas descaled by factor standard deviations |
+| `weights` | Portfolio weights for tradable models (1×A matrices) |
+| `gammas` | Posterior inclusion probabilities for BMA models |
+| `dates` | Date vector for the estimation period |
+| `sdf_mat` | SDF time series for each model (T×N_models) |
+| `sdf_mim` | Mimicking portfolio returns (T×N_models) |
+| `top_factors` | Top factors by probability (f2-only, per shrinkage) |
+| `top_factors_all` | Top factors by probability (all factors) |
+
+**Model Name Mapping for Tables 2 & 3:**
+
+| Table Name | IS_AP Column |
+|------------|--------------|
+| BMA 20/40/60/80% | `BMA-20%`, `BMA-40%`, `BMA-60%`, `BMA-80%` |
+| CAPM | `CAPM` |
+| CAPMB | `CAPMB` |
+| FF5 | `FF5` |
+| HKM | `HKM` |
+| TOP | `Top-80%-All` |
+| KNS | `KNS` |
+| RPPCA | `RP-PCA` |
+
 ### Factor Name Vectors (IMPORTANT)
 
 The .Rdata files contain pre-computed factor classification vectors that **must not be overwritten**:
