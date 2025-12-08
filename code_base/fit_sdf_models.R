@@ -444,13 +444,13 @@ fit_sdf_models <- function(
         dplyr::arrange(dplyr::desc(R2)) |>
         dplyr::mutate(factor = factor(factor, levels = factor))
 
-      pct05 <- round(100 * mean(f_pv < .05))
-      pct10 <- round(100 * mean(f_pv < .10))
-      pctHi <- 100 - pct10
+      pct05 <- round(100 * mean(f_pv < .05, na.rm = TRUE))
+      pct_mid <- round(100 * mean(f_pv >= .05 & f_pv < .10, na.rm = TRUE))
+      pctHi <- round(100 * mean(f_pv >= .10, na.rm = TRUE))
 
       alpha_labels <- c(
         `p < .05` = glue::glue("p < .05 ({pct05}%)"),
-        `p < .10` = glue::glue("p < .10 ({pct10}%)"),
+        `p < .10` = glue::glue("p < .10 ({pct_mid}%)"),
         `p > .10` = glue::glue("p > .10 ({pctHi}%)")
       )
 
@@ -565,12 +565,12 @@ fit_sdf_models <- function(
         dplyr::mutate(factor = factor(factor, levels = factor))
 
       pct05 <- round(100 * mean(f_pv_long < .05, na.rm = TRUE))
-      pct10 <- round(100 * mean(f_pv_long < .10, na.rm = TRUE))
-      pctHi <- 100 - pct10
+      pct_mid <- round(100 * mean(f_pv_long >= .05 & f_pv_long < .10, na.rm = TRUE))
+      pctHi <- round(100 * mean(f_pv_long >= .10, na.rm = TRUE))
 
       alpha_labels <- c(
         `p < .05` = glue::glue("p < .05 ({pct05}%)"),
-        `p < .10` = glue::glue("p < .10 ({pct10}%)"),
+        `p < .10` = glue::glue("p < .10 ({pct_mid}%)"),
         `p > .10` = glue::glue("p > .10 ({pctHi}%)")
       )
 
