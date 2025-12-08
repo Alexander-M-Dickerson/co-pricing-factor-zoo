@@ -1,0 +1,203 @@
+\documentclass[12pt]{article}
+\usepackage{natbib}
+\usepackage[normalem]{ulem}
+\usepackage[utf8x]{inputenc}
+\usepackage{amsmath,amsfonts,amssymb,amsthm,mathrsfs,graphicx,
+	setspace,wrapfig,lscape,longtable,multirow,chngcntr,
+	color,soul,bm,booktabs,changepage,layouts,float,enumitem,
+	titlesec,quoting,xparse,pifont,apptools,makecell,array,dirtytalk}
+\usepackage[T1]{fontenc}
+\usepackage[colorlinks=true,linkcolor=blue,urlcolor=blue,citecolor=blue]{hyperref}
+\usepackage[labelfont=bf]{caption,subcaption}
+\usepackage[table, dvipsnames]{xcolor}
+\usepackage[bottom]{footmisc}
+\usepackage[page,title]{appendix}
+\usepackage{tikz,tikz-3dplot}\usetikzlibrary{decorations.pathreplacing}
+\usepackage[top=1.25in, bottom=1.25in, left=1.25in, right=1.25in]{geometry}
+\usepgflibrary{arrows}
+\usepackage{ragged2e}
+\usepackage{alphalph}
+\usepackage{etoc}
+\usepackage{placeins}
+\usepackage[sectionbib]{bibunits} 
+\defaultbibliographystyle{chicago} 
+\defaultbibliography{bibliography_2025_11_12}
+
+\renewcommand{\today}{\ifcase \month \or January\or February\or March\or %
+	April\or May \or June\or July\or August\or September\or October\or November\or %
+	December\fi \ \number \year} 
+
+%%%%%%%%%%%%%%%% Define math environments %%%%%%%%%%
+\newtheorem{theorem}{Theorem}
+\newtheorem{algorithm}{Algorithm}
+\newtheorem{axiom}{Axiom}
+\newtheorem{case}[theorem]{Case}
+\newtheorem{claim}{Claim}
+\newtheorem{conclusion}{Conclusion}
+\newtheorem{condition}[theorem]{Condition}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{corollary}{Corollary}
+\AtAppendix{\counterwithin{definition}{section}}
+\newtheorem{definition}{Definition}
+\AtAppendix{\counterwithin{lemma}{section}}
+\newtheorem{lemma}{Lemma}
+\AtAppendix{\counterwithin{assumption}{section}}
+\newtheorem{assumption}{Assumption}
+\AtAppendix{\counterwithin{proposition}{section}}
+\newtheorem{proposition}{Proposition}
+\newtheorem{remark}{Remark}
+\newtheorem{exmp}{Example}
+
+%%%%%%%%%%%%%%%%% Common math %%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\iid}{\stackrel{\mathrm{iid}}{\sim}}
+\newcommand{\prob}{\mathbb{P}}	
+\newcommand{\expec}{\mathbb E}
+\newcommand{\var}{\mathrm{var}}
+\newcommand{\cov}{\mathrm{cov}}
+\newcommand{\corr}{\mathrm{corr}}
+\newcommand{\diff}{\mathrm d}
+\newcommand{\intdiff}{\,\mathrm d}
+\DeclareMathOperator*{\subjecto}{ subject\ to\quad }
+\DeclareMathOperator*{\maximize}{\mathrm maximize\quad } 
+\DeclareMathOperator*{\minimize}{\mathrm minimize\quad }
+\DeclareMathOperator*{\argmin}{\displaystyle arg\,min} 
+\DeclareMathOperator*{\argmax}{\displaystyle  arg\,max} 
+\DeclareMathOperator*{\normal}{\mathcal{N}}
+
+% Needed for "code like" text for the Appendix Section"
+\def\code#1{\texttt{#1}}
+
+
+%%%%%%%%%%%%%%%%%%% ad-hoc defs %%%%%%%%%%%
+\newcommand\bgamma{ {\bm \gamma} }
+\newcommand\mM{\mathcal{M}}
+\newcommand\bmR{\bm R}
+\newcommand\bmb{\bm b}
+\newcommand\bmf{\bm f}
+\newcommand\SR{\mathrm{SR}}
+\newcommand\BF{\mathrm{BF}}
+\newcommand\Entropy{\mathcal E}
+\newcommand{\Flow}{\mathrm{Flow}}
+%%%% Hide Columns %%%%%%%%%%%
+\newcolumntype{H}{>{\setbox0=\hbox\bgroup}c<{\egroup}@{}}
+%%%% Math Columns %%%%%%%%%%%
+\newcolumntype{C}{>{$}c<{$}}
+\newcolumntype{R}{>{$}r<{$}}
+\newcolumntype{L}{>{$}l<{$}}
+
+\usepackage{alphalph}
+\renewcommand*{\thesubfigure}{%
+	\AlphAlph{\value{subfigure}}%
+%	\alphalph{\value{subfigure}}%
+}%
+
+\renewcommand{\thesubfigure}{\Alph{subfigure}:}
+\captionsetup[subfloat]{font=footnotesize,labelformat=simple,labelsep=space}
+
+\singlespacing
+\title{
+	{\textbf{The Co-Pricing Factor Zoo Replication:\\Tables and Figures}}\thanks{{\scriptsize 
+	We are thankful for comments and suggestions from Nikolai Roussanov (the Co-Editor), an anonymous
+referee, Svetlana Bryzgalova, Mikhail Chernov, Magnus Dahlquist, Jiantao Huang, Byounghyun Jeon, 
+Ian Martin, Mamdouh Medhat, Yoshio Nozawa, 
+Andrew Patton, Paola Pederzoli,
+Lukas Schmid, 
+Patrick Weiss, 
+Paolo Zaffaroni, 
+Irina Zviadadze,  
+and seminar and conference participants at 
+BTM KAIST College of Business, Cancun Derivatives and Asset Pricing Conference 2024, Chinese University of Hong Kong, EFA Bratislava, ESSFM Asset Pricing Gerzensee 2024, FIRS Berlin, 4th Frontiers of Factor Investing Conference Lancaster, Goethe University, HEC Lausanne, INQUIRE Europe Spring Seminar Brussels,  London School of Economics, NTU Taipei, Machine Learning and Finance Conference Oxford,  MFS Oslo,  SFS Cavalcade Atlanta, SFS Cavalcade Asia-Pacific Seoul, Tinbergen Institute, University of Essex, WFA Honolulu, and the XXIV Brazilian Finance Meeting Curitiba. 
+We gratefully acknowledge financial support from  INQUIRE Europe. The companion website to this paper, \href{https://openbondassetpricing.com/}{openbondassetpricing.com}, contains updated corporate bond factor data. An earlier version of this paper circulated under the title ``The Corporate Bond Factor Zoo.'' 
+}
+}  
+}
+\author{{\normalsize Alexander Dickerson\thanks{{\scriptsize School of Banking \& Finance, The University of New South Wales;  \url{alexander.dickerson1@unsw.edu.au}}}} \and 
+	{\normalsize Christian Julliard\thanks{{\scriptsize Department of Finance, FMG, and SRC, London School of Economics, and CEPR; \url{c.julliard@lse.ac.uk}}}}
+	\and
+	{\normalsize Philippe Mueller\thanks{{\scriptsize Warwick Business School, The University of Warwick, \url{philippe.mueller@wbs.ac.uk}}}}
+	}
+
+\date{{\small   \today }}
+
+\evensidemargin -0.1in \oddsidemargin -0.1in \textwidth 6.7in
+\hyphenation{mo-del} \topmargin -0.5in \textheight 9in 
+\setlength{\footnotesep}{10.5pt} \linespread{2}
+\renewcommand{\baselinestretch}{1.3}
+\setlength{\footskip}{40pt}
+
+\linespread{1.5}
+
+
+\begin{document}
+\maketitle
+
+\vspace{-.75cm}
+
+\begin{abstract}
+\singlespacing
+\noindent
+{
+This document replicates the main results. If you use the associated code or data, please cite our paper appropriately.
+We analyze 18 quadrillion models for the joint pricing of corporate bond and stock returns.
+Strikingly, we find that equity and nontradable factors alone suffice to explain corporate bond risk premia once their Treasury term structure risk is accounted for, rendering the extensive bond factor literature largely redundant for this purpose.
+While only a handful of factors, behavioral and nontradable, are likely robust sources of priced risk, the true latent stochastic discount factor is \emph{dense} in the space of observable factors. 
+Consequently, a Bayesian Model Averaging Stochastic Discount Factor explains risk premia better than all low-dimensional models, in- and out-of-sample, by optimally aggregating dozens of factors that serve as noisy proxies for common underlying risks, yielding an out-of-sample Sharpe ratio of 1.5 to 1.8.
+This SDF, as well as its conditional mean and volatility, are persistent, track the business cycle and times of heightened economic uncertainty, and predict future asset returns.
+} 
+\end{abstract}
+\bigskip
+\singlespacing{
+\noindent \emph{Keywords:} Macro-finance, asset pricing, corporate bonds, bond-stock co-pricing, factor zoo, factor models, Bayesian methods.}
+\medskip
+
+\noindent \emph{JEL Classification Codes:} G10; G12; G40; C12; C13; C52. 
+\bigskip
+\thispagestyle{empty}
+
+\pagebreak
+\setcounter{page}{1}
+\onehalfspacing
+\setstretch{1.4}
+\setlength{\belowdisplayskip}{5pt} 
+\setlength{\belowdisplayshortskip}{5pt}
+\setlength{\abovedisplayskip}{5pt} 
+\setlength{\abovedisplayshortskip}{5pt}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Sections in the main body
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{bibunit}
+
+\input{tables.tex}
+
+\input{figures.tex}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%% References %%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+{\footnotesize
+\singlespacing 
+ \setlength{\bibsep}{4pt}
+\putbib
+}\pagebreak
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%% Main Appendix %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+\newpage
+\appendix
+
+\begin{center}
+ {\LARGE \textbf{Appendix}}   
+\end{center}
+\renewcommand{\theequation}{A.\arabic{equation}}%
+\renewcommand{\thefigure}{A.\arabic{figure}} \setcounter{figure}{0}
+\renewcommand{\thetable}{A.\arabic{table}} \setcounter{table}{0}
+
+\input{app_tables.tex}
+\end{bibunit}
+\end{document}
