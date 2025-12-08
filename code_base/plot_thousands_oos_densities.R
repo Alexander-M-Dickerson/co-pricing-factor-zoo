@@ -156,11 +156,14 @@ plot_thousands_oos_densities <- function(thousands_oos_results,
     # Determine x coordinate for annotations
     # When force_left_annotations = TRUE, always use left-aligned positioning
     x_coord <- if (force_left_annotations) {
-      # Use minimum of x_limits for left alignment
+      # Use left edge with small offset for readability
       if (metric_name == "R2OLS") {
         -0.95  # Left side of [-1, 1] range
       } else if (metric_name == "R2GLS") {
-        min(long$value, na.rm = TRUE)  # Left edge of data range
+        # Use left edge with 2% offset from data range
+        data_min <- min(long$value, na.rm = TRUE)
+        data_max <- max(long$value, na.rm = TRUE)
+        data_min + 0.02 * (data_max - data_min)
       } else {
         0  # Left edge for RMSE/MAPE (starting at 0)
       }
