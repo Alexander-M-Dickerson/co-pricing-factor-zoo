@@ -19,18 +19,18 @@ gc()
 
 #### 1.1 Results Location -----------------------------------------------------
 # Root path where time-varying results are saved
-output_root    <- "/home/aldi/DJM_replication_2/output/time_varying"
+output_root    <- "C:/Users/ASUS/Documents/GitHub/co-pricing-factor-zoo/output/time_varying" 
 
 #### 1.2 Path Override --------------------------------------------------------
 # When TRUE, use the paths below instead of those stored in the metadata.
 # This is useful when running on a different machine than where estimation ran.
-path_override  <- FALSE
+path_override  <- TRUE
 
 # These paths are ONLY used when path_override = TRUE
-override_main_path     <- "/path/to/project"
-override_data_folder   <- "/path/to/project/data"
-override_code_folder   <- "/path/to/project/code_base"
-override_output_folder <- "/path/to/project/output"
+override_main_path     <- "C:/Users/ASUS/Documents/GitHub/co-pricing-factor-zoo"
+override_data_folder   <- "C:/Users/ASUS/Documents/GitHub/co-pricing-factor-zoo/data"
+override_code_folder   <- "C:/Users/ASUS/Documents/GitHub/co-pricing-factor-zoo/code_base"
+override_output_folder <- "C:/Users/ASUS/Documents/GitHub/co-pricing-factor-zoo/output"
 
 #### 1.3 Model Specification --------------------------------------------------
 # These parameters identify which results file to load
