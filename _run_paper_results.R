@@ -608,6 +608,7 @@ if (!exists("thousands_oos_results_duration") || is.null(thousands_oos_results_d
     os_estim      = "co_pricing",
     output_path   = figures_dir,
     figure_prefix = "fig8",
+    force_left_annotations = TRUE,  # All annotations top-left for duration figures
     verbose       = verbose
   )
 
