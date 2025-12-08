@@ -90,13 +90,25 @@ plot_cumret <- function(
   ## -------------------------------------------------------------------------
   ## 2. Compute cumulative returns
   ## -------------------------------------------------------------------------
-  
+
   if (verbose) cat("Computing cumulative returns...\n")
-  
+
+  # Define legend label mapping (internal name -> display name)
+  legend_labels <- c(
+    "EqualWeight" = "EW",
+    "RP-PCA"      = "RPPCA"
+  )
+
+  # Helper function to rename portfolio for display
+  rename_portfolio <- function(x) {
+    ifelse(x %in% names(legend_labels), legend_labels[x], x)
+  }
+
   # Get ordering by final dollar value
   plot_data <- df_scaled %>%
     dplyr::select(date, all_of(factor_vec)) %>%
     pivot_longer(-date, names_to = "portfolio", values_to = "ret") %>%
+    mutate(portfolio = rename_portfolio(portfolio)) %>%
     group_by(portfolio) %>%
     arrange(date) %>%
     mutate(dollar = exp(cumsum(ret))) %>%
@@ -104,16 +116,21 @@ plot_cumret <- function(
     ungroup() %>%
     arrange(desc(dollar)) %>%
     mutate(portfolio = factor(portfolio, levels = unique(portfolio))) -> ordering_df
-  
+
   # Now use this order in the full dataset
   plot_data <- df_scaled %>%
     dplyr::select(date, all_of(factor_vec)) %>%
     pivot_longer(-date, names_to = "portfolio", values_to = "ret") %>%
+    mutate(portfolio = rename_portfolio(portfolio)) %>%
     group_by(portfolio) %>%
     arrange(date) %>%
     mutate(dollar = exp(cumsum(ret))) %>%
     ungroup() %>%
     mutate(portfolio = factor(portfolio, levels = levels(ordering_df$portfolio)))
+
+  # Also rename the color_vec and line_types_vec keys
+  names(color_vec) <- rename_portfolio(names(color_vec))
+  names(line_types_vec) <- rename_portfolio(names(line_types_vec))
   
   # Get last dollar values for endpoint labels
   last_dollar <- plot_data %>%
@@ -161,7 +178,10 @@ plot_cumret <- function(
       breaks = dollar_breaks,
       labels = dollar_format(accuracy = 1)
     ) +
-    scale_x_date(date_labels = "%Y-%m", date_breaks = "12 months") +
+    scale_x_date(
+      breaks = seq(as.Date("2004-08-01"), as.Date("2023-08-01"), by = "1 year"),
+      labels = format(seq(as.Date("2004-08-01"), as.Date("2023-08-01"), by = "1 year"), "%Y-%m")
+    ) +
     labs(
       x = NULL,
       y = "Portfolio Value in $",
