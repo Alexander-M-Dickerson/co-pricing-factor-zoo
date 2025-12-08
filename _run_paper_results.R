@@ -191,16 +191,15 @@ if (verbose) {
 # Required for: Table 1 (Top 5 factors), Table 4 (SR by factor type),
 #               Table 5 (DR vs CF decomposition)
 
-if (verbose) message("SR Decomposition: Computing for all model types...")
-
-# Check if we should regenerate or use cached results
+# Check if cached results exist
 sr_decomp_file <- file.path(data_folder, "sr_decomposition_results.rds")
-regenerate_sr_decomp <- TRUE  # Set to FALSE to use cached results
+regenerate_sr_decomp <- FALSE  # Set to TRUE to force re-estimation
 
 if (file.exists(sr_decomp_file) && !regenerate_sr_decomp) {
-  if (verbose) message("  Loading cached SR decomposition results...")
+  if (verbose) message("SR Decomposition: Loading cached results from ", sr_decomp_file)
   res_tbl_top <- readRDS(sr_decomp_file)
 } else {
+  if (verbose) message("SR Decomposition: Computing for all model types...")
   # Run SR decomposition across all model types
   res_tbl_top <- run_sr_decomposition_multi(
     results_path  = results_path,
