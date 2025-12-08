@@ -367,10 +367,12 @@ run_bayesian_mcmc <- function(
       all_factor_names = c(colnames(f1_matrix), colnames(f2_matrix))
     )
   } else if (model_type == "treasury") {
-    # Treasury: all factors treated as non-traded
+    # Treasury: all factors treated as non-traded FOR BMA estimation
+    # But we preserve f2_matrix for benchmark models (KNS, RP-PCA, PCA)
     fac <- list(
       f1 = cbind(f1_matrix, f2_matrix),
-      f2 = NULL,
+      f2 = NULL,                          # NULL for BMA estimation
+      f2_benchmarks = f2_matrix,          # Preserved for KNS/RP-PCA/PCA "f2 only" versions
       f_all_raw = cbind(f1_matrix, f2_matrix),
       n_nontraded = ncol(f1_matrix) + ncol(f2_matrix),
       n_bondfac = NULL,
@@ -430,6 +432,8 @@ run_bayesian_mcmc <- function(
   if (!is.null(fac$R)) R_matrix <- fac$R
   f1 <- fac$f1
   f2 <- fac$f2
+  # For benchmark models (KNS, RP-PCA, PCA): use f2_benchmarks if available (treasury model)
+  f2_benchmarks <- if (!is.null(fac$f2_benchmarks)) fac$f2_benchmarks else fac$f2
   
   # Convert NULL f1 to empty matrix with correct row count (MCMC functions expect matrix, not NULL)
   if (is.null(f1_matrix)) {
@@ -699,7 +703,7 @@ run_bayesian_mcmc <- function(
     
     kns_out <- estimate_kns_oos_ts(
       R  = R_matrix,
-      f2 = f2,
+      f2 = f2_benchmarks,
       verbose = verbose
     )
   } else {
@@ -712,7 +716,7 @@ run_bayesian_mcmc <- function(
     if (verbose) message("Running RP-PCA ...")
     rp_out <- estim_rppca_ts(
       R      = R_matrix,
-      f2     = f2,
+      f2     = f2_benchmarks,
       kappa  = 20,
       npc    = 5,
       verbose = verbose
@@ -728,7 +732,7 @@ run_bayesian_mcmc <- function(
     if (verbose) message("Running standard PCA (kappa=0) ...")
     pca_out <- estim_rppca_ts(
       R      = R_matrix,
-      f2     = f2,
+      f2     = f2_benchmarks,
       kappa  = 0,       # Standard PCA (no risk premium weighting)
       npc    = 5,
       verbose = verbose

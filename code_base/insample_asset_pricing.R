@@ -366,24 +366,30 @@ insample_asset_pricing_enhanced <- function(results, f_all, R, f1, f2,
   # Add RP-PCA, PCA, and KNS (always included)
   # Handle nested vs flat structures
   if (is_nested_rp) {
-    lambda_hat$`RP-PCA`   <- gmm_estimation(Rc, rp_out$combined$factors, W, include.intercept = TRUE)
-    lambda_hat$`RP-PCAf2` <- gmm_estimation(Rc, rp_out$f2_only$factors, W, include.intercept = TRUE)
+    lambda_hat$`RP-PCA` <- gmm_estimation(Rc, rp_out$combined$factors, W, include.intercept = TRUE)
+    if (!is.null(rp_out$f2_only)) {
+      lambda_hat$`RP-PCAf2` <- gmm_estimation(Rc, rp_out$f2_only$factors, W, include.intercept = TRUE)
+    }
   } else {
-    lambda_hat$`RP-PCA`   <- gmm_estimation(Rc, rp_out$factors, W, include.intercept = TRUE)
+    lambda_hat$`RP-PCA` <- gmm_estimation(Rc, rp_out$factors, W, include.intercept = TRUE)
     # No f2_only for flat structure
   }
-  
+
   if (is_nested_pca && !is.null(pca_out)) {
-    lambda_hat$PCA   <- gmm_estimation(Rc, pca_out$combined$factors, W, include.intercept = TRUE)
-    lambda_hat$PCAf2 <- gmm_estimation(Rc, pca_out$f2_only$factors, W, include.intercept = TRUE)
+    lambda_hat$PCA <- gmm_estimation(Rc, pca_out$combined$factors, W, include.intercept = TRUE)
+    if (!is.null(pca_out$f2_only)) {
+      lambda_hat$PCAf2 <- gmm_estimation(Rc, pca_out$f2_only$factors, W, include.intercept = TRUE)
+    }
   } else if (!is.null(pca_out)) {
     lambda_hat$PCA <- gmm_estimation(Rc, pca_out$factors, W, include.intercept = TRUE)
     # No f2_only for flat structure
   }
-  
+
   if (is_nested_kns) {
-    lambda_hat$KNS   <- as.matrix(kns_out$combined$kns_lambdas)
-    lambda_hat$KNSf2 <- as.matrix(kns_out$f2_only$kns_lambdas)
+    lambda_hat$KNS <- as.matrix(kns_out$combined$kns_lambdas)
+    if (!is.null(kns_out$f2_only)) {
+      lambda_hat$KNSf2 <- as.matrix(kns_out$f2_only$kns_lambdas)
+    }
   } else {
     lambda_hat$KNS <- as.matrix(kns_out$kns_lambdas)
     # No f2_only for flat structure
