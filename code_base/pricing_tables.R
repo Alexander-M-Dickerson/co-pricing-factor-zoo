@@ -67,16 +67,6 @@ run_pricing_multi <- function(results_path,
   is_results <- list()
   os_results <- list()
 
-  # OOS test asset files by model type
-  oos_files <- list(
-    bond_stock_with_sp = list(
-      bond = "bond_oosample_all_excess.csv",
-      stock = "equity_os_77.csv"
-    ),
-    bond = list(bond = "bond_oosample_all_excess.csv"),
-    stock = list(stock = "equity_os_77.csv")
-  )
-
   for (model_type in model_types) {
     if (verbose) message("--- Processing: ", model_type, " ---")
 
@@ -123,26 +113,36 @@ run_pricing_multi <- function(results_path,
     # ---- Run OS pricing if requested ----
     if (run_oos) {
       tryCatch({
-        # Load OOS test assets
-        oos_file_list <- oos_files[[model_type]]
-        R_oos_parts <- list()
+        # Load OOS test assets - handle date columns correctly
+        # Bond file has date as first column
+        # Stock file has date as first column (must remove when combining)
 
-        for (asset_type in names(oos_file_list)) {
-          oos_file <- file.path(data_path, oos_file_list[[asset_type]])
-          if (file.exists(oos_file)) {
-            oos_data <- read.csv(oos_file, check.names = FALSE)
-            # Handle equity file which may have extra first column
-            if (asset_type == "stock" && ncol(oos_data) > 77) {
-              oos_data <- oos_data[, -1, drop = FALSE]
-            }
-            R_oos_parts[[asset_type]] <- oos_data
-          } else {
-            warning("  OOS file not found: ", oos_file)
+        bond_oos_file <- file.path(data_path, "bond_oosample_all_excess.csv")
+        stock_oos_file <- file.path(data_path, "equity_os_77.csv")
+
+        R_oos_data <- NULL
+
+        if (model_type == "bond_stock_with_sp") {
+          # Combined: Rb (with date) + Rs (without date)
+          if (file.exists(bond_oos_file) && file.exists(stock_oos_file)) {
+            Rb <- read.csv(bond_oos_file, check.names = FALSE)
+            Rs <- read.csv(stock_oos_file, check.names = FALSE)[, -1, drop = FALSE]  # Remove date column
+            R_oos_data <- cbind(Rb, Rs)
+          }
+        } else if (model_type == "bond") {
+          # Bond only: just Rb (with date)
+          if (file.exists(bond_oos_file)) {
+            R_oos_data <- read.csv(bond_oos_file, check.names = FALSE)
+          }
+        } else if (model_type == "stock") {
+          # Stock only: just Rs (with date)
+          if (file.exists(stock_oos_file)) {
+            R_oos_data <- read.csv(stock_oos_file, check.names = FALSE)
           }
         }
 
-        if (length(R_oos_parts) > 0) {
-          R_oos_data <- do.call(cbind, R_oos_parts)
+        if (!is.null(R_oos_data)) {
+          if (verbose) message("  OOS assets: ", ncol(R_oos_data) - 1, " portfolios")
 
           # Get required objects from global env
           data_list_local <- get("data_list", envir = .GlobalEnv)
