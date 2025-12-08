@@ -24,6 +24,8 @@ The pipeline consists of:
 │     run_sr_decomposition_multi()  →  data/sr_decomposition_results.rds │
 │     run_pricing_multi()           →  data/pricing_results.rds          │
 │     run_thousands_oos_tests()     →  data/thousands_oos_results.rds    │
+│     run_thousands_oos_tests(duration_mode=TRUE)                        │
+│                                   →  data/thousands_oos_results_duration.rds │
 └─────────────────────────────────────────────────────────────────┘
                                  │
                                  ▼
@@ -421,14 +423,36 @@ thousands_oos_results$bond_stock_with_sp  # List with:
 # - combo_id: block indices (e.g., "1-3-5")
 ```
 
+#### Duration Mode
+
+The function supports duration-adjusted analysis via `duration_mode = TRUE`:
+
+```r
+# Duration-adjusted mode
+res_dur <- run_thousands_oos_tests(
+  results_path = "output/unconditional",
+  data_path = "data",
+  model_types = c("bond_stock_with_sp", "stock", "bond"),
+  duration_mode = TRUE,
+  output_name = "thousands_oos_results_duration.rds"
+)
+```
+
+In duration mode:
+- **bond_stock_with_sp**: Loads `duration_bond_stock_with_sp_...Rdata`
+- **bond**: Loads `duration_bond_...Rdata`
+- **stock**: Loads `excess_stock_...Rdata` (unchanged)
+- **Bond OOS file**: Uses `bond_oosample_all_duration_tmt.csv` instead of excess
+
 #### Speed Optimizations
 
 The function is optimized for speed:
 
 1. **`os_pricing_fast()`**: Lightweight pricing without date handling overhead
 2. **`prepare_oos_inputs()`**: Pre-compute factor matrices once per model type
-3. **`parallel::mclapply`**: Fork-based parallelism (faster than `furrr` on Linux)
-4. **No serialization**: Fork-based workers share memory with parent
+3. **`parallel::mclapply`**: Fork-based parallelism on Linux/Mac
+4. **`parallel::parLapply`**: PSOCK cluster on Windows
+5. **Caching**: Results saved to RDS, loaded if file exists
 
 Typical runtime: ~5-10 minutes per model type on 8+ cores.
 

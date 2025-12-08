@@ -384,14 +384,16 @@ run_subset_combos <- function(R_oss_mat, cols_from, cols_to, precomputed,
 #' @param results_path Path to results folder containing .Rdata files
 #' @param data_path Path to data folder containing OOS test assets
 #' @param model_types Vector of model types to process
-#' @param return_type Return type (e.g., "excess")
+#' @param return_type Return type (e.g., "excess") - used for stock model
 #' @param alpha.w Beta prior hyperparameter
 #' @param beta.w Beta prior hyperparameter
 #' @param kappa Factor tilt
 #' @param tag Run identifier
 #' @param intercept Logical, whether models include intercept
-#' @param bond_oos_file Filename for bond OOS assets
+#' @param bond_oos_file Filename for bond OOS assets (excess returns)
 #' @param stock_oos_file Filename for stock OOS assets
+#' @param duration_mode Logical, if TRUE use duration-adjusted for bond models
+#' @param bond_oos_file_duration Filename for bond OOS assets (duration returns)
 #' @param n_cores Number of parallel cores (default: detectCores - 1)
 #' @param save_output Save results to RDS?
 #' @param output_path Path for output file
@@ -402,10 +404,21 @@ run_subset_combos <- function(R_oss_mat, cols_from, cols_to, precomputed,
 #'
 #' @examples
 #' \dontrun{
+#'   # Excess returns mode
 #'   res <- run_thousands_oos_tests(
 #'     results_path = "output/unconditional",
 #'     data_path = "data",
 #'     model_types = c("bond_stock_with_sp", "stock", "bond"),
+#'     verbose = TRUE
+#'   )
+#'
+#'   # Duration-adjusted mode
+#'   res_dur <- run_thousands_oos_tests(
+#'     results_path = "output/unconditional",
+#'     data_path = "data",
+#'     model_types = c("bond_stock_with_sp", "stock", "bond"),
+#'     duration_mode = TRUE,
+#'     output_name = "thousands_oos_results_duration.rds",
 #'     verbose = TRUE
 #'   )
 #' }
@@ -420,6 +433,8 @@ run_thousands_oos_tests <- function(results_path,
                                      intercept = TRUE,
                                      bond_oos_file = "bond_oosample_all_excess.csv",
                                      stock_oos_file = "equity_os_77.csv",
+                                     duration_mode = FALSE,
+                                     bond_oos_file_duration = "bond_oosample_all_duration_tmt.csv",
                                      n_cores = max(1, parallel::detectCores() - 1),
                                      save_output = TRUE,
                                      output_path = NULL,
@@ -429,12 +444,16 @@ run_thousands_oos_tests <- function(results_path,
   if (verbose) {
     message("\n", strrep("=", 70))
     message("THOUSANDS OUT-OF-SAMPLE TESTS")
+    if (duration_mode) message("MODE: Duration-adjusted")
     message(strrep("=", 70))
     message("Using ", n_cores, " parallel cores")
   }
 
+  # --- Determine which bond OOS file to use ---
+  bond_file_to_use <- if (duration_mode) bond_oos_file_duration else bond_oos_file
+
   # --- Load OOS test assets (with correct date handling) ---
-  bond_path <- file.path(data_path, bond_oos_file)
+  bond_path <- file.path(data_path, bond_file_to_use)
   stock_path <- file.path(data_path, stock_oos_file)
 
   if (!file.exists(bond_path)) stop("Bond OOS file not found: ", bond_path)
@@ -456,6 +475,7 @@ run_thousands_oos_tests <- function(results_path,
     message("OOS assets loaded:")
     message("  Equity: ", ncol(R_ossE), " portfolios, ", nrow(R_ossE), " obs")
     message("  Bond:   ", ncol(R_ossB), " portfolios, ", nrow(R_ossB), " obs")
+    message("  Bond file: ", bond_file_to_use)
   }
 
   # --- Block indices for subset combinations ---
@@ -482,10 +502,18 @@ run_thousands_oos_tests <- function(results_path,
       message(strrep("-", 60))
     }
 
+    # Determine return_type for this model
+    # In duration_mode: bond and bond_stock_with_sp use "duration", stock uses "excess"
+    model_return_type <- if (duration_mode && model_type != "stock") {
+      "duration"
+    } else {
+      return_type
+    }
+
     # Construct filename
     rdata_filename <- sprintf(
       "%s_%s_alpha.w=%s_beta.w=%s_kappa=%s_%s.Rdata",
-      return_type, model_type, alpha.w, beta.w, kappa, tag
+      model_return_type, model_type, alpha.w, beta.w, kappa, tag
     )
     rdata_path <- file.path(results_path, model_type, rdata_filename)
 
