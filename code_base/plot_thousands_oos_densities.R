@@ -30,6 +30,7 @@
 #' @param width Figure width in inches (default: 3.25)
 #' @param height Figure height in inches (default: 3.25)
 #' @param axis_text_size Size for axis text (default: 7)
+#' @param force_left_annotations Force all annotations to top-left (default: FALSE, use TRUE for duration figures)
 #' @param verbose Print progress messages
 #'
 #' @return List of ggplot objects (invisibly)
@@ -61,6 +62,7 @@ plot_thousands_oos_densities <- function(thousands_oos_results,
                                           width = 3.25,
                                           height = 3.25,
                                           axis_text_size = 7,
+                                          force_left_annotations = FALSE,
                                           verbose = TRUE) {
 
   # Load required packages
@@ -152,7 +154,17 @@ plot_thousands_oos_densities <- function(thousands_oos_results,
              `Stock BMA` = "yellow")
 
     # Determine x coordinate for annotations
-    x_coord <- if (is.function(spec$x_anno_fn)) {
+    # When force_left_annotations = TRUE, always use left-aligned positioning
+    x_coord <- if (force_left_annotations) {
+      # Use minimum of x_limits for left alignment
+      if (metric_name == "R2OLS") {
+        -0.95  # Left side of [-1, 1] range
+      } else if (metric_name == "R2GLS") {
+        min(long$value, na.rm = TRUE)  # Left edge of data range
+      } else {
+        0  # Left edge for RMSE/MAPE (starting at 0)
+      }
+    } else if (is.function(spec$x_anno_fn)) {
       spec$x_anno_fn(long$value)
     } else {
       spec$x_anno
@@ -277,6 +289,7 @@ generate_figures_5_and_8 <- function(thousands_oos_results,
       thousands_oos_results = thousands_oos_results_duration,
       output_path = output_path,
       figure_prefix = "fig8",
+      force_left_annotations = TRUE,  # All annotations top-left for duration figures
       verbose = verbose
     )
   }
