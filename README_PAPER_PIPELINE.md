@@ -100,11 +100,12 @@ Add the table/figure to the index below.
 
 | Table | Description | Status | Helper Function |
 |-------|-------------|--------|-----------------|
-| 1 | Top 5 factor contributions to SDF | **Data ready** | `sr_decomposition()` |
-| A.2 | Posterior probabilities and risk prices | **Implemented** | `pp_figure_table()` |
+| 1 | Top 5 factor contributions to SDF | **Implemented** | `generate_table_1()` |
+| 2 | TBD | Not implemented | - |
 | 3 | TBD | Not implemented | - |
-| 4 | BMA-SDF dimensionality & SR by factor type | **Data ready** | `sr_decomposition()` |
-| 5 | Discount rate vs cash-flow news | **Data ready** | `sr_decomposition()` |
+| 4 | BMA-SDF dimensionality & SR by factor type | **Implemented** | `generate_table_4()` |
+| 5 | Discount rate vs cash-flow news | **Implemented** | `generate_table_5()` |
+| A.2 | Posterior probabilities and risk prices | **Implemented** | `pp_figure_table()` |
 
 ## Figures Index
 
@@ -251,6 +252,42 @@ res_tbl_top$bond                # tibble for bond-only model
 ```
 
 Saved to: `data/sr_decomposition_results.rds`
+
+### Table Generation: `sr_tables.R`
+
+The `sr_tables.R` module generates LaTeX tables from SR decomposition results.
+
+#### Main Functions
+
+| Function | Description | Output File |
+|----------|-------------|-------------|
+| `generate_table_1()` | Top 5 factor contributions | `table_1_top5_factors.tex` |
+| `generate_table_4()` | SR decomposition by factor type | `table_4_sr_by_factor_type.tex` |
+| `generate_table_5()` | DR vs CF decomposition | `table_5_dr_vs_cf.tex` |
+| `generate_sr_tables()` | Generate all tables at once | All above |
+
+#### Usage
+
+```r
+# Generate all tables
+sr_table_results <- generate_sr_tables(
+  res_tbl_top  = res_tbl_top,
+  output_path  = "output/paper/tables",
+  tables       = c(1, 4, 5),
+  verbose      = TRUE
+)
+
+# Or generate individual tables
+generate_table_1(res_tbl_top, output_path = "output/paper/tables")
+generate_table_4(res_tbl_top, output_path = "output/paper/tables")
+generate_table_5(res_tbl_top, output_path = "output/paper/tables")
+```
+
+#### Helper Functions
+
+- `extract_block()` - Extract and pivot a factor group block from sr_decomposition output
+- `format_latex_value()` - Format numeric values for LaTeX (handles integers vs decimals)
+- `build_latex_row()` - Build a single LaTeX table row with proper formatting
 
 ### Shrinkage Levels
 
