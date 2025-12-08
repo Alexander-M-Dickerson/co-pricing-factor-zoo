@@ -313,6 +313,52 @@ if (verbose && !is.null(thousands_oos_results)) {
 }
 
 
+#### Thousands OOS Tests - Duration Mode (for Figure 5) ------------------------
+# Same as above but with duration-adjusted returns for bond models.
+# bond_stock_with_sp and bond use duration .Rdata files
+# stock uses excess .Rdata file (unchanged)
+# Bond OOS file: bond_oosample_all_duration_tmt.csv
+
+if (verbose) message("\nThousands OOS Tests (Duration): Running subset combinations...")
+
+# Check if cached results exist
+thousands_oos_dur_file <- file.path(data_folder, "thousands_oos_results_duration.rds")
+regenerate_thousands_oos_dur <- FALSE  # Set to TRUE to force re-computation
+
+if (file.exists(thousands_oos_dur_file) && !regenerate_thousands_oos_dur) {
+  if (verbose) message("  Loading cached results from ", thousands_oos_dur_file)
+  thousands_oos_results_duration <- readRDS(thousands_oos_dur_file)
+} else {
+  if (verbose) message("  Computing thousands OOS tests - duration mode (this may take several minutes)...")
+  # Run thousands of OOS tests with duration-adjusted returns
+  thousands_oos_results_duration <- run_thousands_oos_tests(
+    results_path   = results_path,
+    data_path      = data_folder,
+    model_types    = c("bond_stock_with_sp", "stock", "bond"),
+    return_type    = return_type,
+    alpha.w        = alpha.w,
+    beta.w         = beta.w,
+    kappa          = kappa,
+    tag            = tag,
+    intercept      = TRUE,
+    bond_oos_file  = "bond_oosample_all_excess.csv",
+    stock_oos_file = "equity_os_77.csv",
+    duration_mode  = TRUE,
+    bond_oos_file_duration = "bond_oosample_all_duration_tmt.csv",
+    n_cores        = max(1, parallel::detectCores() - 1),
+    save_output    = TRUE,
+    output_path    = data_folder,
+    output_name    = "thousands_oos_results_duration.rds",
+    verbose        = verbose
+  )
+}
+
+if (verbose && !is.null(thousands_oos_results_duration)) {
+  message("  Thousands OOS (duration) results available for: ",
+          paste(names(thousands_oos_results_duration)[!sapply(thousands_oos_results_duration, is.null)], collapse = ", "))
+}
+
+
 ###############################################################################
 ## SECTION 3: TABLES
 ###############################################################################
