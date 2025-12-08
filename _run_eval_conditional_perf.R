@@ -21,7 +21,18 @@ gc()
 output_root    <- "C:/Users/ASUS/Documents/GitHub/co-pricing-factor-zoo/output/time_varying" 
 code_folder_over_ride    <- "C:/Users/ASUS/Documents/GitHub/co-pricing-factor-zoo/code_base"
 
-#### 1.2 Model Specification --------------------------------------------------
+#### 1.2 Path Override --------------------------------------------------------
+# When TRUE, use the paths below instead of those stored in the metadata.
+# This is useful when running on a different machine than where estimation ran.
+path_override  <- FALSE
+
+# These paths are ONLY used when path_override = TRUE
+override_main_path   <- "/path/to/project"
+override_data_folder <- "/path/to/project/data"
+override_code_folder <- "/path/to/project/code_base"
+override_output_folder <- "/path/to/project/output"
+
+#### 1.3 Model Specification --------------------------------------------------
 # These parameters identify which results file to load
 return_type    <- "excess"              # "excess" or "duration"
 model_type     <- "bond_stock_with_sp"  # "bond", "stock", "bond_stock_with_sp"
@@ -31,12 +42,12 @@ f1_flag        <- TRUE                 # TRUE if f1 was used, FALSE otherwise
 alpha.w        <- 1                     # Alpha hyperparameter
 beta.w         <- 1                     # Beta hyperparameter
 
-#### 1.3 Performance Evaluation Options ---------------------------------------
+#### 1.4 Performance Evaluation Options ---------------------------------------
 # Volatility scaling: scale all portfolios to match this model's volatility
 # Set to NULL for no scaling
 vol_scale      <- "MKTS"                # "MKTS", "EqualWeight", or NULL
 
-#### 1.4 Plot Options ---------------------------------------------------------
+#### 1.5 Plot Options ---------------------------------------------------------
 # Portfolios to include in plots (set to NULL to skip all plots)
 factor_vec     <- c("BMA-80%", "KNS", "RP-PCA", "EqualWeight", "MKTB", "MKTS")
 
@@ -75,7 +86,7 @@ generate_plots <- list(
 # Benchmark for Information Ratio calculation
 ir_benchmark   <- "EqualWeight"  # or "EW"
 
-#### 1.5 Weight Analysis Options ----------------------------------------------
+#### 1.6 Weight Analysis Options ----------------------------------------------
 # Models for detailed weight analysis (heatmaps + stacked charts)
 # These are the key models you want to showcase to investors
 # Set to NULL to use all BMA models, or specify exact model names
@@ -90,7 +101,7 @@ weight_heatmap_n_top <- 15
 # Number of top factors for stacked charts (remainder grouped as "Other")
 weight_stacked_n_top <- 8
 
-#### 1.6 Tail Risk Options ----------------------------------------------------
+#### 1.7 Tail Risk Options ----------------------------------------------------
 # Benchmark for capture ratio and tail risk comparisons
 # Options: "MKTS", "MKTB", "EqualWeight", or any portfolio in factor_vec
 tail_risk_benchmark <- "EqualWeight"
@@ -146,12 +157,21 @@ cat("Extracting configuration from metadata...\n")
 
 metadata <- combined_results$metadata
 
-# Extract paths from metadata
-main_path   <- metadata$paths$main_path
-data_folder <- metadata$paths$data_folder
-code_folder <- metadata$paths$code_folder
+# Extract paths: use override if enabled, otherwise use metadata
+if (path_override) {
+  cat("  [PATH OVERRIDE ENABLED]\n")
+  main_path     <- override_main_path
+  data_folder   <- override_data_folder
+  code_folder   <- override_code_folder
+  output_folder <- override_output_folder
+} else {
+  main_path     <- metadata$paths$main_path
+  data_folder   <- metadata$paths$data_folder
+  code_folder   <- metadata$paths$code_folder
+  output_folder <- metadata$paths$output_folder
+}
 
-# Extract data file names from metadata
+# Extract data file names from metadata (these are filenames, not paths)
 f2       <- metadata$data_files$f2
 R        <- metadata$data_files$R
 fac_freq <- metadata$data_files$fac_freq
@@ -159,6 +179,7 @@ fac_freq <- metadata$data_files$fac_freq
 cat("  Main path:    ", main_path, "\n")
 cat("  Data folder:  ", data_folder, "\n")
 cat("  Code folder:  ", code_folder, "\n")
+cat("  Output folder:", output_folder, "\n")
 cat("  f2 files:     ", paste(f2, collapse = ", "), "\n")
 cat("  R files:      ", paste(R, collapse = ", "), "\n")
 cat("  fac_freq:     ", fac_freq, "\n")
@@ -365,7 +386,7 @@ tryCatch({
   cat("LATEX TABLES SAVED\n")
   cat("========================================\n\n")
   
-  tables_dir <- file.path(metadata$paths$output_folder, "time_varying", metadata$model_type, "tables")
+  tables_dir <- file.path(output_folder, "time_varying", model_type, "tables")
   cat("Tables saved to: ", tables_dir, "\n")
   cat("  - oos_performance_short.tex\n")
   cat("  - oos_performance_full.tex\n")
@@ -381,7 +402,7 @@ tryCatch({
     cat("========================================\n\n")
     
     # Determine output directory for figures
-    figures_base <- file.path(metadata$paths$output_folder, "time_varying", metadata$model_type)
+    figures_base <- file.path(output_folder, "time_varying", model_type)
     
     # Generate plots based on user selections
     all_plots <- list()
