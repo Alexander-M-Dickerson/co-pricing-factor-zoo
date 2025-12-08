@@ -299,7 +299,10 @@ run_time_varying_estimation <- function(
       
       
       # Store IS_AP directly in list
-      IS_AP_list[[as.character(window_end)]] <- IS_AP
+      # For forward mode: key by window_end (the expanding boundary)
+      # For backward mode: key by window_start (the expanding boundary)
+      date_key <- if (reverse_time) as.character(window_start) else as.character(window_end)
+      IS_AP_list[[date_key]] <- IS_AP
       gc(verbose = FALSE)
       
       window_end_time <- Sys.time()
