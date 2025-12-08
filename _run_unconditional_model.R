@@ -25,8 +25,8 @@ output_folder  <- "output"                                # Results folder
 code_folder    <- "code_base"                             # Helper scripts folder
 
 #### 1.2 Model Configuration --------------------------------------------------
-model_type     <- "bond"             # Options: "bond", "stock", "bond_stock_with_sp", "treasury"
-return_type    <- "duration"                       # Options: "excess", "duration"
+model_type     <- "treasury"           # Options: "bond", "stock", "bond_stock_with_sp", "treasury"
+return_type    <- "excess"             # Options: "excess", "duration"
 
 #### 1.3 Data Files (filenames in data_folder) --------------------------------
 # All files MUST have 'date' as first column in YYYY-MM-DD format
@@ -48,8 +48,8 @@ f1             <- "nontraded.csv" # Non-traded factors (or NULL to exclude)
 # n_bond_factors <- NULL   # Auto-inferred for bond_stock_with_sp!
 
 # MODE B: Multi-file (NEW!)
-f2             <- c("traded_bond_duration_tmt.csv")  # Multiple files
-R              <- c("bond_insample_test_assets_50_duration_tmt.csv")
+f2             <- c("traded_bond_excess.csv")  # Multiple files
+R              <- c("bond_insample_test_assets_50_duration_tmt_tbond.csv")
 n_bond_factors <- NULL   # Auto-inferred for bond_stock_with_sp!
 
 # Frequentist factors (always single file)
@@ -86,7 +86,7 @@ kappa_fac      <- NULL                      # Factor-specific kappa
 drop_draws_pct  <- 0                         # Percentage of initial draws to drop (0-0.5)
 
 #### 1.7 Other Settings -------------------------------------------------------
-tag            <- "baseline"     # Label for output file (customize as needed)
+tag            <- "bond_treasury"     # Label for output file (customize as needed)
 num_cores      <- length(SRscale)# Parallel processing cores
 seed           <- 234            # Random seed for reproducibility
 intercept      <- TRUE           # Include linear intercept?
