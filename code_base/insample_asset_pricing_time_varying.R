@@ -229,12 +229,18 @@ insample_asset_pricing_time_varying <- function(results, f_all, R, f1, f2,
   lambda_hat <- c(lambda_hat, lambda_hat_bayesian, lambda_hat_all)
   
   # add RP-PCA and KNS (always included)
-  lambda_hat$`RP-PCA`   <- gmm_estimation(Rc, rp_out$combined$factors, W, include.intercept = TRUE)
-  lambda_hat$`RP-PCAf2` <- gmm_estimation(f2, rp_out$f2_only$factors, W_f2, include.intercept = TRUE)
-  lambda_hat$PCA        <- gmm_estimation(Rc, pca_out$combined$factors, W, include.intercept = TRUE)
-  lambda_hat$PCAf2      <- gmm_estimation(f2, pca_out$f2_only$factors, W_f2, include.intercept = TRUE)
-  lambda_hat$KNS        <- as.matrix(kns_out$combined$kns_lambdas)
-  lambda_hat$KNSf2      <- as.matrix(kns_out$f2_only$kns_lambdas)
+  lambda_hat$`RP-PCA` <- gmm_estimation(Rc, rp_out$combined$factors, W, include.intercept = TRUE)
+  if (!is.null(rp_out$f2_only)) {
+    lambda_hat$`RP-PCAf2` <- gmm_estimation(f2, rp_out$f2_only$factors, W_f2, include.intercept = TRUE)
+  }
+  lambda_hat$PCA <- gmm_estimation(Rc, pca_out$combined$factors, W, include.intercept = TRUE)
+  if (!is.null(pca_out$f2_only)) {
+    lambda_hat$PCAf2 <- gmm_estimation(f2, pca_out$f2_only$factors, W_f2, include.intercept = TRUE)
+  }
+  lambda_hat$KNS <- as.matrix(kns_out$combined$kns_lambdas)
+  if (!is.null(kns_out$f2_only)) {
+    lambda_hat$KNSf2 <- as.matrix(kns_out$f2_only$kns_lambdas)
+  }
   
   ## -----------------------------------------------------------------------
   ## 2  lambda-hat estimates for the four BMA shrinkage levels
@@ -541,54 +547,56 @@ insample_asset_pricing_time_varying <- function(results, f_all, R, f1, f2,
   }
   
   ## -----------------------------------------------------------------------
-  ## 4.4.1  RP-PCA Model - f2 only (RP-PCAf2)
+  ## 4.4.1  RP-PCA Model - f2 only (RP-PCAf2) - ONLY IF f2_only EXISTS
   ## -----------------------------------------------------------------------
-  lambda_raw_rpf2 <- lambda_hat$`RP-PCAf2`
-  lambdas_out$`RP-PCAf2` <- matrix(lambda_raw_rpf2, nrow = 1,
-                                   dimnames = list(date_label, rownames(lambda_raw_rpf2)))
-  
-  # --- Descale by PC SDs (omit intercept) ---------------------------------
-  f_pc_f2   <- rp_out$f2_only$factors
-  pc_sds_f2 <- matrixStats::colSds(f_pc_f2)
-  names(pc_sds_f2) <- colnames(f_pc_f2)
-  
-  lambda_no_int_rpf2 <- drop(lambda_raw_rpf2[-1, , drop = FALSE])
-  stopifnot(all(names(lambda_no_int_rpf2) %in% names(pc_sds_f2)))
-  lambda_scaled_rpf2 <- lambda_no_int_rpf2 / pc_sds_f2[names(lambda_no_int_rpf2)]
-  
-  # --- Store scaled lambdas (with intercept) -------------------------------
-  lambda_scaled_full_rpf2 <- rbind(
-    intercept = matrix(lambda_raw_rpf2[1, , drop = FALSE], ncol = 1,
-                       dimnames = list(rownames(lambda_raw_rpf2)[1], colnames(lambda_raw_rpf2))),
-    matrix(lambda_scaled_rpf2, ncol = 1,
-           dimnames = list(names(lambda_scaled_rpf2), colnames(lambda_raw_rpf2)))
-  )
-  scaled_lambdas_out$`RP-PCAf2` <- matrix(lambda_scaled_full_rpf2, nrow = 1,
-                                          dimnames = list(date_label, rownames(lambda_scaled_full_rpf2)))
-  
-  # --- Convert to asset weights using RAW-space loader ---------------------
-  if (length(f2_names) > 0 && !is.null(rp_out$f2_only$w_rpca)) {
-    npc_f2 <- rp_out$f2_only$npc
-    L_all_f2 <- rp_out$f2_only$w_rpca
-    pc_keep_f2 <- intersect(colnames(L_all_f2), names(lambda_scaled_rpf2))
-    stopifnot(length(pc_keep_f2) == npc_f2)
-    Loading_pc_f2 <- L_all_f2[, pc_keep_f2, drop = FALSE]   # M x npc_f2
-    
-    w_rppcaf2_exact <- Loading_pc_f2 %*% matrix(lambda_scaled_rpf2[pc_keep_f2], ncol = 1)
-    
-    sum_w2 <- sum(w_rppcaf2_exact)
-    if (abs(sum_w2) < 1e-12) warning("RP-PCA f2: sum of weights is ~0; budget-1 normalization may be unstable.")
-    w_rppcaf2 <- as.vector(w_rppcaf2_exact) / sum_w2
-    
-    f2_asset_names <- if (!is.null(colnames(f2))) colnames(f2) else paste0("Asset", seq_len(nrow(Loading_pc_f2)))
-    
-    weights_out$`RP-PCAf2` <- matrix(w_rppcaf2, nrow = 1,
-                                     dimnames = list(date_label, f2_asset_names))
-  } else {
-    weights_out$`RP-PCAf2` <- matrix(numeric(0), nrow = 1, ncol = 0,
-                                     dimnames = list(date_label, NULL))
+  if (!is.null(rp_out$f2_only)) {
+    lambda_raw_rpf2 <- lambda_hat$`RP-PCAf2`
+    lambdas_out$`RP-PCAf2` <- matrix(lambda_raw_rpf2, nrow = 1,
+                                     dimnames = list(date_label, rownames(lambda_raw_rpf2)))
+
+    # --- Descale by PC SDs (omit intercept) ---------------------------------
+    f_pc_f2   <- rp_out$f2_only$factors
+    pc_sds_f2 <- matrixStats::colSds(f_pc_f2)
+    names(pc_sds_f2) <- colnames(f_pc_f2)
+
+    lambda_no_int_rpf2 <- drop(lambda_raw_rpf2[-1, , drop = FALSE])
+    stopifnot(all(names(lambda_no_int_rpf2) %in% names(pc_sds_f2)))
+    lambda_scaled_rpf2 <- lambda_no_int_rpf2 / pc_sds_f2[names(lambda_no_int_rpf2)]
+
+    # --- Store scaled lambdas (with intercept) -------------------------------
+    lambda_scaled_full_rpf2 <- rbind(
+      intercept = matrix(lambda_raw_rpf2[1, , drop = FALSE], ncol = 1,
+                         dimnames = list(rownames(lambda_raw_rpf2)[1], colnames(lambda_raw_rpf2))),
+      matrix(lambda_scaled_rpf2, ncol = 1,
+             dimnames = list(names(lambda_scaled_rpf2), colnames(lambda_raw_rpf2)))
+    )
+    scaled_lambdas_out$`RP-PCAf2` <- matrix(lambda_scaled_full_rpf2, nrow = 1,
+                                            dimnames = list(date_label, rownames(lambda_scaled_full_rpf2)))
+
+    # --- Convert to asset weights using RAW-space loader ---------------------
+    if (length(f2_names) > 0 && !is.null(rp_out$f2_only$w_rpca)) {
+      npc_f2 <- rp_out$f2_only$npc
+      L_all_f2 <- rp_out$f2_only$w_rpca
+      pc_keep_f2 <- intersect(colnames(L_all_f2), names(lambda_scaled_rpf2))
+      stopifnot(length(pc_keep_f2) == npc_f2)
+      Loading_pc_f2 <- L_all_f2[, pc_keep_f2, drop = FALSE]   # M x npc_f2
+
+      w_rppcaf2_exact <- Loading_pc_f2 %*% matrix(lambda_scaled_rpf2[pc_keep_f2], ncol = 1)
+
+      sum_w2 <- sum(w_rppcaf2_exact)
+      if (abs(sum_w2) < 1e-12) warning("RP-PCA f2: sum of weights is ~0; budget-1 normalization may be unstable.")
+      w_rppcaf2 <- as.vector(w_rppcaf2_exact) / sum_w2
+
+      f2_asset_names <- if (!is.null(colnames(f2))) colnames(f2) else paste0("Asset", seq_len(nrow(Loading_pc_f2)))
+
+      weights_out$`RP-PCAf2` <- matrix(w_rppcaf2, nrow = 1,
+                                       dimnames = list(date_label, f2_asset_names))
+    } else {
+      weights_out$`RP-PCAf2` <- matrix(numeric(0), nrow = 1, ncol = 0,
+                                       dimnames = list(date_label, NULL))
+    }
   }
-  
+
   ## -----------------------------------------------------------------------
   ## 4.4.2  RP-PCA PC Weights (NxN matrices)
   ## -----------------------------------------------------------------------
@@ -596,9 +604,9 @@ insample_asset_pricing_time_varying <- function(results, f_all, R, f1, f2,
   # they DO NOT reproduce the scores unless you remove the sum-to-1 scaling.
   # Combined (R+f2) PC weights
   rppca_pcs_weights_matrix   <- rp_out$combined$w_rpca_sum1
-  
-  # f2 only PC weights
-  rppcaf2_pc_weights_matrix  <- rp_out$f2_only$w_rpca_sum1
+
+  # f2 only PC weights (only if f2_only exists)
+  rppcaf2_pc_weights_matrix  <- if (!is.null(rp_out$f2_only)) rp_out$f2_only$w_rpca_sum1 else NULL
   
   
   
@@ -666,52 +674,54 @@ insample_asset_pricing_time_varying <- function(results, f_all, R, f1, f2,
   }
   
   ## -----------------------------------------------------------------------
-  ## 4.5.1  Standard PCA Model - f2 only (PCAf2)
+  ## 4.5.1  Standard PCA Model - f2 only (PCAf2) - ONLY IF f2_only EXISTS
   ## -----------------------------------------------------------------------
-  lambda_raw_pcaf2 <- lambda_hat$PCAf2
-  lambdas_out$PCAf2 <- matrix(lambda_raw_pcaf2, nrow = 1,
-                              dimnames = list(date_label, rownames(lambda_raw_pcaf2)))
-  
-  # --- Descale by PC SDs (omit intercept) ---------------------------------
-  f_pc_f2_pca   <- pca_out$f2_only$factors
-  pc_sds_f2_pca <- matrixStats::colSds(f_pc_f2_pca)
-  names(pc_sds_f2_pca) <- colnames(f_pc_f2_pca)
-  
-  lambda_no_int_pcaf2 <- drop(lambda_raw_pcaf2[-1, , drop = FALSE])
-  stopifnot(all(names(lambda_no_int_pcaf2) %in% names(pc_sds_f2_pca)))
-  lambda_scaled_pcaf2 <- lambda_no_int_pcaf2 / pc_sds_f2_pca[names(lambda_no_int_pcaf2)]
-  
-  # --- Store scaled lambdas (with intercept) -------------------------------
-  lambda_scaled_full_pcaf2 <- rbind(
-    intercept = matrix(lambda_raw_pcaf2[1, , drop = FALSE], ncol = 1,
-                       dimnames = list(rownames(lambda_raw_pcaf2)[1], colnames(lambda_raw_pcaf2))),
-    matrix(lambda_scaled_pcaf2, ncol = 1,
-           dimnames = list(names(lambda_scaled_pcaf2), colnames(lambda_raw_pcaf2)))
-  )
-  scaled_lambdas_out$PCAf2 <- matrix(lambda_scaled_full_pcaf2, nrow = 1,
-                                     dimnames = list(date_label, rownames(lambda_scaled_full_pcaf2)))
-  
-  # --- Convert to asset weights using RAW-space loader ---------------------
-  if (length(f2_names) > 0 && !is.null(pca_out$f2_only$w_rpca)) {
-    npc_f2_pca <- pca_out$f2_only$npc
-    L_all_f2_pca <- pca_out$f2_only$w_rpca
-    pc_keep_f2_pca <- intersect(colnames(L_all_f2_pca), names(lambda_scaled_pcaf2))
-    stopifnot(length(pc_keep_f2_pca) == npc_f2_pca)
-    Loading_pc_f2_pca <- L_all_f2_pca[, pc_keep_f2_pca, drop = FALSE]   # M x npc_f2
-    
-    w_pcaf2_exact <- Loading_pc_f2_pca %*% matrix(lambda_scaled_pcaf2[pc_keep_f2_pca], ncol = 1)
-    
-    sum_w2_pca <- sum(w_pcaf2_exact)
-    if (abs(sum_w2_pca) < 1e-12) warning("PCA f2: sum of weights is ~0; budget-1 normalization may be unstable.")
-    w_pcaf2 <- as.vector(w_pcaf2_exact) / sum_w2_pca
-    
-    f2_asset_names_pca <- if (!is.null(colnames(f2))) colnames(f2) else paste0("Asset", seq_len(nrow(Loading_pc_f2_pca)))
-    
-    weights_out$PCAf2 <- matrix(w_pcaf2, nrow = 1,
-                                dimnames = list(date_label, f2_asset_names_pca))
-  } else {
-    weights_out$PCAf2 <- matrix(numeric(0), nrow = 1, ncol = 0,
-                                dimnames = list(date_label, NULL))
+  if (!is.null(pca_out$f2_only)) {
+    lambda_raw_pcaf2 <- lambda_hat$PCAf2
+    lambdas_out$PCAf2 <- matrix(lambda_raw_pcaf2, nrow = 1,
+                                dimnames = list(date_label, rownames(lambda_raw_pcaf2)))
+
+    # --- Descale by PC SDs (omit intercept) ---------------------------------
+    f_pc_f2_pca   <- pca_out$f2_only$factors
+    pc_sds_f2_pca <- matrixStats::colSds(f_pc_f2_pca)
+    names(pc_sds_f2_pca) <- colnames(f_pc_f2_pca)
+
+    lambda_no_int_pcaf2 <- drop(lambda_raw_pcaf2[-1, , drop = FALSE])
+    stopifnot(all(names(lambda_no_int_pcaf2) %in% names(pc_sds_f2_pca)))
+    lambda_scaled_pcaf2 <- lambda_no_int_pcaf2 / pc_sds_f2_pca[names(lambda_no_int_pcaf2)]
+
+    # --- Store scaled lambdas (with intercept) -------------------------------
+    lambda_scaled_full_pcaf2 <- rbind(
+      intercept = matrix(lambda_raw_pcaf2[1, , drop = FALSE], ncol = 1,
+                         dimnames = list(rownames(lambda_raw_pcaf2)[1], colnames(lambda_raw_pcaf2))),
+      matrix(lambda_scaled_pcaf2, ncol = 1,
+             dimnames = list(names(lambda_scaled_pcaf2), colnames(lambda_raw_pcaf2)))
+    )
+    scaled_lambdas_out$PCAf2 <- matrix(lambda_scaled_full_pcaf2, nrow = 1,
+                                       dimnames = list(date_label, rownames(lambda_scaled_full_pcaf2)))
+
+    # --- Convert to asset weights using RAW-space loader ---------------------
+    if (length(f2_names) > 0 && !is.null(pca_out$f2_only$w_rpca)) {
+      npc_f2_pca <- pca_out$f2_only$npc
+      L_all_f2_pca <- pca_out$f2_only$w_rpca
+      pc_keep_f2_pca <- intersect(colnames(L_all_f2_pca), names(lambda_scaled_pcaf2))
+      stopifnot(length(pc_keep_f2_pca) == npc_f2_pca)
+      Loading_pc_f2_pca <- L_all_f2_pca[, pc_keep_f2_pca, drop = FALSE]   # M x npc_f2
+
+      w_pcaf2_exact <- Loading_pc_f2_pca %*% matrix(lambda_scaled_pcaf2[pc_keep_f2_pca], ncol = 1)
+
+      sum_w2_pca <- sum(w_pcaf2_exact)
+      if (abs(sum_w2_pca) < 1e-12) warning("PCA f2: sum of weights is ~0; budget-1 normalization may be unstable.")
+      w_pcaf2 <- as.vector(w_pcaf2_exact) / sum_w2_pca
+
+      f2_asset_names_pca <- if (!is.null(colnames(f2))) colnames(f2) else paste0("Asset", seq_len(nrow(Loading_pc_f2_pca)))
+
+      weights_out$PCAf2 <- matrix(w_pcaf2, nrow = 1,
+                                  dimnames = list(date_label, f2_asset_names_pca))
+    } else {
+      weights_out$PCAf2 <- matrix(numeric(0), nrow = 1, ncol = 0,
+                                  dimnames = list(date_label, NULL))
+    }
   }
   
   ## -----------------------------------------------------------------------
@@ -721,9 +731,9 @@ insample_asset_pricing_time_varying <- function(results, f_all, R, f1, f2,
   # they DO NOT reproduce the scores unless you remove the sum-to-1 scaling.
   # Combined (R+f2) PC weights
   pca_pcs_weights_matrix   <- pca_out$combined$w_rpca_sum1
-  
-  # f2 only PC weights
-  pcaf2_pc_weights_matrix  <- pca_out$f2_only$w_rpca_sum1
+
+  # f2 only PC weights (only if f2_only exists)
+  pcaf2_pc_weights_matrix  <- if (!is.null(pca_out$f2_only)) pca_out$f2_only$w_rpca_sum1 else NULL
   
   ## -----------------------------------------------------------------------
   ## 4.6  KNS Model - Combined (R+f2)
@@ -751,40 +761,42 @@ insample_asset_pricing_time_varying <- function(results, f_all, R, f1, f2,
                             dimnames = list(date_label, asset_names))
   
   ## -----------------------------------------------------------------------
-  ## 4.7  KNS Model - f2 only (KNSf2)
+  ## 4.7  KNS Model - f2 only (KNSf2) - ONLY IF f2_only EXISTS
   ## -----------------------------------------------------------------------
-  lambda_raw_knsf2 <- lambda_hat$KNSf2
-  lambdas_out$KNSf2 <- matrix(lambda_raw_knsf2, nrow = 1,
-                              dimnames = list(date_label, rownames(lambda_raw_knsf2)))
-  
-  # For KNSf2, lambdas are computed from standardized data, so raw lambdas = scaled lambdas
-  scaled_lambdas_out$KNSf2 <- matrix(lambda_raw_knsf2, nrow = 1,
-                                     dimnames = list(date_label, rownames(lambda_raw_knsf2)))
-  
-  # Extract weights from kns_out$f2_only$kns_w1
-  w_knsf2 <- kns_out$f2_only$kns_w1
-  
-  # Get f2 asset names
-  f2_asset_names <- if (!is.null(colnames(f2))) {
-    colnames(f2)
-  } else {
-    paste0("Asset", 1:length(w_knsf2))
+  if (!is.null(kns_out$f2_only)) {
+    lambda_raw_knsf2 <- lambda_hat$KNSf2
+    lambdas_out$KNSf2 <- matrix(lambda_raw_knsf2, nrow = 1,
+                                dimnames = list(date_label, rownames(lambda_raw_knsf2)))
+
+    # For KNSf2, lambdas are computed from standardized data, so raw lambdas = scaled lambdas
+    scaled_lambdas_out$KNSf2 <- matrix(lambda_raw_knsf2, nrow = 1,
+                                       dimnames = list(date_label, rownames(lambda_raw_knsf2)))
+
+    # Extract weights from kns_out$f2_only$kns_w1
+    w_knsf2 <- kns_out$f2_only$kns_w1
+
+    # Get f2 asset names
+    f2_asset_names <- if (!is.null(colnames(f2))) {
+      colnames(f2)
+    } else {
+      paste0("Asset", 1:length(w_knsf2))
+    }
+
+    weights_out$KNSf2 <- matrix(as.vector(w_knsf2), nrow = 1,
+                                dimnames = list(date_label, f2_asset_names))
   }
-  
-  weights_out$KNSf2 <- matrix(as.vector(w_knsf2), nrow = 1,
-                              dimnames = list(date_label, f2_asset_names))
-  
+
   ## -----------------------------------------------------------------------
   ## 4.8  KNS PC Weights (NxN matrices)
   ## -----------------------------------------------------------------------
   # Store NxN PC weight matrices from combined and f2_only
   # These matrices show how each PC is constructed from the underlying assets
-  
+
   # Combined (R+f2) PC weights
   kns_pcs_weights_matrix <- kns_out$combined$w_sum1_pc
-  
-  # f2 only PC weights
-  knsf2_pc_weights_matrix <- kns_out$f2_only$w_sum1_pc
+
+  # f2 only PC weights (only if f2_only exists)
+  knsf2_pc_weights_matrix <- if (!is.null(kns_out$f2_only)) kns_out$f2_only$w_sum1_pc else NULL
   
   ## -----------------------------------------------------------------------
   ## 4.9  Optimal Portfolios (f2 only)
