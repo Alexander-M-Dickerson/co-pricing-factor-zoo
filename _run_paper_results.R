@@ -239,7 +239,7 @@ if (verbose) message("Pricing Results: Collecting for all model types...")
 
 # Check if we should regenerate or use cached results
 pricing_file <- file.path(data_folder, "pricing_results.rds")
-regenerate_pricing <- TRUE  # Set to TRUE to force re-computation (required after OOS fix)
+regenerate_pricing <- FALSE  # Set to TRUE to force re-computation (required after OOS fix)
 
 if (file.exists(pricing_file) && !regenerate_pricing) {
   if (verbose) message("  Loading cached pricing results from ", pricing_file)
