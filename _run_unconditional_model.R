@@ -48,7 +48,7 @@ f1             <- "nontraded.csv" # Non-traded factors (or NULL to exclude)
 # n_bond_factors <- NULL   # Auto-inferred for bond_stock_with_sp!
 
 # MODE B: Multi-file (NEW!)
-f2             <- c("traded_bond_excess.csv")  # Multiple files
+f2             <- c("traded_equity.csv")  # Multiple files
 R              <- c("bond_insample_test_assets_50_duration_tmt_tbond.csv")
 n_bond_factors <- NULL   # Auto-inferred for bond_stock_with_sp!
 
@@ -86,7 +86,7 @@ kappa_fac      <- NULL                      # Factor-specific kappa
 drop_draws_pct  <- 0                         # Percentage of initial draws to drop (0-0.5)
 
 #### 1.7 Other Settings -------------------------------------------------------
-tag            <- "bond_treasury"     # Label for output file (customize as needed)
+tag            <- "stock_treasury"     # Label for output file (customize as needed)
 num_cores      <- length(SRscale)# Parallel processing cores
 seed           <- 234            # Random seed for reproducibility
 intercept      <- TRUE           # Include linear intercept?
