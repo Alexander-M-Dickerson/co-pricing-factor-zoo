@@ -118,7 +118,8 @@ Add the table/figure to the index below.
 | 2 | Posterior probability plot | **Implemented** | `pp_figure_table()` |
 | 3 | Number of factors & Sharpe ratio distributions | **Implemented** | `plot_nfac_sr()` |
 | 4 | Posterior probabilities & market prices of risk | **Implemented** | `pp_bar_plots()` |
-| 5 | Thousands OOS pricing tests | Data ready, plot pending | `run_thousands_oos_tests()` |
+| 5 | Thousands OOS pricing tests (excess) | **Implemented** | `plot_thousands_oos_densities()` |
+| 8 | Thousands OOS pricing tests (duration) | **Implemented** | `plot_thousands_oos_densities()` |
 
 ## Expected Objects in .Rdata
 
@@ -455,6 +456,62 @@ The function is optimized for speed:
 5. **Caching**: Results saved to RDS, loaded if file exists
 
 Typical runtime: ~5-10 minutes per model type on 8+ cores.
+
+### Density Plots: `plot_thousands_oos_densities.R`
+
+The `plot_thousands_oos_densities.R` module generates density plots from thousands OOS results for Figures 5 and 8.
+
+#### Main Functions
+
+| Function | Description | Output Files |
+|----------|-------------|--------------|
+| `plot_thousands_oos_densities()` | Generate 4 density plots for one figure | `{prefix}_1_gls.pdf`, `{prefix}_2_ols.pdf`, etc. |
+| `generate_figures_5_and_8()` | Convenience wrapper for both figures | All 8 plots |
+
+#### Output Files
+
+**Figure 5 (Excess Returns):**
+- `fig5_1_gls.pdf` - R2GLS density distributions
+- `fig5_2_ols.pdf` - R2OLS density distributions
+- `fig5_3_rmse.pdf` - RMSEdm density distributions
+- `fig5_4_mape.pdf` - MAPEdm density distributions
+
+**Figure 8 (Duration-Adjusted):**
+- `fig8_1_gls.pdf` - R2GLS density distributions
+- `fig8_2_ols.pdf` - R2OLS density distributions
+- `fig8_3_rmse.pdf` - RMSEdm density distributions
+- `fig8_4_mape.pdf` - MAPEdm density distributions
+
+#### What Each Plot Shows
+
+Each density plot shows three overlapping distributions:
+- **Co-pricing BMA** (red): IS model = `bond_stock_with_sp`, pricing co_pricing OOS
+- **Bond BMA** (blue): IS model = `bond`, pricing co_pricing OOS
+- **Stock BMA** (yellow): IS model = `stock`, pricing co_pricing OOS
+
+Annotations show the mean value for each model.
+
+#### Usage
+
+```r
+# Figure 5 (excess returns)
+plot_thousands_oos_densities(
+  thousands_oos_results = thousands_oos_results,
+  model_col = "BMA-80%",
+  os_estim = "co_pricing",
+  output_path = "output/paper/figures",
+  figure_prefix = "fig5"
+)
+
+# Figure 8 (duration-adjusted)
+plot_thousands_oos_densities(
+  thousands_oos_results = thousands_oos_results_duration,
+  model_col = "BMA-80%",
+  os_estim = "co_pricing",
+  output_path = "output/paper/figures",
+  figure_prefix = "fig8"
+)
+```
 
 ### Shrinkage Levels
 
