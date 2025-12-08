@@ -751,10 +751,10 @@ if (file.exists(fig9_3_path) && file.exists(fig9_4_path)) {
 if (verbose) message("Figures 10-12: SDF Time Series, Volatility, and Predictability")
 
 # Check if all Figure 10-12 outputs already exist
-fig10_path <- file.path(figures_dir, "SDF_Time_Series_BMA.pdf")
-fig11_path <- file.path(figures_dir, "SDF_Volatility_BMA_CAPMB_FF5.pdf")
-fig12a_path <- file.path(figures_dir, "Predictability1m_BMA.pdf")
-fig12b_path <- file.path(figures_dir, "Predictability12m_BMA.pdf")
+fig10_path <- file.path(figures_dir, "fig10_sdf_time_series_bma.pdf")
+fig11_path <- file.path(figures_dir, "fig11_sdf_volatility_bma_capmb_ff5.pdf")
+fig12a_path <- file.path(figures_dir, "fig12a_predictability1m_bma.pdf")
+fig12b_path <- file.path(figures_dir, "fig12b_predictability12m_bma.pdf")
 
 if (file.exists(fig10_path) && file.exists(fig11_path) &&
     file.exists(fig12a_path) && file.exists(fig12b_path)) {
@@ -785,10 +785,10 @@ if (file.exists(fig10_path) && file.exists(fig11_path) &&
     )
 
     if (verbose) {
-      message("  Generated: SDF_Time_Series_BMA.pdf")
-      message("  Generated: SDF_Volatility_BMA_CAPMB_FF5.pdf")
-      message("  Generated: Predictability1m_BMA.pdf")
-      message("  Generated: Predictability12m_BMA.pdf")
+      message("  Generated: fig10_sdf_time_series_bma.pdf")
+      message("  Generated: fig11_sdf_volatility_bma_capmb_ff5.pdf")
+      message("  Generated: fig12a_predictability1m_bma.pdf")
+      message("  Generated: fig12b_predictability12m_bma.pdf")
     }
   }
 }

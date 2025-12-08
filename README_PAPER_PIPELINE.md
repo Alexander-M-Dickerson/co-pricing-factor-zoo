@@ -784,14 +784,14 @@ For 12-month horizon, Newey-West standard errors (15 lags) are used to account f
 #### Output Files
 
 **Figure 10 (SDF Time Series):**
-- `SDF_Time_Series_BMA.pdf` - BMA-SDF level and conditional mean
+- `fig10_sdf_time_series_bma.pdf` - BMA-SDF level and conditional mean
 
 **Figure 11 (SDF Volatility):**
-- `SDF_Volatility_BMA_CAPMB_FF5.pdf` - Annualized conditional volatility comparison
+- `fig11_sdf_volatility_bma_capmb_ff5.pdf` - Annualized conditional volatility comparison
 
 **Figure 12 (Predictability):**
-- `Predictability1m_BMA.pdf` - 1-month horizon R² for each factor
-- `Predictability12m_BMA.pdf` - 12-month horizon R² for each factor
+- `fig12a_predictability1m_bma.pdf` - 1-month horizon R² for each factor
+- `fig12b_predictability12m_bma.pdf` - 12-month horizon R² for each factor
 
 #### Plot Elements
 

@@ -292,10 +292,10 @@ fit_sdf_models <- function(
 
   p_fig10 <- plot_ts_bma()
   ggplot2::ggsave(
-    file.path(output_path, "SDF_Time_Series_BMA.pdf"),
+    file.path(output_path, "fig10_sdf_time_series_bma.pdf"),
     p_fig10, width = ts_width, height = ts_height, units = "in"
   )
-  if (verbose) message("  Saved: SDF_Time_Series_BMA.pdf")
+  if (verbose) message("  Saved: fig10_sdf_time_series_bma.pdf")
 
   ##-----------------------------------------------------------------------##
   ## 8.  Figure 11: SDF Volatility Comparison (BMA / CAPMB / FF5)          ##
@@ -383,10 +383,10 @@ fit_sdf_models <- function(
                         hjust = 0, size = 4.2, label = "NBER recessions")
 
     ggplot2::ggsave(
-      file.path(output_path, "SDF_Volatility_BMA_CAPMB_FF5.pdf"),
+      file.path(output_path, "fig11_sdf_volatility_bma_capmb_ff5.pdf"),
       p_fig11, width = ts_width, height = ts_height, units = "in"
     )
-    if (verbose) message("  Saved: SDF_Volatility_BMA_CAPMB_FF5.pdf")
+    if (verbose) message("  Saved: fig11_sdf_volatility_bma_capmb_ff5.pdf")
   } else {
     warning("Not enough models for Figure 11 (need BMA, CAPMB, FF5)")
   }
@@ -510,7 +510,7 @@ fit_sdf_models <- function(
 
       suppressWarnings(
         ggplot2::ggsave(
-          file.path(output_path, paste0("Predictability1m_", label, ".pdf")),
+          file.path(output_path, paste0("fig12a_predictability1m_", tolower(label), ".pdf")),
           p_bar, width = ts_width, height = ts_height, units = "in"
         )
       )
@@ -520,7 +520,7 @@ fit_sdf_models <- function(
     }
 
     pred_pvals_1m$BMA <- build_predict_plot_1m("BMA", fit_bma$mu, fit_bma$sigma)
-    if (verbose) message("  Saved: Predictability1m_BMA.pdf")
+    if (verbose) message("  Saved: fig12a_predictability1m_bma.pdf")
 
     ##--- Figure 12 Panel B: 12-month predictability ---##
     build_predict_plot_12m <- function(label, mu_vec, vol_vec, months = 12) {
@@ -632,7 +632,7 @@ fit_sdf_models <- function(
 
       suppressWarnings(
         ggplot2::ggsave(
-          file.path(output_path, paste0("Predictability12m_", label, ".pdf")),
+          file.path(output_path, paste0("fig12b_predictability12m_", tolower(label), ".pdf")),
           p_bar, width = ts_width, height = ts_height, units = "in"
         )
       )
@@ -642,7 +642,7 @@ fit_sdf_models <- function(
     }
 
     pred_pvals_12m$BMA <- build_predict_plot_12m("BMA", fit_bma$mu, fit_bma$sigma)
-    if (verbose) message("  Saved: Predictability12m_BMA.pdf")
+    if (verbose) message("  Saved: fig12b_predictability12m_bma.pdf")
 
   } else {
     if (verbose) message("  Skipping Figure 12: factor data not available")
@@ -676,10 +676,10 @@ fit_sdf_models <- function(
       predictability_pvalues_12m = pred_pvals_12m
     ),
     figures_saved = c(
-      "SDF_Time_Series_BMA.pdf",
-      "SDF_Volatility_BMA_CAPMB_FF5.pdf",
-      "Predictability1m_BMA.pdf",
-      "Predictability12m_BMA.pdf"
+      "fig10_sdf_time_series_bma.pdf",
+      "fig11_sdf_volatility_bma_capmb_ff5.pdf",
+      "fig12a_predictability1m_bma.pdf",
+      "fig12b_predictability12m_bma.pdf"
     )
   ))
 }

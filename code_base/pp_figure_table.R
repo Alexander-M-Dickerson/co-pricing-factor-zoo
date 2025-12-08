@@ -67,8 +67,10 @@ pp_figure_table <- function(results,
   ## ---- 0b. Construct filename with metadata --------------------------------
   fig_basename <- sprintf("figure_2_posterior_probs_%s_%s_%s",
                           return_type, model_type, tag)
+  tex_basename <- sprintf("table_a2_posterior_probs_%s_%s_%s",
+                          return_type, model_type, tag)
   fig_name <- paste0(fig_basename, ".pdf")
-  tex_name <- paste0(fig_basename, ".tex")
+  tex_name <- paste0(tex_basename, ".tex")
 
   ## ---- 0c.  Factor names ---------------------------------------------------
   if (!exists("f1", inherits = TRUE))
