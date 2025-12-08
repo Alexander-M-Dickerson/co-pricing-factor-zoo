@@ -303,23 +303,16 @@ run_subset_combos <- function(R_oss_mat, cols_from, cols_to, precomputed,
   n_combos <- length(combos)
   if (verbose) message("    Running ", n_combos, " subset combinations...")
 
-  # Run in parallel using mclapply (fork-based, fast on Linux)
-  start_time <- Sys.time()
-
-  results <- parallel::mclapply(combos, function(idx) {
-    # Combine selected blocks
+  # Worker function for pricing one combination
+  price_combo <- function(idx, splits, precomputed) {
     R_sub <- do.call(cbind, splits[idx])
-
-    # Run fast pricing
     tryCatch({
       metrics <- os_pricing_fast(R_sub, precomputed, precomputed$intercept)
-      # Add combo info
       metrics$n_blocks <- length(idx)
       metrics$n_assets <- ncol(R_sub)
       metrics$combo_id <- paste(idx, collapse = "-")
       metrics
     }, error = function(e) {
-      # Return NA row on error
       data.frame(
         metric = c("RMSEdm", "MAPEdm", "R2OLS", "R2GLS"),
         n_blocks = length(idx),
@@ -329,7 +322,43 @@ run_subset_combos <- function(R_oss_mat, cols_from, cols_to, precomputed,
         stringsAsFactors = FALSE
       )
     })
-  }, mc.cores = n_cores)
+  }
+
+  start_time <- Sys.time()
+
+  # Check if running on Windows
+  is_windows <- .Platform$OS.type == "windows"
+
+  if (is_windows) {
+    # Windows: use parLapply with PSOCK cluster
+    if (n_cores > 1) {
+      if (verbose) message("    (Windows detected: using PSOCK cluster)")
+      cl <- parallel::makeCluster(n_cores)
+      on.exit(parallel::stopCluster(cl), add = TRUE)
+
+      # Export required objects and functions to cluster
+      parallel::clusterExport(cl, c("os_pricing_fast", "splits", "precomputed", "price_combo"),
+                               envir = environment())
+
+      # Load required packages on workers
+      parallel::clusterEvalQ(cl, {
+        library(matrixStats)
+        library(data.table)
+      })
+
+      results <- parallel::parLapply(cl, combos, function(idx) {
+        price_combo(idx, splits, precomputed)
+      })
+    } else {
+      # Single core fallback
+      results <- lapply(combos, function(idx) price_combo(idx, splits, precomputed))
+    }
+  } else {
+    # Linux/Mac: use mclapply (fork-based, faster)
+    results <- parallel::mclapply(combos, function(idx) {
+      price_combo(idx, splits, precomputed)
+    }, mc.cores = n_cores)
+  }
 
   elapsed <- as.numeric(difftime(Sys.time(), start_time, units = "mins"))
 
