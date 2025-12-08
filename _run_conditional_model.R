@@ -68,9 +68,15 @@ holding_period <- 12  # Re-estimate every 12 months
 # Window type
 window_type    <- "expanding"  # Options: "expanding" or "rolling"
 
+# Time direction
+reverse_time   <- FALSE  # If TRUE, expand windows backward from date_end
+                         # Forward: [1986→2004], [1986→2005], ..., [1986→2022]
+                         # Backward: [2004→2022], [2003→2022], ..., [1986→2022]
+
 cat("Initial window : ", initial_window, "\n")
 cat("Holding period : ", holding_period, " months\n")
-cat("Window type    : ", window_type, "\n\n")
+cat("Window type    : ", window_type, "\n")
+cat("Reverse time   : ", reverse_time, "\n\n")
 
 #### 1.6 Frequentist Models ---------------------------------------------------
 frequentist_models <- list(
@@ -168,7 +174,8 @@ tryCatch({
     initial_window = initial_window,
     holding_period = holding_period,
     window_type    = window_type,
-    
+    reverse_time   = reverse_time,
+
     # Frequentist models
     frequentist_models = frequentist_models,
     

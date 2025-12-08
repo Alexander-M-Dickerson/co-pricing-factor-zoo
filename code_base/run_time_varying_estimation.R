@@ -86,7 +86,8 @@ run_time_varying_estimation <- function(
   initial_window  = 222,
   holding_period  = 12,
   window_type     = "expanding",
-  
+  reverse_time    = FALSE,
+
   # Frequentist models (REQUIRED)
   frequentist_models = NULL,
   
@@ -200,16 +201,18 @@ run_time_varying_estimation <- function(
     log_msg("TIME-VARYING ESTIMATION SETUP\n")
     log_msg("=====================================\n")
     log_msg("Window type    : ", window_type, "\n")
+    log_msg("Reverse time   : ", reverse_time, "\n")
     log_msg("Holding period : ", holding_period, " months\n")
     log_msg("Analysis period: ", date_start, " to ", date_end, "\n")
   }
-  
+
   window_schedule <- generate_window_schedule(
     date_start      = date_start,
     date_end        = date_end,
     initial_window  = initial_window,
     holding_period  = holding_period,
     window_type     = window_type,
+    reverse_time    = reverse_time,
     verbose         = verbose,
     log_msg         = log_msg
   )
@@ -407,11 +410,12 @@ run_time_varying_estimation <- function(
     
     # Time-varying parameters
     window_type        = window_type,
+    reverse_time       = reverse_time,
     holding_period     = holding_period,
     initial_window     = initial_window,
     date_start         = date_start,
     date_end           = date_end,
-    
+
     # MCMC parameters
     ndraws             = ndraws,
     alpha.w            = alpha.w,
@@ -459,6 +463,7 @@ run_time_varying_estimation <- function(
     tag              = tag,
     holding_period   = holding_period,
     f1_flag          = f1_flag,
+    reverse_time     = reverse_time,
     save_csv_flag    = save_csv_flag,
     verbose          = verbose,
     log_msg          = log_msg
@@ -498,113 +503,224 @@ run_time_varying_estimation <- function(
 ## =============================================================================
 
 generate_window_schedule <- function(date_start, date_end, initial_window,
-                                     holding_period, window_type, verbose = TRUE,
+                                     holding_period, window_type,
+                                     reverse_time = FALSE, verbose = TRUE,
                                      log_msg = cat) {
-  
+
   library(lubridate)
-  
+
   # Parse dates
   start_date <- as.Date(date_start)
   end_date   <- as.Date(date_end)
-  
-  # Determine initial window end date
-  if (is.character(initial_window)) {
-    # Parse date range format "YYYY-MM-DD:YYYY-MM-DD"
-    parts <- strsplit(initial_window, ":")[[1]]
-    initial_start <- as.Date(parts[1])
-    initial_end   <- as.Date(parts[2])
-    
-    if (initial_start < start_date || initial_end > end_date) {
-      stop("initial_window dates must be within date_start and date_end range")
-    }
-  } else {
-    # Integer: count months from start_date
-    initial_start <- start_date
-    initial_end   <- start_date %m+% months(initial_window - 1)
-    
-    # Adjust to end of month
-    initial_end <- ceiling_date(initial_end, "month") - days(1)
-    
-    if (initial_end > end_date) {
-      stop("initial_window extends beyond date_end")
-    }
-  }
-  
-  # Build window schedule
-  windows <- data.frame(
-    window_id  = integer(0),
-    start_date = character(0),
-    end_date   = character(0),
-    stringsAsFactors = FALSE
-  )
-  
-  current_start <- initial_start
-  current_end   <- initial_end
-  window_id     <- 1
-  
-  # First window
-  windows <- rbind(windows, data.frame(
-    window_id  = window_id,
-    start_date = as.character(current_start),
-    end_date   = as.character(current_end),
-    stringsAsFactors = FALSE
-  ))
-  
-  # Subsequent windows
-  while (TRUE) {
-    # Calculate next window end
-    next_end <- current_end %m+% months(holding_period)
-    next_end <- ceiling_date(next_end, "month") - days(1)
-    
-    # If we've reached or passed the final date
-    if (next_end >= end_date) {
-      # Include final window using all remaining data (if different from current)
-      if (end_date > current_end) {
-        window_id <- window_id + 1
-        next_start <- if (window_type == "rolling") {
-          current_start %m+% months(holding_period)
-        } else {
-          initial_start  # expanding: keep original start
-        }
-        
-        windows <- rbind(windows, data.frame(
-          window_id  = window_id,
-          start_date = as.character(next_start),
-          end_date   = as.character(end_date),
-          stringsAsFactors = FALSE
-        ))
+
+  ## =========================================================================
+  ## FORWARD MODE (reverse_time = FALSE)
+  ## Fix START at date_start, expand END forward
+  ## Example: [1986→2004], [1986→2005], ..., [1986→2022]
+  ## =========================================================================
+
+  if (!reverse_time) {
+
+    # Determine initial window end date
+    if (is.character(initial_window)) {
+      # Parse date range format "YYYY-MM-DD:YYYY-MM-DD"
+      parts <- strsplit(initial_window, ":")[[1]]
+      initial_start <- as.Date(parts[1])
+      initial_end   <- as.Date(parts[2])
+
+      if (initial_start < start_date || initial_end > end_date) {
+        stop("initial_window dates must be within date_start and date_end range")
       }
-      break
-    }
-    
-    # Regular window
-    window_id <- window_id + 1
-    
-    if (window_type == "rolling") {
-      # Rolling: shift both start and end forward
-      next_start <- current_start %m+% months(holding_period)
     } else {
-      # Expanding: keep original start
-      next_start <- initial_start
+      # Integer: count months from start_date
+      initial_start <- start_date
+      initial_end   <- start_date %m+% months(initial_window - 1)
+
+      # Adjust to end of month
+      initial_end <- ceiling_date(initial_end, "month") - days(1)
+
+      if (initial_end > end_date) {
+        stop("initial_window extends beyond date_end")
+      }
     }
-    
+
+    # Build window schedule (forward)
+    windows <- data.frame(
+      window_id  = integer(0),
+      start_date = character(0),
+      end_date   = character(0),
+      stringsAsFactors = FALSE
+    )
+
+    current_start <- initial_start
+    current_end   <- initial_end
+    window_id     <- 1
+
+    # First window
     windows <- rbind(windows, data.frame(
       window_id  = window_id,
-      start_date = as.character(next_start),
-      end_date   = as.character(next_end),
+      start_date = as.character(current_start),
+      end_date   = as.character(current_end),
       stringsAsFactors = FALSE
     ))
-    
-    current_start <- next_start
-    current_end   <- next_end
+
+    # Subsequent windows (expanding END forward)
+    while (TRUE) {
+      # Calculate next window end
+      next_end <- current_end %m+% months(holding_period)
+      next_end <- ceiling_date(next_end, "month") - days(1)
+
+      # If we've reached or passed the final date
+      if (next_end >= end_date) {
+        # Include final window using all remaining data (if different from current)
+        if (end_date > current_end) {
+          window_id <- window_id + 1
+          next_start <- if (window_type == "rolling") {
+            current_start %m+% months(holding_period)
+          } else {
+            initial_start  # expanding: keep original start
+          }
+
+          windows <- rbind(windows, data.frame(
+            window_id  = window_id,
+            start_date = as.character(next_start),
+            end_date   = as.character(end_date),
+            stringsAsFactors = FALSE
+          ))
+        }
+        break
+      }
+
+      # Regular window
+      window_id <- window_id + 1
+
+      if (window_type == "rolling") {
+        # Rolling: shift both start and end forward
+        next_start <- current_start %m+% months(holding_period)
+      } else {
+        # Expanding: keep original start
+        next_start <- initial_start
+      }
+
+      windows <- rbind(windows, data.frame(
+        window_id  = window_id,
+        start_date = as.character(next_start),
+        end_date   = as.character(next_end),
+        stringsAsFactors = FALSE
+      ))
+
+      current_start <- next_start
+      current_end   <- next_end
+    }
+
+  } else {
+
+    ## =========================================================================
+    ## BACKWARD MODE (reverse_time = TRUE)
+    ## Fix END at date_end, expand START backward
+    ## Example: [2004→2022], [2003→2022], ..., [1986→2022]
+    ## =========================================================================
+
+    # Determine initial window START (counting backward from date_end)
+    if (is.character(initial_window)) {
+      # Parse date range format "YYYY-MM-DD:YYYY-MM-DD"
+      parts <- strsplit(initial_window, ":")[[1]]
+      initial_start <- as.Date(parts[1])
+      initial_end   <- as.Date(parts[2])
+
+      if (initial_start < start_date || initial_end > end_date) {
+        stop("initial_window dates must be within date_start and date_end range")
+      }
+    } else {
+      # Integer: count months BACKWARD from end_date
+      initial_end   <- end_date
+      initial_start <- end_date %m-% months(initial_window - 1)
+
+      # Adjust to start of month (first day)
+      initial_start <- floor_date(initial_start, "month")
+
+      if (initial_start < start_date) {
+        stop("initial_window (backward) extends before date_start")
+      }
+    }
+
+    # Build window schedule (backward)
+    windows <- data.frame(
+      window_id  = integer(0),
+      start_date = character(0),
+      end_date   = character(0),
+      stringsAsFactors = FALSE
+    )
+
+    current_start <- initial_start
+    current_end   <- initial_end
+    window_id     <- 1
+
+    # First window (most recent data, smallest training window)
+    windows <- rbind(windows, data.frame(
+      window_id  = window_id,
+      start_date = as.character(current_start),
+      end_date   = as.character(current_end),
+      stringsAsFactors = FALSE
+    ))
+
+    # Subsequent windows (expanding START backward, END fixed for expanding)
+    while (TRUE) {
+      # Calculate next window start (moving backward)
+      next_start <- current_start %m-% months(holding_period)
+      next_start <- floor_date(next_start, "month")
+
+      # If we've reached or passed the earliest date
+      if (next_start <= start_date) {
+        # Include final window using all data from start_date
+        if (current_start > start_date) {
+          window_id <- window_id + 1
+          next_end <- if (window_type == "rolling") {
+            current_end %m-% months(holding_period)
+          } else {
+            initial_end  # expanding: keep original end
+          }
+
+          windows <- rbind(windows, data.frame(
+            window_id  = window_id,
+            start_date = as.character(start_date),
+            end_date   = as.character(next_end),
+            stringsAsFactors = FALSE
+          ))
+        }
+        break
+      }
+
+      # Regular window
+      window_id <- window_id + 1
+
+      if (window_type == "rolling") {
+        # Rolling: shift both start and end backward
+        next_end <- current_end %m-% months(holding_period)
+      } else {
+        # Expanding: keep original end
+        next_end <- initial_end
+      }
+
+      windows <- rbind(windows, data.frame(
+        window_id  = window_id,
+        start_date = as.character(next_start),
+        end_date   = as.character(next_end),
+        stringsAsFactors = FALSE
+      ))
+
+      current_start <- next_start
+      current_end   <- next_end
+    }
   }
-  
+
   if (verbose) {
-    log_msg("Window schedule generated:\n")
+    direction_label <- if (reverse_time) "(backward)" else "(forward)"
+    log_msg("Window schedule generated ", direction_label, ":\n")
     log_msg("  First window: ", windows$start_date[1], " to ", windows$end_date[1], "\n")
     log_msg("  Last window : ", windows$start_date[nrow(windows)], " to ", windows$end_date[nrow(windows)], "\n")
   }
-  
+
   return(windows)
 }
 
@@ -1146,23 +1262,25 @@ stack_window_results <- function(IS_AP_list, verbose = TRUE, log_msg = cat) {
 ## =============================================================================
 
 save_combined_results <- function(combined_results, output_dir, return_type,
-                                  model_type, alpha.w, beta.w, tag, 
-                                  holding_period, f1_flag, save_csv_flag = FALSE,
+                                  model_type, alpha.w, beta.w, tag,
+                                  holding_period, f1_flag, reverse_time = FALSE,
+                                  save_csv_flag = FALSE,
                                   verbose = TRUE, log_msg = cat) {
-  
+
   if (verbose) {
     log_msg("=====================================\n")
     log_msg("SAVING PANEL RESULTS\n")
     log_msg("=====================================\n\n")
   }
-  
+
   saved_paths <- list()
-  
-  # Base filename pattern
+
+  # Base filename pattern (add _backward suffix if reverse_time = TRUE)
+  direction_suffix <- if (reverse_time) "_backward" else ""
   base_pattern <- sprintf(
-    "SS_%s_%s_alpha.w=%g_beta.w=%g_SRscale=%s_holding_period=%d_f1=%s",
-    return_type, model_type, trunc(alpha.w), trunc(beta.w), tag, 
-    holding_period, f1_flag
+    "SS_%s_%s_alpha.w=%g_beta.w=%g_SRscale=%s_holding_period=%d_f1=%s%s",
+    return_type, model_type, trunc(alpha.w), trunc(beta.w), tag,
+    holding_period, f1_flag, direction_suffix
   )
   
   ## -------------------------------------------------------------------------
