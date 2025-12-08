@@ -206,8 +206,8 @@ cat("========================================\n")
 cat("OUTPUT FILES GENERATED\n")
 cat("========================================\n\n")
 
-figures_dir <- file.path(output_folder, "time_varying", model_type, "figures")
-tables_dir  <- file.path(output_folder, "time_varying", model_type, "tables")
+figures_dir <- file.path(output_folder, "paper", "figures")
+tables_dir  <- file.path(output_folder, "paper", "tables")
 
 cat("Figure 7 saved to:\n")
 cat("  ", file.path(figures_dir, "fig7_oos_cumret.pdf"), "\n\n")

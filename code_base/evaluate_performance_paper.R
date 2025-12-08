@@ -549,8 +549,7 @@ evaluate_performance_paper <- function(
   ## -------------------------------------------------------------------------
 
   output_base <- metadata$paths$output_folder
-  model_type <- metadata$model_type
-  tables_dir <- file.path(output_base, "time_varying", model_type, "tables")
+  tables_dir <- file.path(output_base, "paper", "tables")
 
   if (!dir.exists(tables_dir)) {
     dir.create(tables_dir, recursive = TRUE)
@@ -575,7 +574,7 @@ evaluate_performance_paper <- function(
       warning("plot_cumret() function not found. Please source plot_portfolio_analytics.R")
     } else {
 
-      figures_base <- file.path(output_base, "time_varying", model_type)
+      figures_base <- file.path(output_base, "paper")
 
       cumret_plot <- plot_cumret(
         df_scaled          = oos_returns_scaled,
