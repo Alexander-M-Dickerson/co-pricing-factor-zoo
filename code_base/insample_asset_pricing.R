@@ -1014,35 +1014,38 @@ insample_asset_pricing_enhanced <- function(results, f_all, R, f1, f2,
   }
   
   # Add KNS models (no intercept for KNS)
+  # Use Rc_benchmarks since KNS was estimated with f2_benchmarks
   if (is_nested_kns) {
     # For nested structure: match old workflow exactly
-    # 1. Standardize returns
-    Rc_std <- scale(Rc, center = FALSE, scale = colSds(Rc))
-    
+    # 1. Standardize returns (use Rc_benchmarks to match KNS estimation)
+    Rc_std <- scale(Rc_benchmarks, center = FALSE, scale = colSds(Rc_benchmarks))
+
     # 2. Get Q matrix and raw lambdas
     Q_combined <- kns_out$combined$pca_output[[2]]
     lambda_raw <- kns_out$combined$kns_lambdas
-    
+
     # 3. Create ALL PCs from standardized returns
     PCs_all <- Rc_std %*% Q_combined  # T x N matrix
-    
+
     # 4. Scale lambdas by PC standard deviations
     lambda_scaled <- lambda_raw * colSds(PCs_all)
-    
+
     # 5. Filter to non-zero lambdas only
     nz_idx <- which(abs(lambda_scaled) > 1e-10)
     lambda_final <- lambda_scaled[nz_idx, , drop = FALSE]
     PCs_filtered <- PCs_all[, nz_idx, drop = FALSE]
-    
+
     # 6. Re-standardize the filtered PCs
     PCs_std <- scale(PCs_filtered, center = FALSE, scale = colSds(PCs_filtered))
-    
+
     # 7. Use for ER_pred
     ER_pred$KNS <- get_cor(PCs_std) %*% lambda_final
-    
+
     # Repeat for f2_only if available
+    # Use f2_benchmarks if available (treasury model), otherwise f2
     if (!is.null(kns_out$f2_only)) {
-      f2_std <- scale(f2, center = FALSE, scale = colSds(f2))
+      f2_for_kns <- if (!is.null(f2_benchmarks)) f2_benchmarks else f2
+      f2_std <- scale(f2_for_kns, center = FALSE, scale = colSds(f2_for_kns))
       Q_f2 <- kns_out$f2_only$pca_output[[2]]
       lambda_raw_f2 <- kns_out$f2_only$kns_lambdas
       
@@ -1218,39 +1221,42 @@ insample_asset_pricing_enhanced <- function(results, f_all, R, f1, f2,
   }
   
   # Add KNS models
+  # Use Rc_benchmarks since KNS was estimated with f2_benchmarks
   if (is_nested_kns) {
     # For nested structure: match old workflow exactly
-    # 1. Standardize returns
-    Rc_std <- scale(Rc, center = FALSE, scale = colSds(Rc))
-    
+    # 1. Standardize returns (use Rc_benchmarks to match KNS estimation)
+    Rc_std <- scale(Rc_benchmarks, center = FALSE, scale = colSds(Rc_benchmarks))
+
     # 2. Get Q matrix and raw lambdas
     Q_combined <- kns_out$combined$pca_output[[2]]
     lambda_raw <- kns_out$combined$kns_lambdas
-    
+
     # 3. Create ALL PCs from standardized returns
     PCs_all <- Rc_std %*% Q_combined  # T x N matrix
-    
+
     # 4. Scale lambdas by PC standard deviations
     lambda_scaled <- lambda_raw * colSds(PCs_all)
-    
+
     # 5. Filter to non-zero lambdas only
     nz_idx <- which(abs(lambda_scaled) > 1e-10)
     lambda_final <- lambda_scaled[nz_idx, , drop = FALSE]
     PCs_filtered <- PCs_all[, nz_idx, drop = FALSE]
-    
+
     # 6. Re-standardize the filtered PCs
     PCs_std <- scale(PCs_filtered, center = FALSE, scale = colSds(PCs_filtered))
-    
+
     # 7. Use for SDF
     sdf_specs$KNS <- list(
       X = PCs_std,
       lambda = lambda_final,
       int = FALSE           # KNS lambda already has no intercept
     )
-    
+
     # Repeat for f2_only if available
+    # Use f2_benchmarks if available (treasury model), otherwise f2
     if (!is.null(kns_out$f2_only)) {
-      f2_std <- scale(f2, center = FALSE, scale = colSds(f2))
+      f2_for_kns <- if (!is.null(f2_benchmarks)) f2_benchmarks else f2
+      f2_std <- scale(f2_for_kns, center = FALSE, scale = colSds(f2_for_kns))
       Q_f2 <- kns_out$f2_only$pca_output[[2]]
       lambda_raw_f2 <- kns_out$f2_only$kns_lambdas
       
