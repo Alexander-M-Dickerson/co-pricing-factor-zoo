@@ -601,7 +601,7 @@ plot_mean_vs_cov(
   results_path  = "output/unconditional",
   model_type    = "treasury",
   tag           = "bond_treasury",
-  data_folder   = "paper.data.rr",
+  data_folder   = "data",
   os_pricing    = "treasury_oosample_all_excess.csv",
   sr_scale      = "80%",
   output_path   = "output/paper/figures",
@@ -615,7 +615,7 @@ plot_mean_vs_cov(
   results_path  = "output/unconditional",
   model_type    = "treasury",
   tag           = "stock_treasury",
-  data_folder   = "paper.data.rr",
+  data_folder   = "data",
   os_pricing    = "treasury_oosample_all_excess.csv",
   sr_scale      = "80%",
   output_path   = "output/paper/figures",
@@ -631,7 +631,7 @@ plot_mean_vs_cov(
   - `excess_treasury_alpha.w=1_beta.w=1_kappa=0_bond_treasury.Rdata`
   - `excess_treasury_alpha.w=1_beta.w=1_kappa=0_stock_treasury.Rdata`
 
-- **OOS data** (in `paper.data.rr/`):
+- **OOS data** (in `data/`):
   - `treasury_oosample_all_excess.csv`
 
 ## Troubleshooting
