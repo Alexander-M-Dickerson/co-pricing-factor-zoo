@@ -88,7 +88,10 @@ helper_files <- c(
   "pp_bar_plots.R",
   "sr_decomposition.R",
   "run_sr_decomposition_multi.R",
-  "sr_tables.R"
+  "sr_tables.R",
+  "validate_and_align_dates.R",
+  "outsample_asset_pricing.R",
+  "pricing_tables.R"
   # Add more helper files as needed
 )
 
@@ -226,6 +229,47 @@ if (verbose && !is.null(res_tbl_top)) {
 }
 
 
+#### Pricing Results (for Tables 2, 3) ----------------------------------------
+# Collects IS and OS pricing results across all model types.
+# Required for: Table 2 (IS pricing), Table 3 (OS pricing)
+
+if (verbose) message("Pricing Results: Collecting for all model types...")
+
+# Check if we should regenerate or use cached results
+pricing_file <- file.path(data_folder, "pricing_results.rds")
+regenerate_pricing <- FALSE  # Set to TRUE to force re-computation
+
+if (file.exists(pricing_file) && !regenerate_pricing) {
+  if (verbose) message("  Loading cached pricing results from ", pricing_file)
+  pricing_results <- readRDS(pricing_file)
+} else {
+  if (verbose) message("  Computing pricing results (this may take a moment)...")
+  # Run pricing collection across all model types
+  pricing_results <- run_pricing_multi(
+    results_path  = results_path,
+    data_path     = data_folder,
+    model_types   = c("bond_stock_with_sp", "stock", "bond"),
+    return_type   = return_type,
+    alpha.w       = alpha.w,
+    beta.w        = beta.w,
+    kappa         = kappa,
+    tag           = tag,
+    run_oos       = TRUE,
+    save_output   = TRUE,
+    output_path   = data_folder,
+    output_name   = "pricing_results.rds",
+    verbose       = verbose
+  )
+}
+
+if (verbose && !is.null(pricing_results)) {
+  message("  IS pricing available for: ",
+          paste(names(pricing_results$is_results)[!sapply(pricing_results$is_results, is.null)], collapse = ", "))
+  message("  OS pricing available for: ",
+          paste(names(pricing_results$os_results)[!sapply(pricing_results$os_results, is.null)], collapse = ", "))
+}
+
+
 ###############################################################################
 ## SECTION 3: TABLES
 ###############################################################################
@@ -264,16 +308,30 @@ if (!exists("res_tbl_top") || is.null(res_tbl_top)) {
 }
 
 
-#### Table 2: [Description] ---------------------------------------------------
-# TODO: Add Table 2 generation code
+#### Tables 2, 3: IS and OS Pricing Tables ------------------------------------
+# Generated using pricing_tables.R functions:
+#   - Table 2: In-sample cross-sectional asset pricing performance
+#   - Table 3: Out-of-sample cross-sectional asset pricing performance
+# Source: pricing_results from pricing collection (Section 2.5)
 
-if (verbose) message("Table 2: [Not yet implemented]")
+if (!exists("pricing_results") || is.null(pricing_results)) {
+  warning("pricing_results not available. Skipping Tables 2, 3.")
+} else {
+  if (verbose) message("Tables 2, 3: IS and OS Pricing Tables")
 
+  # Generate both pricing tables at once
+  pricing_table_results <- generate_pricing_tables(
+    pricing_results = pricing_results,
+    output_path     = tables_dir,
+    tables          = c(2, 3),
+    verbose         = verbose
+  )
 
-#### Table 3: [Description] ---------------------------------------------------
-# TODO: Add Table 3 generation code
-
-if (verbose) message("Table 3: [Not yet implemented]")
+  if (verbose) {
+    message("  Generated: table_2_is_pricing.tex")
+    message("  Generated: table_3_os_pricing.tex")
+  }
+}
 
 
 ###############################################################################
