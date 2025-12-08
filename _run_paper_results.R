@@ -92,7 +92,8 @@ helper_files <- c(
   "validate_and_align_dates.R",
   "outsample_asset_pricing.R",
   "pricing_tables.R",
-  "thousands_outsample_tests.R"
+  "thousands_outsample_tests.R",
+  "plot_thousands_oos_densities.R"
   # Add more helper files as needed
 )
 
@@ -556,24 +557,63 @@ if (!exists("results")) {
 }
 
 
-#### Figure 5: Thousands OOS Pricing Tests -------------------------------------
-# Generates: Figure 5 (OOS pricing robustness across asset subset combinations)
-# Shows distribution of pricing metrics (R2, RMSE) across thousands of
-# different test asset subsets.
+#### Figure 5: Thousands OOS Pricing Tests (Excess Returns) -------------------
+# Generates: Figure 5 (4 density plots for OOS pricing metrics)
+#   fig5_1_gls.pdf  - R2GLS densities
+#   fig5_2_ols.pdf  - R2OLS densities
+#   fig5_3_rmse.pdf - RMSEdm densities
+#   fig5_4_mape.pdf - MAPEdm densities
+# Shows distribution of metrics across thousands of test asset subsets.
 # Source: thousands_oos_results from Section 2.5
 
-if (verbose) message("Figure 5: Thousands OOS Pricing Tests")
+if (verbose) message("Figure 5: Thousands OOS Pricing Tests (Excess Returns)")
 
 if (!exists("thousands_oos_results") || is.null(thousands_oos_results)) {
   warning("thousands_oos_results not available. Skipping Figure 5.")
 } else {
-  # TODO: Implement Figure 5 plotting function
-  # This will visualize the distribution of OOS pricing metrics across
-  # all subset combinations (e.g., boxplots, density plots, CDFs)
-  if (verbose) message("  [Figure 5 plotting not yet implemented]")
-  if (verbose) message("  Data available: ",
-                       sum(sapply(thousands_oos_results, function(x) !is.null(x))),
-                       " model types")
+  # Generate Figure 5 density plots
+  fig5_result <- plot_thousands_oos_densities(
+    thousands_oos_results = thousands_oos_results,
+    model_col     = "BMA-80%",
+    os_estim      = "co_pricing",
+    output_path   = figures_dir,
+    figure_prefix = "fig5",
+    verbose       = verbose
+  )
+
+  if (verbose) {
+    message("  Generated 4 density plots for Figure 5")
+  }
+}
+
+
+#### Figure 8: Thousands OOS Pricing Tests (Duration-Adjusted) -----------------
+# Generates: Figure 8 (4 density plots for OOS pricing metrics, duration-adjusted)
+#   fig8_1_gls.pdf  - R2GLS densities
+#   fig8_2_ols.pdf  - R2OLS densities
+#   fig8_3_rmse.pdf - RMSEdm densities
+#   fig8_4_mape.pdf - MAPEdm densities
+# Same as Figure 5 but using duration-adjusted results.
+# Source: thousands_oos_results_duration from Section 2.5
+
+if (verbose) message("Figure 8: Thousands OOS Pricing Tests (Duration-Adjusted)")
+
+if (!exists("thousands_oos_results_duration") || is.null(thousands_oos_results_duration)) {
+  warning("thousands_oos_results_duration not available. Skipping Figure 8.")
+} else {
+  # Generate Figure 8 density plots
+  fig8_result <- plot_thousands_oos_densities(
+    thousands_oos_results = thousands_oos_results_duration,
+    model_col     = "BMA-80%",
+    os_estim      = "co_pricing",
+    output_path   = figures_dir,
+    figure_prefix = "fig8",
+    verbose       = verbose
+  )
+
+  if (verbose) {
+    message("  Generated 4 density plots for Figure 8")
+  }
 }
 
 
