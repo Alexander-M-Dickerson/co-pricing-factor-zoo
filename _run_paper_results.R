@@ -93,7 +93,8 @@ helper_files <- c(
   "outsample_asset_pricing.R",
   "pricing_tables.R",
   "thousands_outsample_tests.R",
-  "plot_thousands_oos_densities.R"
+  "plot_thousands_oos_densities.R",
+  "plot_mean_vs_cov.R"
   # Add more helper files as needed
 )
 
@@ -614,6 +615,88 @@ if (!exists("thousands_oos_results_duration") || is.null(thousands_oos_results_d
 
   if (verbose) {
     message("  Generated 4 density plots for Figure 8")
+  }
+}
+
+
+#### Figure 9: Mean vs Covariance Diagnostic Plots (Treasury Model) -----------
+# Generates: Figure 9 (4 scatter plots of E[R] vs -cov(M,R))
+#   fig9_1_bond_is.pdf   - Bond treasury in-sample
+#   fig9_2_bond_os.pdf   - Bond treasury out-of-sample
+#   fig9_3_stock_is.pdf  - Stock treasury in-sample
+#   fig9_4_stock_os.pdf  - Stock treasury out-of-sample
+# Plots expected returns against SDF covariance to visualize pricing fit.
+# Under correct specification, points should lie on the 45-degree line.
+# Source: Treasury .Rdata files (bond_treasury and stock_treasury tags)
+
+if (verbose) message("Figure 9: Mean vs Covariance Diagnostic Plots (Treasury Model)")
+
+# Treasury data folder
+treasury_data_folder <- "paper.data.rr"
+
+# Figure 9.1 & 9.2: Bond Treasury (IS & OS)
+bond_treasury_file <- file.path(
+  results_path, "treasury",
+  "excess_treasury_alpha.w=1_beta.w=1_kappa=0_bond_treasury.Rdata"
+)
+
+if (!file.exists(bond_treasury_file)) {
+  warning("Bond treasury .Rdata not found. Skipping Figure 9.1-9.2.\n  ", bond_treasury_file)
+} else {
+  fig9_bond <- plot_mean_vs_cov(
+    results_path  = results_path,
+    return_type   = "excess",
+    model_type    = "treasury",
+    alpha.w       = 1,
+    beta.w        = 1,
+    kappa         = 0,
+    tag           = "bond_treasury",
+    intercept     = TRUE,
+    data_folder   = treasury_data_folder,
+    os_pricing    = "treasury_oosample_all_excess.csv",
+    sr_scale      = "80%",
+    output_path   = figures_dir,
+    figure_prefix = "fig9",
+    suffix_is     = "1_bond_is",
+    suffix_os     = "2_bond_os",
+    constrained   = TRUE,
+    verbose       = verbose
+  )
+  if (verbose) {
+    message("  Generated: fig9_1_bond_is.pdf, fig9_2_bond_os.pdf")
+  }
+}
+
+# Figure 9.3 & 9.4: Stock Treasury (IS & OS)
+stock_treasury_file <- file.path(
+  results_path, "treasury",
+  "excess_treasury_alpha.w=1_beta.w=1_kappa=0_stock_treasury.Rdata"
+)
+
+if (!file.exists(stock_treasury_file)) {
+  warning("Stock treasury .Rdata not found. Skipping Figure 9.3-9.4.\n  ", stock_treasury_file)
+} else {
+  fig9_stock <- plot_mean_vs_cov(
+    results_path  = results_path,
+    return_type   = "excess",
+    model_type    = "treasury",
+    alpha.w       = 1,
+    beta.w        = 1,
+    kappa         = 0,
+    tag           = "stock_treasury",
+    intercept     = TRUE,
+    data_folder   = treasury_data_folder,
+    os_pricing    = "treasury_oosample_all_excess.csv",
+    sr_scale      = "80%",
+    output_path   = figures_dir,
+    figure_prefix = "fig9",
+    suffix_is     = "3_stock_is",
+    suffix_os     = "4_stock_os",
+    constrained   = TRUE,
+    verbose       = verbose
+  )
+  if (verbose) {
+    message("  Generated: fig9_3_stock_is.pdf, fig9_4_stock_os.pdf")
   }
 }
 

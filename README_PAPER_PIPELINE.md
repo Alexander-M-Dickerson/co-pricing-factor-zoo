@@ -120,6 +120,7 @@ Add the table/figure to the index below.
 | 4 | Posterior probabilities & market prices of risk | **Implemented** | `pp_bar_plots()` |
 | 5 | Thousands OOS pricing tests (excess) | **Implemented** | `plot_thousands_oos_densities()` |
 | 8 | Thousands OOS pricing tests (duration) | **Implemented** | `plot_thousands_oos_densities()` |
+| 9 | Mean vs Covariance diagnostic plots (Treasury) | **Implemented** | `plot_mean_vs_cov()` |
 
 ## Expected Objects in .Rdata
 
@@ -519,6 +520,119 @@ The `SRscale` parameter (e.g., `c(0.20, 0.40, 0.60, 0.80)`) controls prior Sharp
 - Values represent % of maximum attainable SR
 - Lower = more conservative, Higher = more aggressive factor selection
 - `results[[1]]` = 20%, `results[[2]]` = 40%, etc.
+
+### Figure 9: Mean vs Covariance Diagnostic Plots
+
+The `plot_mean_vs_cov.R` module generates diagnostic scatter plots of E[R] vs -cov(M,R) to visualize SDF pricing performance for treasury models.
+
+#### Mathematical Background
+
+The fundamental asset pricing equation states that expected excess returns equal the covariance between returns and the stochastic discount factor (SDF), scaled by the expected SDF:
+
+```
+E[R] = -cov(M, R) × (1 / E[M])
+```
+
+When the SDF is normalized such that E[M] ≈ 1, this simplifies to:
+
+```
+E[R] ≈ -cov(M, R)
+```
+
+**Interpretation:**
+- Under the null hypothesis that the model is correctly specified, all assets should lie on the **45-degree line** (slope = 1, intercept = 0)
+- Deviations from the 45-degree line indicate mispricing
+- The **constrained R²** (forcing slope = 1) measures overall pricing fit
+
+#### Computation Details
+
+The function computes annualized values:
+
+```
+minus_cov = (1 - cov(R, M))^12 - 1
+meansR    = (1 + mean(R))^12 - 1
+```
+
+Where:
+- `R` = matrix of test asset returns (T × N)
+- `M` = BMA SDF from specified shrinkage level (vector of length T)
+- The ^12 exponentiation converts monthly to annual returns
+
+#### Constrained vs Unconstrained R²
+
+The plot reports the **constrained R²**, which imposes the theoretically-motivated restriction that the slope equals 1:
+
+```
+R²_constrained = 1 - Var(E[R] - (-cov(M,R))) / Var(E[R])
+```
+
+This differs from the unconstrained OLS R² which allows the slope to vary freely:
+
+```
+R²_OLS = 1 - Var(residuals) / Var(E[R])
+```
+
+The constrained R² is more appropriate because under the correct model, the slope should be exactly 1.
+
+#### Output Files
+
+Figure 9 generates 4 plots (2 for each treasury tag):
+
+| File | Description | Treasury Tag |
+|------|-------------|--------------|
+| `fig9_1_bond_is.pdf` | Bond in-sample | `bond_treasury` |
+| `fig9_2_bond_os.pdf` | Bond out-of-sample | `bond_treasury` |
+| `fig9_3_stock_is.pdf` | Stock in-sample | `stock_treasury` |
+| `fig9_4_stock_os.pdf` | Stock out-of-sample | `stock_treasury` |
+
+#### Plot Elements
+
+Each plot includes:
+- **Black dots**: Individual assets (test portfolios)
+- **Blue line + ribbon**: OLS fitted regression line with 95% confidence interval
+- **Red dashed line**: 45-degree line (theoretical prediction under correct specification)
+- **Annotations**: Constrained R² and fitted slope
+
+#### Usage
+
+```r
+# Bond treasury (Figure 9.1-9.2)
+plot_mean_vs_cov(
+  results_path  = "output/unconditional",
+  model_type    = "treasury",
+  tag           = "bond_treasury",
+  data_folder   = "paper.data.rr",
+  os_pricing    = "treasury_oosample_all_excess.csv",
+  sr_scale      = "80%",
+  output_path   = "output/paper/figures",
+  figure_prefix = "fig9",
+  suffix_is     = "1_bond_is",
+  suffix_os     = "2_bond_os"
+)
+
+# Stock treasury (Figure 9.3-9.4)
+plot_mean_vs_cov(
+  results_path  = "output/unconditional",
+  model_type    = "treasury",
+  tag           = "stock_treasury",
+  data_folder   = "paper.data.rr",
+  os_pricing    = "treasury_oosample_all_excess.csv",
+  sr_scale      = "80%",
+  output_path   = "output/paper/figures",
+  figure_prefix = "fig9",
+  suffix_is     = "3_stock_is",
+  suffix_os     = "4_stock_os"
+)
+```
+
+#### Required Data Files
+
+- **Rdata files** (in `output/unconditional/treasury/`):
+  - `excess_treasury_alpha.w=1_beta.w=1_kappa=0_bond_treasury.Rdata`
+  - `excess_treasury_alpha.w=1_beta.w=1_kappa=0_stock_treasury.Rdata`
+
+- **OOS data** (in `paper.data.rr/`):
+  - `treasury_oosample_all_excess.csv`
 
 ## Troubleshooting
 
