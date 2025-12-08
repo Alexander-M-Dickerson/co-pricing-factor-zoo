@@ -1105,6 +1105,30 @@ If objects are missing from loaded data:
 1. The MCMC run may have used different settings
 2. Re-run MCMC if needed with `save_flag = TRUE`
 
+### Running on a Different Machine (Path Override)
+
+The `.rds` files from `run_time_varying_estimation()` store absolute paths in the metadata. If you run the evaluation script (`_run_eval_conditional_perf.R`) on a different machine, these paths will be incorrect.
+
+**Solution:** Use the `path_override` feature in `_run_eval_conditional_perf.R`:
+
+```r
+#### 1.2 Path Override --------------------------------------------------------
+# When TRUE, use the paths below instead of those stored in the metadata.
+# This is useful when running on a different machine than where estimation ran.
+path_override  <- TRUE
+
+# These paths are ONLY used when path_override = TRUE
+override_main_path     <- "/your/local/project/path"
+override_data_folder   <- "/your/local/project/path/data"
+override_code_folder   <- "/your/local/project/path/code_base"
+override_output_folder <- "/your/local/project/path/output"
+```
+
+When `path_override = TRUE`:
+- The script uses your specified paths instead of those from metadata
+- Data file **names** (f2, R, fac_freq) are still read from metadata
+- Console output shows `[PATH OVERRIDE ENABLED]` to confirm
+
 ## Development Notes
 
 ### For Claude
