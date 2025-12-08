@@ -436,11 +436,10 @@ run_bayesian_mcmc <- function(
   f2_benchmarks <- if (!is.null(fac$f2_benchmarks)) fac$f2_benchmarks else fac$f2
   
   # Convert NULL f1 to empty matrix with correct row count (MCMC functions expect matrix, not NULL)
-  if (is.null(f1_matrix)) {
+  # Note: f1 is already correctly set from fac$f1 above (which handles treasury model's merged factors)
+  if (is.null(f1)) {
     f1 <- matrix(numeric(0), nrow = nrow(R_matrix), ncol = 0)
     colnames(f1) <- character(0)
-  } else {
-    f1 <- f1_matrix
   }
   f_all_raw <- fac$f_all_raw
   
