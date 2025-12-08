@@ -111,7 +111,7 @@ expanding_runs_plots <- function(
   ordering <- df_long %>%
     group_by(factor) %>%
     summarise(
-      total_n = n(),
+      total_n = dplyr::n(),
       rank1   = sum(Rank == 1),
       .groups = "drop"
     ) %>%
