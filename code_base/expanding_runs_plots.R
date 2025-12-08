@@ -134,10 +134,11 @@ expanding_runs_plots <- function(
   df_plot <- df_long %>%
     mutate(date_label = as.Date(paste0(format(date, "%Y"), "-01-01")))
 
-  # Determine edge years to blank out
-  all_years <- sort(unique(format(df_plot$date_label, "%Y")))
-  first_year <- as.Date(paste0(min(all_years), "-01-01"))
-  last_year  <- as.Date(paste0(max(all_years), "-01-01"))
+  # Determine edge years to blank out (year before first data, year after last data)
+  # These appear on the axis due to ggplot's date_breaks but have no data
+  data_years <- as.numeric(unique(format(df_plot$date_label, "%Y")))
+  year_before_first <- as.Date(paste0(min(data_years) - 1, "-01-01"))
+  year_after_last   <- as.Date(paste0(max(data_years) + 1, "-01-01"))
 
   # Create the plot
   p <- ggplot(df_plot, aes(x = date_label, y = factor, fill = Rank)) +
@@ -146,9 +147,9 @@ expanding_runs_plots <- function(
       date_breaks = "1 year",
       labels = function(x) {
         labs <- format(x, "%Y")
-        # Blank out first and last year labels
-        labs[x == first_year] <- ""
-        labs[x == last_year]  <- ""
+        # Blank out edge year labels (year before/after data range)
+        labs[x == year_before_first] <- ""
+        labs[x == year_after_last]   <- ""
         labs
       }
     ) +
