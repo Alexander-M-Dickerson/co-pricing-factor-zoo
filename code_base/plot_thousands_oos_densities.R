@@ -139,9 +139,12 @@ plot_thousands_oos_densities <- function(thousands_oos_results,
       return(NULL)
     }
 
-    # Compute means
-    mu <- colMeans(vals, na.rm = TRUE)
-    mu <- round(mu, ifelse(metric_name == "R2OLS", 2, 3))
+    # Compute means with proper decimal formatting
+    # R2GLS and R2OLS: 2 decimal places
+    # RMSEdm and MAPEdm: 3 decimal places (with trailing zeros)
+    mu_raw <- colMeans(vals, na.rm = TRUE)
+    n_decimals <- if (metric_name %in% c("R2GLS", "R2OLS")) 2 else 3
+    mu <- sapply(mu_raw, function(x) sprintf(paste0("%.", n_decimals, "f"), x))
 
     # Color palette
     pal <- c(`Co-pricing BMA` = "red",
@@ -164,20 +167,27 @@ plot_thousands_oos_densities <- function(thousands_oos_results,
       c(0, max(long$value, na.rm = TRUE))
     }
 
-    # Build plot
-    p <- ggplot(long, aes(x = value, fill = series)) +
+    # Filter data to x_limits to avoid warnings about removed rows
+    long_filtered <- long[long$value >= x_limits[1] & long$value <= x_limits[2], ]
+
+    # Build plot using text labels instead of bquote to avoid is.na() warnings
+    label_cp <- paste0("Co-pricing BMA^", spec$short, " = ", mu["Co-pricing BMA"])
+    label_bond <- paste0("Bond BMA^", spec$short, " = ", mu["Bond BMA"])
+    label_stock <- paste0("Stock BMA^", spec$short, " = ", mu["Stock BMA"])
+
+    p <- ggplot(long_filtered, aes(x = value, fill = series)) +
       geom_density(alpha = 0.20) +
       scale_fill_manual(values = pal, guide = "none") +
       scale_x_continuous(limits = x_limits) +
       coord_cartesian(xlim = x_limits, ylim = c(0, NA)) +
       annotate("text", x = x_coord, y = Inf,
-               label = bquote("Co-pricing BMA" ^.(spec$short) == .(mu["Co-pricing BMA"])),
+               label = label_cp, parse = TRUE,
                hjust = 0, vjust = 2, size = text_size) +
       annotate("text", x = x_coord, y = Inf,
-               label = bquote("Bond BMA" ^.(spec$short) == .(mu["Bond BMA"])),
+               label = label_bond, parse = TRUE,
                hjust = 0, vjust = 3.5, size = text_size) +
       annotate("text", x = x_coord, y = Inf,
-               label = bquote("Stock BMA" ^.(spec$short) == .(mu["Stock BMA"])),
+               label = label_stock, parse = TRUE,
                hjust = 0, vjust = 5, size = text_size) +
       labs(x = NULL, y = "Density") +
       theme_minimal() +
@@ -207,7 +217,10 @@ plot_thousands_oos_densities <- function(thousands_oos_results,
                           tolower(metric_specs[[metric_name]]$short))
       filepath <- file.path(output_path, filename)
 
-      ggplot2::ggsave(filepath, plot = p, width = width, height = height, device = "pdf")
+      # Suppress warnings about removed rows or scale issues
+      suppressWarnings(
+        ggplot2::ggsave(filepath, plot = p, width = width, height = height, device = "pdf")
+      )
 
       if (verbose) message("    Saved: ", filename)
 
