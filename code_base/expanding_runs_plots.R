@@ -235,3 +235,248 @@ generate_figure_6a <- function(
     verbose       = verbose
   )
 }
+
+
+#' Generate Heatmaps of Top Factors by Market Price of Risk (Expanding Window)
+#'
+#' Reads results from time-varying estimation (.rds format) and generates
+#' heatmaps showing the top factors by absolute market price of risk over time.
+#'
+#' @param rds_path       Path to the ALL_RESULTS.rds file from run_time_varying_estimation()
+#' @param psi_level      Shrinkage level to use: 0.2, 0.4, 0.6, or 0.8 (default: 0.8)
+#' @param top_n          Number of top factors to show (default: 5)
+#' @param output_path    Directory to save figures (default: "output/paper/figures")
+#' @param figure_prefix  Prefix for output filenames (default: "fig_ia_17a")
+#' @param verbose        Print progress messages (default: TRUE)
+#'
+#' @return List containing:
+#'   - top_factors_lambda: Named list of top factors by date
+#'   - plot: The ggplot object
+#'   - output_file: Path to saved PDF
+#'   - df_long: Long-format data frame used for plotting
+#'
+#' @details
+#' This function reads the combined results from expanding window estimation
+#' and creates a heatmap showing which factors have the highest absolute
+#' market prices of risk at each estimation date. Factors are ordered by
+#' their frequency of appearance in the top N across all dates.
+#'
+#' The input .rds file is expected to contain `lambdas_panel`, a data frame
+#' with columns: date, model, model_type, psi_level, factor, lambda, scaled_lambda.
+#' Only BMA models are used for ranking.
+#'
+#' @examples
+#' \dontrun{
+#'   result <- expanding_runs_plots_lambda(
+#'     rds_path = "output/time_varying/bond_stock_with_sp/SS_excess_..._ALL_RESULTS.rds",
+#'     psi_level = 0.8,
+#'     output_path = "output/paper/figures"
+#'   )
+#' }
+
+expanding_runs_plots_lambda <- function(
+    rds_path,
+    psi_level     = 0.8,
+    top_n         = 5,
+    output_path   = "output/paper/figures",
+    figure_prefix = "fig_ia_17a",
+    verbose       = TRUE
+) {
+
+  ## ── packages ──────────────────────────────────────────────────────────────
+  library(dplyr)
+  library(tidyr)
+  library(purrr)
+  library(tibble)
+  library(ggplot2)
+  library(lubridate)
+
+  talk <- function(...) if (isTRUE(verbose)) message(...)
+
+  ## ── 1. Validate and load RDS file ─────────────────────────────────────────
+  if (!file.exists(rds_path)) {
+    stop("RDS file not found: ", rds_path, call. = FALSE)
+  }
+
+  talk("Loading: ", rds_path)
+  combined_results <- readRDS(rds_path)
+
+  # Check for lambdas_panel
+  if (is.null(combined_results$lambdas_panel) ||
+      nrow(combined_results$lambdas_panel) == 0) {
+    stop("lambdas_panel not found or empty in RDS file.", call. = FALSE)
+  }
+
+  lambdas_panel <- combined_results$lambdas_panel
+
+  talk("  Found ", length(unique(lambdas_panel$date)), " estimation dates")
+  talk("  Found ", length(unique(lambdas_panel$factor)), " factors")
+  talk("  Available psi_levels: ", paste(sort(unique(lambdas_panel$psi_level)), collapse = ", "))
+  talk("  Available models: ", paste(unique(lambdas_panel$model), collapse = ", "))
+
+  ## ── 2. Filter to BMA model at specified shrinkage level ───────────────────
+  # Construct BMA model name (e.g., "BMA-80%")
+  bma_model_name <- sprintf("BMA-%d%%", round(psi_level * 100))
+
+  if (!bma_model_name %in% unique(lambdas_panel$model)) {
+    stop("Model ", bma_model_name, " not found. Available: ",
+         paste(unique(lambdas_panel$model), collapse = ", "), call. = FALSE)
+  }
+
+  lambdas_filtered <- lambdas_panel %>%
+    filter(model == bma_model_name)
+
+  talk("  Using model = ", bma_model_name, " (", nrow(lambdas_filtered), " rows)")
+
+  ## ── 3. Identify top N factors for each date by abs(lambda) ────────────────
+  dates <- sort(unique(lambdas_filtered$date))
+
+  top_factors_lambda <- lapply(dates, function(d) {
+    lambdas_filtered %>%
+      filter(date == d) %>%
+      mutate(abs_lambda = abs(lambda)) %>%
+      arrange(desc(abs_lambda)) %>%
+      slice_head(n = top_n) %>%
+      pull(factor)
+  })
+  names(top_factors_lambda) <- as.character(dates)
+
+  talk("  Identified top ", top_n, " factors by |lambda| for each of ", length(dates), " dates")
+
+  ## ── 4. Build long data frame for heatmap ──────────────────────────────────
+  df_long <- map_df(names(top_factors_lambda), function(d) {
+    tibble(
+      date   = as.Date(d),
+      factor = top_factors_lambda[[d]],
+      Rank   = seq_along(top_factors_lambda[[d]])
+    )
+  })
+
+  ## ── 5. Order factors by frequency, then by how often they are Rank 1 ──────
+  ordering <- df_long %>%
+    group_by(factor) %>%
+    summarise(
+      total_n = dplyr::n(),
+      rank1   = sum(Rank == 1),
+      .groups = "drop"
+    ) %>%
+    arrange(desc(total_n), desc(rank1)) %>%
+    pull(factor)
+
+  df_long <- df_long %>%
+    mutate(factor = factor(factor, levels = rev(ordering)))
+
+  ## ── 6. Create heatmap ─────────────────────────────────────────────────────
+  # Plotting parameters
+  x_tick_size      <- 14
+  legend_text_size <- 14
+  y_label_size     <- 14
+  plot_width       <- 12
+  plot_height      <- 7
+  plot_units       <- "in"
+
+  # Normalize dates to January 1st of each year for x-axis labels
+  df_plot <- df_long %>%
+    mutate(date_label = as.Date(paste0(format(date, "%Y"), "-01-01")))
+
+  # Determine edge years to blank out (year before first data, year after last data)
+  # These appear on the axis due to ggplot's date_breaks but have no data
+  data_years <- as.numeric(unique(format(df_plot$date_label, "%Y")))
+  year_before_first <- as.Date(paste0(min(data_years) - 1, "-01-01"))
+  year_after_last   <- as.Date(paste0(max(data_years) + 1, "-01-01"))
+
+  # Create the plot
+  p <- ggplot(df_plot, aes(x = date_label, y = factor, fill = Rank)) +
+    geom_tile(colour = "white") +
+    scale_x_date(
+      date_breaks = "1 year",
+      labels = function(x) {
+        labs <- format(x, "%Y")
+        # Blank out edge year labels (year before/after data range)
+        labs[x == year_before_first] <- ""
+        labs[x == year_after_last]   <- ""
+        labs
+      }
+    ) +
+    scale_fill_gradient(
+      low = "#08519c",
+      high = "#c6dbef",
+      name = "Rank"
+    ) +
+    labs(x = "", y = "", title = "") +
+    theme_minimal() +
+    theme(
+      panel.border    = element_rect(colour = "black", fill = NA, linewidth = 1),
+      axis.text.x     = element_text(angle = 45, hjust = 1, size = x_tick_size),
+      axis.text.y     = element_text(size = y_label_size),
+      axis.title.y    = element_text(size = y_label_size),
+      legend.position = "right",
+      legend.text     = element_text(size = legend_text_size),
+      legend.title    = element_text(size = legend_text_size),
+      legend.background      = element_rect(colour = "black", fill = "white"),
+      legend.box.background  = element_rect(colour = "white", fill = "white")
+    ) +
+    guides(fill = guide_legend(reverse = FALSE))
+
+  ## ── 7. Save figure ────────────────────────────────────────────────────────
+  if (!dir.exists(output_path)) {
+    dir.create(output_path, recursive = TRUE)
+  }
+
+  # Construct output filename
+  psi_label <- sprintf("%d", round(psi_level * 100))
+  output_file <- file.path(output_path,
+                           paste0(figure_prefix, "_top", top_n, "_lambda_psi", psi_label, ".pdf"))
+
+  suppressWarnings({
+    ggsave(output_file, plot = p,
+           width = plot_width, height = plot_height, units = plot_units)
+  })
+
+  talk("Saved: ", output_file)
+
+  ## ── 8. Return results ─────────────────────────────────────────────────────
+  invisible(list(
+    top_factors_lambda = top_factors_lambda,
+    plot               = p,
+    output_file        = output_file,
+    df_long            = df_long
+  ))
+}
+
+
+#' Generate Figure IA.17a: Top Factors by Lambda Heatmap (Forward Expanding)
+#'
+#' Convenience wrapper for expanding_runs_plots_lambda() with standard output naming.
+#'
+#' @param rds_path       Path to the ALL_RESULTS.rds file
+#' @param psi_level      Shrinkage level (default: 0.8)
+#' @param top_n          Number of top factors (default: 5)
+#' @param output_path    Output directory
+#' @param verbose        Print progress
+#'
+#' @return List with plot and data
+#'
+#' @examples
+#' \dontrun{
+#'   generate_figure_ia17a(
+#'     rds_path = "output/time_varying/bond_stock_with_sp/SS_..._ALL_RESULTS.rds"
+#'   )
+#' }
+
+generate_figure_ia17a <- function(
+    rds_path,
+    psi_level   = 0.8,
+    top_n       = 5,
+    output_path = "output/paper/figures",
+    verbose     = TRUE
+) {
+  expanding_runs_plots_lambda(
+    rds_path      = rds_path,
+    psi_level     = psi_level,
+    top_n         = top_n,
+    output_path   = output_path,
+    figure_prefix = "fig_ia_17a",
+    verbose       = verbose
+  )
+}

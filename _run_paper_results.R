@@ -777,6 +777,36 @@ if (file.exists(fig6a_output_path)) {
 }
 
 
+#### Figure IA.17a: Top Factors by Lambda Over Time (Expanding Window) ---------
+# Generates: fig_ia_17a_top5_lambda_psi80.pdf - Heatmap of top 5 factors by
+#            absolute market price of risk across forward-expanding estimation windows.
+# Source: expanding_runs_plots.R
+# Input: Time-varying estimation .rds file from run_time_varying_estimation()
+
+if (verbose) message("Figure IA.17a: Top Factors by Lambda Over Time (Expanding Window)")
+
+fig_ia17a_output_path <- file.path(figures_dir, "fig_ia_17a_top5_lambda_psi80.pdf")
+
+if (file.exists(fig_ia17a_output_path)) {
+  if (verbose) message("  Skipping Figure IA.17a: file already exists")
+} else if (!file.exists(expanding_rds_path)) {
+  warning("Expanding window .rds not found. Skipping Figure IA.17a.\n  ", expanding_rds_path)
+} else {
+  fig_ia17a_result <- generate_figure_ia17a(
+    rds_path    = expanding_rds_path,
+    psi_level   = 0.8,
+    top_n       = 5,
+    output_path = figures_dir,
+    verbose     = verbose
+  )
+
+  if (verbose) {
+    message("  Generated: fig_ia_17a_top5_lambda_psi80.pdf")
+    message("  Estimation dates: ", length(fig_ia17a_result$top_factors_lambda))
+  }
+}
+
+
 #### Figures 10-12: SDF Time Series, Volatility, and Predictability -----------
 # Generates:
 #   Figure 10: SDF_Time_Series_BMA.pdf - BMA SDF time series with ARIMA mean
