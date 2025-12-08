@@ -635,68 +635,82 @@ if (verbose) message("Figure 9: Mean vs Covariance Diagnostic Plots (Treasury Mo
 treasury_data_folder <- "paper.data.rr"
 
 # Figure 9.1 & 9.2: Bond Treasury (IS & OS)
-bond_treasury_file <- file.path(
-  results_path, "treasury",
-  "excess_treasury_alpha.w=1_beta.w=1_kappa=0_bond_treasury.Rdata"
-)
+fig9_1_path <- file.path(figures_dir, "fig9_1_bond_is.pdf")
+fig9_2_path <- file.path(figures_dir, "fig9_2_bond_os.pdf")
 
-if (!file.exists(bond_treasury_file)) {
-  warning("Bond treasury .Rdata not found. Skipping Figure 9.1-9.2.\n  ", bond_treasury_file)
+if (file.exists(fig9_1_path) && file.exists(fig9_2_path)) {
+  if (verbose) message("  Skipping Figure 9.1-9.2: files already exist")
 } else {
-  fig9_bond <- plot_mean_vs_cov(
-    results_path  = results_path,
-    return_type   = "excess",
-    model_type    = "treasury",
-    alpha.w       = 1,
-    beta.w        = 1,
-    kappa         = 0,
-    tag           = "bond_treasury",
-    intercept     = TRUE,
-    data_folder   = treasury_data_folder,
-    os_pricing    = "treasury_oosample_all_excess.csv",
-    sr_scale      = "80%",
-    output_path   = figures_dir,
-    figure_prefix = "fig9",
-    suffix_is     = "1_bond_is",
-    suffix_os     = "2_bond_os",
-    constrained   = TRUE,
-    verbose       = verbose
+  bond_treasury_file <- file.path(
+    results_path, "treasury",
+    "excess_treasury_alpha.w=1_beta.w=1_kappa=0_bond_treasury.Rdata"
   )
-  if (verbose) {
-    message("  Generated: fig9_1_bond_is.pdf, fig9_2_bond_os.pdf")
+
+  if (!file.exists(bond_treasury_file)) {
+    warning("Bond treasury .Rdata not found. Skipping Figure 9.1-9.2.\n  ", bond_treasury_file)
+  } else {
+    fig9_bond <- plot_mean_vs_cov(
+      results_path  = results_path,
+      return_type   = "excess",
+      model_type    = "treasury",
+      alpha.w       = 1,
+      beta.w        = 1,
+      kappa         = 0,
+      tag           = "bond_treasury",
+      intercept     = TRUE,
+      data_folder   = treasury_data_folder,
+      os_pricing    = "treasury_oosample_all_excess.csv",
+      sr_scale      = "80%",
+      output_path   = figures_dir,
+      figure_prefix = "fig9",
+      suffix_is     = "1_bond_is",
+      suffix_os     = "2_bond_os",
+      constrained   = TRUE,
+      verbose       = verbose
+    )
+    if (verbose) {
+      message("  Generated: fig9_1_bond_is.pdf, fig9_2_bond_os.pdf")
+    }
   }
 }
 
 # Figure 9.3 & 9.4: Stock Treasury (IS & OS)
-stock_treasury_file <- file.path(
-  results_path, "treasury",
-  "excess_treasury_alpha.w=1_beta.w=1_kappa=0_stock_treasury.Rdata"
-)
+fig9_3_path <- file.path(figures_dir, "fig9_3_stock_is.pdf")
+fig9_4_path <- file.path(figures_dir, "fig9_4_stock_os.pdf")
 
-if (!file.exists(stock_treasury_file)) {
-  warning("Stock treasury .Rdata not found. Skipping Figure 9.3-9.4.\n  ", stock_treasury_file)
+if (file.exists(fig9_3_path) && file.exists(fig9_4_path)) {
+  if (verbose) message("  Skipping Figure 9.3-9.4: files already exist")
 } else {
-  fig9_stock <- plot_mean_vs_cov(
-    results_path  = results_path,
-    return_type   = "excess",
-    model_type    = "treasury",
-    alpha.w       = 1,
-    beta.w        = 1,
-    kappa         = 0,
-    tag           = "stock_treasury",
-    intercept     = TRUE,
-    data_folder   = treasury_data_folder,
-    os_pricing    = "treasury_oosample_all_excess.csv",
-    sr_scale      = "80%",
-    output_path   = figures_dir,
-    figure_prefix = "fig9",
-    suffix_is     = "3_stock_is",
-    suffix_os     = "4_stock_os",
-    constrained   = TRUE,
-    verbose       = verbose
+  stock_treasury_file <- file.path(
+    results_path, "treasury",
+    "excess_treasury_alpha.w=1_beta.w=1_kappa=0_stock_treasury.Rdata"
   )
-  if (verbose) {
-    message("  Generated: fig9_3_stock_is.pdf, fig9_4_stock_os.pdf")
+
+  if (!file.exists(stock_treasury_file)) {
+    warning("Stock treasury .Rdata not found. Skipping Figure 9.3-9.4.\n  ", stock_treasury_file)
+  } else {
+    fig9_stock <- plot_mean_vs_cov(
+      results_path  = results_path,
+      return_type   = "excess",
+      model_type    = "treasury",
+      alpha.w       = 1,
+      beta.w        = 1,
+      kappa         = 0,
+      tag           = "stock_treasury",
+      intercept     = TRUE,
+      data_folder   = treasury_data_folder,
+      os_pricing    = "treasury_oosample_all_excess.csv",
+      sr_scale      = "80%",
+      output_path   = figures_dir,
+      figure_prefix = "fig9",
+      suffix_is     = "3_stock_is",
+      suffix_os     = "4_stock_os",
+      constrained   = TRUE,
+      verbose       = verbose
+    )
+    if (verbose) {
+      message("  Generated: fig9_3_stock_is.pdf, fig9_4_stock_os.pdf")
+    }
   }
 }
 
