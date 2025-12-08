@@ -86,9 +86,9 @@ helper_files <- c(
   "pp_figure_table.R",
   "plot_nfac_sr.R",
   "sr_decomposition.R",
-  "run_sr_decomposition_multi.R"
-  # Add more helper files as needed:
-  # "table_helpers.R"
+  "run_sr_decomposition_multi.R",
+  "sr_tables.R"
+  # Add more helper files as needed
 )
 
 for (helper in helper_files) {
@@ -236,15 +236,32 @@ if (verbose) {
   message(strrep("=", 60), "\n")
 }
 
-#### Table 1: Top 5 Factor Contributions to SDF -------------------------------
-# Shows the most likely (top 5) factors by posterior probability and their
-# contribution to the SDF Sharpe ratio.
-# Source: res_tbl_top from SR decomposition
+#### Tables 1, 4, 5: SR Decomposition Tables ----------------------------------
+# Generated using sr_tables.R functions:
+#   - Table 1: Top 5 factor contributions to SDF
+#   - Table 4: BMA-SDF dimensionality & SR by factor type
+#   - Table 5: Discount rate vs cash-flow news
+# Source: res_tbl_top from SR decomposition (Section 2.5)
 
-if (verbose) message("Table 1: Top 5 Factor Contributions [Data ready, table generation pending]")
+if (!exists("res_tbl_top") || is.null(res_tbl_top)) {
+  warning("res_tbl_top not available. Skipping Tables 1, 4, 5.")
+} else {
+  if (verbose) message("Tables 1, 4, 5: SR Decomposition Tables")
 
-# TODO: Extract "Top 5 Factors" group from res_tbl_top and format for LaTeX
-# Example access: res_tbl_top$bond_stock_with_sp %>% filter(factor_type == "Top 5 Factors")
+  # Generate all SR tables at once using the master function
+  sr_table_results <- generate_sr_tables(
+    res_tbl_top  = res_tbl_top,
+    output_path  = tables_dir,
+    tables       = c(1, 4, 5),
+    verbose      = verbose
+  )
+
+  if (verbose) {
+    message("  Generated: table_1_top5_factors.tex")
+    message("  Generated: table_4_sr_by_factor_type.tex")
+    message("  Generated: table_5_dr_vs_cf.tex")
+  }
+}
 
 
 #### Table 2: [Description] ---------------------------------------------------
@@ -257,26 +274,6 @@ if (verbose) message("Table 2: [Not yet implemented]")
 # TODO: Add Table 3 generation code
 
 if (verbose) message("Table 3: [Not yet implemented]")
-
-
-#### Table 4: BMA-SDF Dimensionality & SR by Factor Type ----------------------
-# Shows SDF dimensionality and Sharpe ratio decomposition by factor type
-# (nontraded, tradable, bond, stock).
-# Source: res_tbl_top from SR decomposition
-
-if (verbose) message("Table 4: SR Decomposition by Factor Type [Data ready, table generation pending]")
-
-# TODO: Extract factor type groups from res_tbl_top and format for LaTeX
-# Groups: "Nontraded factors", "Tradable factors", "Bond tradable factors", "Stock tradable factors"
-
-
-#### Table 5: Discount Rate vs Cash-Flow News ---------------------------------
-# Shows decomposition into discount rate (DR) and cash-flow (CF) factors.
-# Source: res_tbl_top from SR decomposition (DR factors, CF factors groups)
-
-if (verbose) message("Table 5: DR vs CF Decomposition [Data ready, table generation pending]")
-
-# TODO: Extract "DR factors" and "CF factors" groups from res_tbl_top and format for LaTeX
 
 
 ###############################################################################
