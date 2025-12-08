@@ -15,6 +15,27 @@ co-pricing-factor-zoo/
 └── output/               # Results (gitignored)
 ```
 
+## Data File Locations
+
+**IMPORTANT**: All CSV data files are stored in the `data/` folder. This includes:
+- Input data files (factor returns, test asset returns)
+- Out-of-sample pricing data (e.g., `treasury_oosample_all_excess.csv`, `bond_oosample_all_excess.csv`, `equity_os_77.csv`)
+- Intermediate cached results (e.g., `sr_decomposition_results.rds`, `pricing_results.rds`)
+
+When writing functions that load CSV files, always use the `data/` folder as the default `data_folder` parameter:
+
+```r
+# Good: use data folder
+my_function <- function(..., data_folder = "data") {
+  csv_path <- file.path(data_folder, "my_file.csv")
+}
+
+# Bad: hardcoded paths or other folders
+my_function <- function(...) {
+  csv_path <- "paper.data.rr/my_file.csv"  # Wrong!
+}
+```
+
 ## R Coding Standards
 
 ### Function Design Principles

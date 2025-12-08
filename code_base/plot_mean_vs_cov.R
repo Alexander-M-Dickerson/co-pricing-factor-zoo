@@ -75,7 +75,7 @@ plot_mean_vs_cov <- function(
     kappa         = 0,
     tag           = "bond_treasury",
     intercept     = TRUE,
-    data_folder   = "paper.data.rr",
+    data_folder   = "data",
     os_pricing    = "treasury_oosample_all_excess.csv",
     sr_scale      = "80%",
     output_path   = "output/paper/figures",

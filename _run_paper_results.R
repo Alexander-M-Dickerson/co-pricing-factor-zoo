@@ -631,9 +631,6 @@ if (!exists("thousands_oos_results_duration") || is.null(thousands_oos_results_d
 
 if (verbose) message("Figure 9: Mean vs Covariance Diagnostic Plots (Treasury Model)")
 
-# Treasury data folder
-treasury_data_folder <- "paper.data.rr"
-
 # Figure 9.1 & 9.2: Bond Treasury (IS & OS)
 fig9_1_path <- file.path(figures_dir, "fig9_1_bond_is.pdf")
 fig9_2_path <- file.path(figures_dir, "fig9_2_bond_os.pdf")
@@ -658,7 +655,7 @@ if (file.exists(fig9_1_path) && file.exists(fig9_2_path)) {
       kappa         = 0,
       tag           = "bond_treasury",
       intercept     = TRUE,
-      data_folder   = treasury_data_folder,
+      data_folder   = data_folder,
       os_pricing    = "treasury_oosample_all_excess.csv",
       sr_scale      = "80%",
       output_path   = figures_dir,
@@ -698,7 +695,7 @@ if (file.exists(fig9_3_path) && file.exists(fig9_4_path)) {
       kappa         = 0,
       tag           = "stock_treasury",
       intercept     = TRUE,
-      data_folder   = treasury_data_folder,
+      data_folder   = data_folder,
       os_pricing    = "treasury_oosample_all_excess.csv",
       sr_scale      = "80%",
       output_path   = figures_dir,
