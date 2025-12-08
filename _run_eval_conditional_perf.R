@@ -159,16 +159,19 @@ metadata <- combined_results$metadata
 # Extract paths: use override if enabled, otherwise use metadata
 if (path_override) {
   cat("  [PATH OVERRIDE ENABLED]\n")
-  main_path     <- override_main_path
-  data_folder   <- override_data_folder
-  code_folder   <- override_code_folder
-  output_folder <- override_output_folder
-} else {
-  main_path     <- metadata$paths$main_path
-  data_folder   <- metadata$paths$data_folder
-  code_folder   <- metadata$paths$code_folder
-  output_folder <- metadata$paths$output_folder
+  # Modify metadata$paths directly so downstream code sees overridden values
+
+  metadata$paths$main_path     <- override_main_path
+  metadata$paths$data_folder   <- override_data_folder
+  metadata$paths$code_folder   <- override_code_folder
+  metadata$paths$output_folder <- override_output_folder
 }
+
+# Now extract from (possibly modified) metadata
+main_path     <- metadata$paths$main_path
+data_folder   <- metadata$paths$data_folder
+code_folder   <- metadata$paths$code_folder
+output_folder <- metadata$paths$output_folder
 
 # Extract data file names from metadata (these are filenames, not paths)
 f2       <- metadata$data_files$f2
