@@ -417,8 +417,8 @@ fit_sdf_models <- function(
         # OLS R² (unchanged by SE choice)
         r2[j] <- summary(fit)$r.squared
 
-        # Newey-West (Bartlett kernel) robust F-test for H0: x1 = x2 = 0, 15 lags
-        nw_vcov <- sandwich::NeweyWest(fit, lag = 15, prewhite = FALSE,
+        # Newey-West (Bartlett kernel) robust F-test for H0: x1 = x2 = 0, 0 lags for monthly
+        nw_vcov <- sandwich::NeweyWest(fit, lag = 0, prewhite = FALSE,
                                        adjust = TRUE, sandwich = TRUE)
 
         keep_coef <- intersect(c("x1", "x2"), names(coef(fit))[!is.na(coef(fit))])
@@ -445,12 +445,12 @@ fit_sdf_models <- function(
         dplyr::mutate(factor = factor(factor, levels = factor))
 
       pct05 <- round(100 * mean(f_pv < .05, na.rm = TRUE))
-      pct_mid <- round(100 * mean(f_pv >= .05 & f_pv < .10, na.rm = TRUE))
-      pctHi <- round(100 * mean(f_pv >= .10, na.rm = TRUE))
+      pct10 <- round(100 * mean(f_pv < .10, na.rm = TRUE))
+      pctHi <- 100 - pct10
 
       alpha_labels <- c(
         `p < .05` = glue::glue("p < .05 ({pct05}%)"),
-        `p < .10` = glue::glue("p < .10 ({pct_mid}%)"),
+        `p < .10` = glue::glue("p < .10 ({pct10}%)"),
         `p > .10` = glue::glue("p > .10 ({pctHi}%)")
       )
 
@@ -565,12 +565,12 @@ fit_sdf_models <- function(
         dplyr::mutate(factor = factor(factor, levels = factor))
 
       pct05 <- round(100 * mean(f_pv_long < .05, na.rm = TRUE))
-      pct_mid <- round(100 * mean(f_pv_long >= .05 & f_pv_long < .10, na.rm = TRUE))
-      pctHi <- round(100 * mean(f_pv_long >= .10, na.rm = TRUE))
+      pct10 <- round(100 * mean(f_pv_long < .10, na.rm = TRUE))
+      pctHi <- 100 - pct10
 
       alpha_labels <- c(
         `p < .05` = glue::glue("p < .05 ({pct05}%)"),
-        `p < .10` = glue::glue("p < .10 ({pct_mid}%)"),
+        `p < .10` = glue::glue("p < .10 ({pct10}%)"),
         `p > .10` = glue::glue("p > .10 ({pctHi}%)")
       )
 
