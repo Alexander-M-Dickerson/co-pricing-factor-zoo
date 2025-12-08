@@ -889,8 +889,11 @@ insample_asset_pricing_enhanced <- function(results, f_all, R, f1, f2,
                                        dimnames = list(date_label, rownames(lambda_raw_knsf2)))
     
     w_knsf2 <- kns_out$f2_only$kns_w1
-    f2_asset_names <- if (!is.null(colnames(f2))) {
+    # Use f2 column names, or f2_benchmarks if f2 is NULL (treasury model)
+    f2_asset_names <- if (!is.null(f2) && !is.null(colnames(f2))) {
       colnames(f2)
+    } else if (!is.null(f2_benchmarks) && !is.null(colnames(f2_benchmarks))) {
+      colnames(f2_benchmarks)
     } else {
       paste0("Asset", 1:length(w_knsf2))
     }
