@@ -110,17 +110,18 @@ cat("Combined results loaded successfully.\n\n")
 
 cat("Extracting configuration from metadata...\n")
 
-metadata <- combined_results$metadata
-
 # Extract paths: use override if enabled, otherwise use metadata
 if (path_override) {
   cat("  [PATH OVERRIDE ENABLED]\n")
-  # Modify metadata$paths directly so downstream code sees overridden values
-  metadata$paths$main_path     <- override_main_path
-  metadata$paths$data_folder   <- override_data_folder
-  metadata$paths$code_folder   <- override_code_folder
-  metadata$paths$output_folder <- override_output_folder
+  # Modify combined_results$metadata$paths directly so evaluate_performance_paper() sees overridden values
+  combined_results$metadata$paths$main_path     <- override_main_path
+  combined_results$metadata$paths$data_folder   <- override_data_folder
+  combined_results$metadata$paths$code_folder   <- override_code_folder
+  combined_results$metadata$paths$output_folder <- override_output_folder
 }
+
+# Extract metadata (now with overridden paths if path_override = TRUE)
+metadata <- combined_results$metadata
 
 # Now extract from (possibly modified) metadata
 main_path     <- metadata$paths$main_path
