@@ -19,9 +19,6 @@
 \usepackage{alphalph}
 \usepackage{etoc}
 \usepackage{placeins}
-\usepackage[sectionbib]{bibunits} 
-\defaultbibliographystyle{chicago} 
-\defaultbibliography{bibliography_2025_11_12}
 
 \renewcommand{\today}{\ifcase \month \or January\or February\or March\or %
 	April\or May \or June\or July\or August\or September\or October\or November\or %
@@ -153,8 +150,6 @@ This SDF, as well as its conditional mean and volatility, are persistent, track 
 %%% Sections in the main body
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{bibunit}
-
 \input{tables.tex}
 
 \input{figures.tex}
@@ -163,9 +158,10 @@ This SDF, as well as its conditional mean and volatility, are persistent, track 
 %%%%%%%% References %%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 {\footnotesize
-\singlespacing 
- \setlength{\bibsep}{4pt}
-\putbib
+\singlespacing
+\setlength{\bibsep}{4pt}
+\bibliographystyle{apalike}
+\bibliography{bibliography_2025_11_12}
 }\pagebreak
 
 
@@ -185,5 +181,5 @@ This SDF, as well as its conditional mean and volatility, are persistent, track 
 \renewcommand{\thetable}{A.\arabic{table}} \setcounter{table}{0}
 
 \input{app_tables.tex}
-\end{bibunit}
+
 \end{document}
