@@ -348,18 +348,28 @@ cat("========================================\\n")
 ## 4. CROSS-PLATFORM BACKGROUND PROCESS LAUNCHER
 ###############################################################################
 
-launch_background_process <- function(script_path, log_path, is_windows) {
+launch_background_process <- function(script_path, log_path, is_windows, working_dir = NULL) {
+  # Normalize paths to absolute paths
+  script_path <- normalizePath(script_path, winslash = "/", mustWork = FALSE)
+  log_path <- normalizePath(log_path, winslash = "/", mustWork = FALSE)
+
+  if (is.null(working_dir)) {
+    working_dir <- dirname(script_path)
+  }
+  working_dir <- normalizePath(working_dir, winslash = "/", mustWork = FALSE)
+
   if (is_windows) {
     # Windows: use start /B with cmd
-    # Normalize paths to Windows format
     script_win <- normalizePath(script_path, winslash = "\\", mustWork = FALSE)
     log_win <- normalizePath(log_path, winslash = "\\", mustWork = FALSE)
-    cmd <- sprintf('start /B cmd /C "Rscript "%s" > "%s" 2>&1"', script_win, log_win)
+    work_win <- normalizePath(working_dir, winslash = "\\", mustWork = FALSE)
+    cmd <- sprintf('start /B cmd /C "cd /d "%s" && Rscript "%s" > "%s" 2>&1"', work_win, script_win, log_win)
     shell(cmd, wait = FALSE)
   } else {
     # Unix/macOS/Linux: use nohup with explicit bash for reliable backgrounding
-    # This works on both bash and dash shells
-    cmd <- sprintf('nohup bash -c \'Rscript "%s" > "%s" 2>&1\' &', script_path, log_path)
+    # cd to working directory first, then run Rscript
+    cmd <- sprintf('nohup bash -c \'cd "%s" && Rscript "%s" > "%s" 2>&1\' &',
+                   working_dir, script_path, log_path)
     system(cmd, ignore.stdout = TRUE, ignore.stderr = TRUE, wait = FALSE)
   }
 }
@@ -387,12 +397,12 @@ log_backward <- file.path(logs_folder, sprintf("log_conditional_ExpandingBackwar
 
 # Launch both in background (cross-platform)
 cat("  [1] ExpandingForward  -> ", log_forward, "\n")
-launch_background_process(temp_forward, log_forward, is_windows)
+launch_background_process(temp_forward, log_forward, is_windows, working_dir = main_path)
 
 Sys.sleep(2)
 
 cat("  [2] ExpandingBackward -> ", log_backward, "\n")
-launch_background_process(temp_backward, log_backward, is_windows)
+launch_background_process(temp_backward, log_backward, is_windows, working_dir = main_path)
 
 cat("\n")
 cat("========================================\n")
