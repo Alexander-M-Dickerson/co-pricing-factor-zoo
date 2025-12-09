@@ -501,15 +501,80 @@ if (verbose) {
 if (verbose) message("Figure 1: [Not yet implemented]")
 
 
+###############################################################################
+## FIGURES 2-4: REQUIRE bond_stock_with_sp DATA
+## ---------------------------------------------------------------------------
+## Figures 2-4 MUST use the bond_stock_with_sp model data.
+## If the user configured a different model_type, we reload the correct file.
+###############################################################################
+
+fig234_model_type <- "bond_stock_with_sp"
+
+# Check if we need to reload data for Figures 2-4
+if (cfg_model_type != fig234_model_type) {
+  if (verbose) {
+    message("\n", strrep("!", 60))
+    message("RELOADING DATA FOR FIGURES 2-4")
+    message("  User configured: model_type = '", cfg_model_type, "'")
+    message("  Figures 2-4 require: model_type = '", fig234_model_type, "'")
+    message("  Reloading correct .Rdata file...")
+    message(strrep("!", 60), "\n")
+  }
+
+  # Construct path to bond_stock_with_sp .Rdata
+  fig234_rdata_filename <- sprintf(
+    "%s_%s_alpha.w=%s_beta.w=%s_kappa=%s_%s.Rdata",
+    cfg_return_type,
+    fig234_model_type,
+    cfg_alpha.w,
+    cfg_beta.w,
+    cfg_kappa,
+    cfg_tag
+  )
+  fig234_rdata_path <- file.path(results_path, fig234_model_type, fig234_rdata_filename)
+
+  if (!file.exists(fig234_rdata_path)) {
+    stop(
+      "CRITICAL ERROR: Figures 2-4 require bond_stock_with_sp model but file not found!\n",
+      "  Expected: ", fig234_rdata_path, "\n",
+      "  Please run the bond_stock_with_sp model first."
+    )
+  }
+
+  # Load the correct data (this overwrites results, f1, f2, etc.)
+  load(fig234_rdata_path)
+
+  if (verbose) {
+    message("  Successfully reloaded: ", fig234_rdata_filename)
+    message("  f1: ", nrow(f1), " obs x ", ncol(f1), " factors")
+    if (!is.null(f2)) message("  f2: ", nrow(f2), " obs x ", ncol(f2), " factors")
+    message("  results: ", length(results), " prior specifications\n")
+  }
+} else {
+  if (verbose) {
+    message("\nFigures 2-4: Using already loaded bond_stock_with_sp data")
+  }
+}
+
+# Verify we have the correct data loaded
+if (verbose) {
+  n_factors_total <- ncol(f1) + ifelse(is.null(f2), 0, ncol(f2))
+  message("  VERIFICATION: Total factors = ", n_factors_total)
+  if (n_factors_total != 54) {
+    warning("  WARNING: Expected 54 factors for bond_stock_with_sp, got ", n_factors_total)
+  } else {
+    message("  VERIFICATION: OK - 54 factors confirmed (bond_stock_with_sp)")
+  }
+}
+
+
 #### Figure 2 + Table A.2: Posterior Probabilities ----------------------------
 # Generates: Figure 2 (posterior probability plot) and Table A.2 (LaTeX table)
 # Source: code_base/pp_figure_table.R
 
-# ENFORCE: Use bond_stock_with_sp for Figure 2
-fig2_model_type <- "bond_stock_with_sp"
 if (verbose) {
-  message("Figure 2 + Table A.2: Posterior Probabilities")
-  message("  [ENFORCED] Using model_type = '", fig2_model_type, "'")
+  message("\nFigure 2 + Table A.2: Posterior Probabilities")
+  message("  Using model_type = '", fig234_model_type, "'")
 }
 
 # Check that required objects exist from loaded .Rdata
@@ -521,9 +586,9 @@ if (!exists("results")) {
   fig2_result <- pp_figure_table(
     results       = results,
     # Metadata for filenames
-    return_type   = return_type,
-    model_type    = fig2_model_type,  # ENFORCED: always bond_stock_with_sp
-    tag           = tag,
+    return_type   = cfg_return_type,
+    model_type    = fig234_model_type,  # ENFORCED: always bond_stock_with_sp
+    tag           = cfg_tag,
     # Prior parameters (for prob_thresh calculation)
     alpha.w       = alpha.w,
     beta.w        = beta.w,
@@ -545,12 +610,11 @@ if (!exists("results")) {
 #### Figure 3: Number of Factors & Sharpe Ratio Distributions -----------------
 # Generates: Figure 3 (two-panel: posterior n_factors + SR distribution)
 # Source: code_base/plot_nfac_sr.R
+# NOTE: Uses bond_stock_with_sp data loaded above (fig234_model_type)
 
-# ENFORCE: Use bond_stock_with_sp for Figure 3
-fig3_model_type <- "bond_stock_with_sp"
 if (verbose) {
-  message("Figure 3: Number of Factors & Sharpe Ratio Distributions")
-  message("  [ENFORCED] Using model_type = '", fig3_model_type, "'")
+  message("\nFigure 3: Number of Factors & Sharpe Ratio Distributions")
+  message("  Using model_type = '", fig234_model_type, "'")
 }
 
 # Check that required objects exist from loaded .Rdata
@@ -563,9 +627,9 @@ if (!exists("results")) {
   fig3_result <- plot_nfac_sr(
     results       = results,
     # Metadata for filenames
-    return_type   = return_type,
-    model_type    = fig3_model_type,  # ENFORCED: always bond_stock_with_sp
-    tag           = tag,
+    return_type   = cfg_return_type,
+    model_type    = fig234_model_type,  # ENFORCED: always bond_stock_with_sp
+    tag           = cfg_tag,
     # Prior selection (use highest shrinkage by default)
     prior_labels  = c("20%", "40%", "60%", "80%"),
     prior_choice  = "80%",
@@ -592,12 +656,11 @@ if (!exists("results")) {
 # Panel A: Posterior inclusion probabilities for each factor
 # Panel B: Posterior mean market prices of risk (annualized)
 # Source: code_base/pp_bar_plots.R
+# NOTE: Uses bond_stock_with_sp data loaded above (fig234_model_type)
 
-# ENFORCE: Use bond_stock_with_sp for Figure 4
-fig4_model_type <- "bond_stock_with_sp"
 if (verbose) {
-  message("Figure 4: Posterior Probabilities & Market Prices of Risk")
-  message("  [ENFORCED] Using model_type = '", fig4_model_type, "'")
+  message("\nFigure 4: Posterior Probabilities & Market Prices of Risk")
+  message("  Using model_type = '", fig234_model_type, "'")
 }
 
 # Check that required objects exist from loaded .Rdata
@@ -609,9 +672,9 @@ if (!exists("results")) {
   fig4_result <- pp_bar_plots(
     results       = results,
     # Metadata for filenames
-    return_type   = return_type,
-    model_type    = fig4_model_type,  # ENFORCED: always bond_stock_with_sp
-    tag           = tag,
+    return_type   = cfg_return_type,
+    model_type    = fig234_model_type,  # ENFORCED: always bond_stock_with_sp
+    tag           = cfg_tag,
     # Prior selection (use highest shrinkage by default)
     prior_labels  = c("20%", "40%", "60%", "80%"),
     prior_choice  = "80%",
