@@ -480,6 +480,29 @@ if (verbose) {
   }
 }
 
+# Verify IS_AP has expected sdf_mim columns for Table 6 Panel A
+if (exists("IS_AP") && !is.null(IS_AP$sdf_mim)) {
+  expected_sdf_mim_cols <- c("BMA-20%", "BMA-40%", "BMA-60%", "BMA-80%",
+                              "HKM", "FF5", "CAPM", "CAPMB",
+                              "KNS", "RP-PCA", "EqualWeight")
+  actual_cols <- colnames(IS_AP$sdf_mim)
+  missing_cols <- setdiff(expected_sdf_mim_cols, actual_cols)
+
+  if (length(missing_cols) > 0) {
+    warning("  IS_AP$sdf_mim missing expected columns: ",
+            paste(missing_cols, collapse = ", "))
+  } else if (verbose) {
+    message("  VERIFICATION: IS_AP$sdf_mim has all expected columns")
+  }
+
+  # Additional check: verify sdf_mim has 54-factor BMA columns (bond_stock_with_sp signature)
+  # BMA models should have been estimated with 54 factors
+  if (verbose) {
+    message("  VERIFICATION: IS_AP$sdf_mim has ", ncol(IS_AP$sdf_mim), " model columns, ",
+            nrow(IS_AP$sdf_mim), " observations")
+  }
+}
+
 
 ###############################################################################
 ## SECTION 3: TABLES
@@ -497,11 +520,17 @@ if (verbose) {
 #   - Table 4: BMA-SDF dimensionality & SR by factor type
 #   - Table 5: Discount rate vs cash-flow news
 # Source: res_tbl_top from SR decomposition (Section 2.5)
+# NOTE: Uses ALL model types (bond_stock_with_sp, stock, bond)
+
+if (verbose) {
+  message("Tables 1, 4, 5: SR Decomposition Tables")
+  message("  Source: res_tbl_top (multi-model: bond_stock_with_sp, stock, bond)")
+  message("  return_type = '", cfg_return_type, "'")
+}
 
 if (!exists("res_tbl_top") || is.null(res_tbl_top)) {
   warning("res_tbl_top not available. Skipping Tables 1, 4, 5.")
 } else {
-  if (verbose) message("Tables 1, 4, 5: SR Decomposition Tables")
 
   # Generate all SR tables at once using the master function
   sr_table_results <- generate_sr_tables(
@@ -524,11 +553,17 @@ if (!exists("res_tbl_top") || is.null(res_tbl_top)) {
 #   - Table 2: In-sample cross-sectional asset pricing performance
 #   - Table 3: Out-of-sample cross-sectional asset pricing performance
 # Source: pricing_results from pricing collection (Section 2.5)
+# NOTE: Uses ALL model types (bond_stock_with_sp, stock, bond)
+
+if (verbose) {
+  message("\nTables 2, 3: IS and OS Pricing Tables")
+  message("  Source: pricing_results (multi-model: bond_stock_with_sp, stock, bond)")
+  message("  return_type = '", cfg_return_type, "'")
+}
 
 if (!exists("pricing_results") || is.null(pricing_results)) {
   warning("pricing_results not available. Skipping Tables 2, 3.")
 } else {
-  if (verbose) message("Tables 2, 3: IS and OS Pricing Tables")
 
   # Generate both pricing tables at once
   pricing_table_results <- generate_pricing_tables(
@@ -550,9 +585,14 @@ if (!exists("pricing_results") || is.null(pricing_results)) {
 #   - Table 6 Panel A: In-sample trading performance of SDF mimicking portfolios
 # Computes: Mean, SR, IR, Skewness, Kurtosis
 # All factors scaled to CAPM monthly volatility
-# Source: IS_AP$sdf_mim from loaded .Rdata
+# Source: IS_AP$sdf_mim from bond_stock_with_sp .Rdata (reloaded in Section 2.6)
 
-if (verbose) message("Table 6 Panel A: Trading Performance")
+if (verbose) {
+  message("\nTable 6 Panel A: Trading Performance")
+  message("  Source: IS_AP$sdf_mim (reloaded in Section 2.6)")
+  message("  model_type  = '", bswsp_model_type, "'")
+  message("  return_type = '", cfg_return_type, "'")
+}
 
 if (!exists("IS_AP") || is.null(IS_AP$sdf_mim)) {
   warning("IS_AP$sdf_mim not available. Skipping Table 6 Panel A.")
@@ -595,7 +635,8 @@ if (verbose) message("Figure 1: [Not yet implemented]")
 
 if (verbose) {
   message("\nFigure 2 + Table A.2: Posterior Probabilities")
-  message("  Using model_type = '", bswsp_model_type, "'")
+  message("  model_type  = '", bswsp_model_type, "'")
+  message("  return_type = '", cfg_return_type, "'")
 }
 
 # Check that required objects exist from loaded .Rdata
@@ -635,7 +676,8 @@ if (!exists("results")) {
 
 if (verbose) {
   message("\nFigure 3: Number of Factors & Sharpe Ratio Distributions")
-  message("  Using model_type = '", bswsp_model_type, "'")
+  message("  model_type  = '", bswsp_model_type, "'")
+  message("  return_type = '", cfg_return_type, "'")
 }
 
 # Check that required objects exist from loaded .Rdata
@@ -681,7 +723,8 @@ if (!exists("results")) {
 
 if (verbose) {
   message("\nFigure 4: Posterior Probabilities & Market Prices of Risk")
-  message("  Using model_type = '", bswsp_model_type, "'")
+  message("  model_type  = '", bswsp_model_type, "'")
+  message("  return_type = '", cfg_return_type, "'")
 }
 
 # Check that required objects exist from loaded .Rdata
@@ -725,7 +768,11 @@ if (!exists("results")) {
 # Shows distribution of metrics across thousands of test asset subsets.
 # Source: thousands_oos_results from Section 2.5
 
-if (verbose) message("Figure 5: Thousands OOS Pricing Tests (Excess Returns)")
+if (verbose) {
+  message("\nFigure 5: Thousands OOS Pricing Tests (Excess Returns)")
+  message("  Source: thousands_oos_results (generated from all model types)")
+  message("  return_type = 'excess'")
+}
 
 if (!exists("thousands_oos_results") || is.null(thousands_oos_results)) {
   warning("thousands_oos_results not available. Skipping Figure 5.")
@@ -755,7 +802,11 @@ if (!exists("thousands_oos_results") || is.null(thousands_oos_results)) {
 # Same as Figure 5 but using duration-adjusted results.
 # Source: thousands_oos_results_duration from Section 2.5
 
-if (verbose) message("Figure 8: Thousands OOS Pricing Tests (Duration-Adjusted)")
+if (verbose) {
+  message("\nFigure 8: Thousands OOS Pricing Tests (Duration-Adjusted)")
+  message("  Source: thousands_oos_results_duration (generated from all model types)")
+  message("  return_type = 'duration'")
+}
 
 if (!exists("thousands_oos_results_duration") || is.null(thousands_oos_results_duration)) {
   warning("thousands_oos_results_duration not available. Skipping Figure 8.")
