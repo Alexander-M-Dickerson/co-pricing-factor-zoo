@@ -37,22 +37,25 @@ install.packages(c(
 
 ### Step 2: Run the Unconditional Models
 
-Open a terminal/command prompt, navigate to the project folder, and run:
+**Recommended: Use the Terminal tab in RStudio** (works on all platforms without PATH issues)
+
+1. Open RStudio and set your working directory to the project folder
+2. Click on the **Terminal** tab (next to Console)
+3. Run:
 
 ```bash
-# On Windows (Command Prompt or PowerShell):
-cd C:\path\to\co-pricing-factor-zoo
 Rscript _run_all_unconditional.R
+```
 
-# On macOS/Linux:
-cd /path/to/co-pricing-factor-zoo
-Rscript _run_all_unconditional.R
+Or with options:
+```bash
+Rscript _run_all_unconditional.R --ndraws=5000 --parallel
 ```
 
 **What this does:**
 - Runs 7 different model specifications
 - Each model takes ~6-20 minutes depending on your machine
-- Creates `.Rdata` files in the `output/` folder
+- Creates `.Rdata` files in the `output/unconditional/` folder
 
 **Expected runtime:**
 | Model Type | Laptop | Server |
@@ -62,8 +65,14 @@ Rscript _run_all_unconditional.R
 
 ### Step 3: Run the Conditional (Time-Varying) Models
 
+In the RStudio Terminal tab:
 ```bash
 Rscript _run_all_conditional.R
+```
+
+Or for quick testing:
+```bash
+Rscript _run_all_conditional.R --ndraws=5000
 ```
 
 **What this does:**
@@ -71,10 +80,11 @@ Rscript _run_all_conditional.R
 - Uses 8 cores total (4 per model)
 - Creates `.rds` files in `output/time_varying/`
 
-**Expected runtime:** ~20-40 minutes total
+**Expected runtime:** ~20-40 minutes total (per estimation window: ~20 min laptop, ~6 min server)
 
 ### Step 4: Generate Paper Tables and Figures
 
+In the RStudio Terminal tab:
 ```bash
 Rscript _run_paper_results.R
 ```
@@ -86,6 +96,7 @@ Rscript _run_paper_results.R
 
 ### Step 5: Compile the LaTeX Document
 
+In the RStudio Terminal tab:
 ```bash
 Rscript _create_djm_tabs_figs.R
 ```
@@ -93,6 +104,8 @@ Rscript _create_djm_tabs_figs.R
 **What this does:**
 - Generates the main LaTeX document
 - Output files in `output/paper/latex/`
+
+> **Note for Windows users:** If you get "'Rscript' is not recognized" in PowerShell or Command Prompt, use the RStudio Terminal instead. The RStudio Terminal automatically has R in the PATH.
 
 ---
 
@@ -283,24 +296,26 @@ install.packages("package_name")
 ### Memory issues
 Close other applications. Each model uses ~2-4 GB RAM.
 
+### "Rscript is not recognized" (Windows)
+This happens when R is not in your system PATH. **Solution:** Use the RStudio Terminal tab instead of PowerShell or Command Prompt. The RStudio Terminal automatically has R in the PATH.
+
 ---
 
-## Summary: Complete Replication in 5 Commands
+## Summary: Complete Replication in 4 Commands
+
+Open RStudio, set your working directory to the project folder, then run these in the **Terminal** tab:
 
 ```bash
-# 1. Navigate to project folder
-cd /path/to/co-pricing-factor-zoo
-
-# 2. Run unconditional models (~1-2 hours total)
+# 1. Run unconditional models (~1-2 hours total)
 Rscript _run_all_unconditional.R
 
-# 3. Run conditional models (~30-40 min)
+# 2. Run conditional models (~30-40 min)
 Rscript _run_all_conditional.R
 
-# 4. Generate tables and figures
+# 3. Generate tables and figures
 Rscript _run_paper_results.R
 
-# 5. Compile LaTeX document
+# 4. Compile LaTeX document
 Rscript _create_djm_tabs_figs.R
 ```
 
