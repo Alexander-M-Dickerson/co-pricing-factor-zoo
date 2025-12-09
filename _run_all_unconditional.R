@@ -27,6 +27,7 @@
 ##
 ## OPTIONS:
 ##   --models=1,2,3      Run specific models (comma-separated, default: all)
+##   --ndraws=N          Number of MCMC draws (default: 50000, use 5000 for quick test)
 ##   --parallel          Run models in parallel (default: sequential)
 ##   --cores=N           Total available cores (default: auto-detect)
 ##   --cores-per-model=N Cores per model (default: 4)
@@ -66,9 +67,18 @@ get_environment_info <- function() {
   lines <- c(lines, "Required Package Versions:")
 
   required_packages <- c(
-    "lubridate", "dplyr", "tidyr", "ggplot2",
-    "parallel", "doParallel", "foreach",
-    "MASS", "Matrix", "Hmisc", "RColorBrewer"
+    # Data manipulation
+    "lubridate", "dplyr", "tidyr", "purrr", "tibble", "data.table", "rlang",
+    # Visualization
+    "ggplot2", "RColorBrewer", "scales", "patchwork",
+    # Parallel processing
+    "parallel", "doParallel", "foreach", "doRNG",
+    # Statistics and linear algebra
+    "MASS", "Matrix", "matrixStats", "Hmisc", "proxyC",
+    # Bayesian estimation
+    "BayesianFactorZoo",
+    # Output formatting
+    "xtable"
   )
 
   for (pkg in required_packages) {
@@ -101,6 +111,7 @@ main_path <- getwd()  # Assumes script is run from project root
 # Default execution settings (can be overridden by command-line args)
 DEFAULT_CORES_PER_MODEL <- 4
 DEFAULT_TOTAL_CORES     <- parallel::detectCores() - 1
+DEFAULT_NDRAWS          <- 50000  # Use 5000 for quick test runs
 RUN_PARALLEL            <- FALSE
 MODELS_TO_RUN           <- 1:7  # All models by default
 DRY_RUN                 <- FALSE
@@ -244,6 +255,7 @@ parse_args <- function() {
 
   result <- list(
     models   = MODELS_TO_RUN,
+    ndraws   = DEFAULT_NDRAWS,
     parallel = RUN_PARALLEL,
     cores    = DEFAULT_TOTAL_CORES,
     cores_per_model = DEFAULT_CORES_PER_MODEL,
@@ -263,6 +275,8 @@ parse_args <- function() {
     } else if (grepl("^--models=", arg)) {
       model_str <- sub("^--models=", "", arg)
       result$models <- as.integer(strsplit(model_str, ",")[[1]])
+    } else if (grepl("^--ndraws=", arg)) {
+      result$ndraws <- as.integer(sub("^--ndraws=", "", arg))
     } else if (grepl("^--cores=", arg)) {
       result$cores <- as.integer(sub("^--cores=", "", arg))
     } else if (grepl("^--cores-per-model=", arg)) {
@@ -271,6 +285,7 @@ parse_args <- function() {
       cat("\nUsage: Rscript _run_all_unconditional.R [options]\n\n")
       cat("Options:\n")
       cat("  --models=1,2,3      Run specific models (comma-separated)\n")
+      cat("  --ndraws=N          Number of MCMC draws (default: 50000, use 5000 for quick test)\n")
       cat("  --parallel          Run models in parallel\n")
       cat("  --sequential        Run models sequentially (default)\n")
       cat("  --cores=N           Total available cores (default: auto-detect)\n")
@@ -301,7 +316,7 @@ launch_background_process <- function(script_path, log_path, is_windows) {
 }
 
 #' Generate R script for a single model
-generate_model_script <- function(cfg, main_path, cores_per_model) {
+generate_model_script <- function(cfg, main_path, cores_per_model, ndraws) {
   # Escape backslashes for Windows paths
   main_path_escaped <- gsub("\\\\", "/", main_path)
 
@@ -352,7 +367,7 @@ frequentist_models <- list(
 )
 
 #### MCMC Parameters
-ndraws         <- 50000
+ndraws         <- %d
 SRscale        <- c(0.20, 0.40, 0.60, 0.80)
 alpha.w        <- 1
 beta.w         <- 1
@@ -388,6 +403,7 @@ cat("========================================\\n")
     cfg$return_type,
     cfg$f2,
     cfg$R,
+    ndraws,
     cfg$tag,
     cores_per_model,
     cfg$name
@@ -397,7 +413,7 @@ cat("========================================\\n")
 }
 
 #' Run a single model (sequential mode - with logging)
-run_single_model <- function(cfg, main_path, cores_per_model, timestamp, dry_run = FALSE) {
+run_single_model <- function(cfg, main_path, cores_per_model, ndraws, timestamp, dry_run = FALSE) {
 
   log_file <- get_log_path(cfg, main_path, timestamp)
 
@@ -415,12 +431,13 @@ run_single_model <- function(cfg, main_path, cores_per_model, timestamp, dry_run
     cat(sprintf("    tag:         %s\n", cfg$tag))
     cat(sprintf("    f2:          %s\n", cfg$f2))
     cat(sprintf("    R:           %s\n", cfg$R))
+    cat(sprintf("    ndraws:      %d\n", ndraws))
     cat(sprintf("    cores:       %d\n", cores_per_model))
     return(list(success = TRUE, time = 0, log_file = log_file))
   }
 
   # Generate temporary script
-  script_content <- generate_model_script(cfg, main_path, cores_per_model)
+  script_content <- generate_model_script(cfg, main_path, cores_per_model, ndraws)
   temp_script <- tempfile(pattern = paste0("model_", cfg$id, "_"), fileext = ".R")
   writeLines(script_content, temp_script)
 
@@ -462,7 +479,7 @@ run_single_model <- function(cfg, main_path, cores_per_model, timestamp, dry_run
 }
 
 #' Run models in parallel using system calls
-run_parallel_models <- function(configs, main_path, total_cores, cores_per_model, timestamp, dry_run = FALSE) {
+run_parallel_models <- function(configs, main_path, total_cores, cores_per_model, ndraws, timestamp, dry_run = FALSE) {
 
   # Calculate how many models can run simultaneously
   # Reserve 1 core, use remaining for models
@@ -478,6 +495,7 @@ run_parallel_models <- function(configs, main_path, total_cores, cores_per_model
   cat(sprintf("  Total cores available: %d\n", total_cores))
   cat(sprintf("  Reserved cores:        1\n"))
   cat(sprintf("  Cores per model:       %d\n", cores_per_model))
+  cat(sprintf("  MCMC draws:            %d\n", ndraws))
   cat(sprintf("  Max concurrent models: %d\n", max_concurrent))
   cat(sprintf("  Models to run:         %d\n", length(configs)))
   cat(sprintf("  Log folder:            output/logs/\n"))
@@ -519,7 +537,7 @@ run_parallel_models <- function(configs, main_path, total_cores, cores_per_model
 
     for (cfg in batch_configs) {
       # Generate script
-      script_content <- generate_model_script(cfg, main_path, cores_per_model)
+      script_content <- generate_model_script(cfg, main_path, cores_per_model, ndraws)
       temp_script <- file.path(main_path, sprintf(".temp_model_%d_%s.R", cfg$id, cfg$name))
       log_file <- get_log_path(cfg, main_path, timestamp)
 
@@ -593,7 +611,7 @@ run_parallel_models <- function(configs, main_path, total_cores, cores_per_model
 }
 
 #' Run models sequentially
-run_sequential_models <- function(configs, main_path, cores_per_model, timestamp, dry_run = FALSE) {
+run_sequential_models <- function(configs, main_path, cores_per_model, ndraws, timestamp, dry_run = FALSE) {
 
   cat("\n")
   cat("=", rep("=", 70), "\n", sep = "")
@@ -601,12 +619,18 @@ run_sequential_models <- function(configs, main_path, cores_per_model, timestamp
   cat("=", rep("=", 70), "\n", sep = "")
   cat(sprintf("  Platform:        %s\n", if (is_windows) "Windows" else "Unix/macOS/Linux"))
   cat(sprintf("  Cores per model: %d\n", cores_per_model))
+  cat(sprintf("  MCMC draws:      %d\n", ndraws))
   cat(sprintf("  Models to run:   %d\n", length(configs)))
   cat(sprintf("  Log folder:      output/logs/\n"))
-  cat("\n")
-  cat("  Expected runtime (50,000 MCMC draws):\n")
-  cat("    Joint models:      ~20 min (laptop) / ~6 min (server)\n")
-  cat("    Bond/Stock models: ~10 min (laptop) / ~3 min (server)\n")
+  if (ndraws == 50000) {
+    cat("\n")
+    cat("  Expected runtime (50,000 MCMC draws):\n")
+    cat("    Joint models:      ~20 min (laptop) / ~6 min (server)\n")
+    cat("    Bond/Stock models: ~10 min (laptop) / ~3 min (server)\n")
+  } else {
+    cat("\n")
+    cat(sprintf("  Note: Running with %d draws (quick test mode)\n", ndraws))
+  }
   cat("=", rep("=", 70), "\n", sep = "")
 
   results <- list()
@@ -615,7 +639,7 @@ run_sequential_models <- function(configs, main_path, cores_per_model, timestamp
   for (i in seq_along(configs)) {
     cfg <- configs[[i]]
     cat(sprintf("\n  [%d/%d] ", i, length(configs)))
-    result <- run_single_model(cfg, main_path, cores_per_model, timestamp, dry_run)
+    result <- run_single_model(cfg, main_path, cores_per_model, ndraws, timestamp, dry_run)
     results[[cfg$name]] <- result
   }
 
@@ -690,6 +714,7 @@ main <- function() {
   cat("#", rep("#", 70), "\n", sep = "")
   cat(sprintf("##  Started:   %s\n", Sys.time()))
   cat(sprintf("##  Models:    %s\n", paste(args$models, collapse = ", ")))
+  cat(sprintf("##  MCMC draws: %d\n", args$ndraws))
   cat(sprintf("##  Mode:      %s\n", if (args$parallel) "PARALLEL" else "SEQUENTIAL"))
   cat(sprintf("##  Timestamp: %s\n", RUN_TIMESTAMP))
   if (args$dry_run) cat("##  [DRY RUN MODE]\n")
@@ -702,6 +727,7 @@ main <- function() {
       main_path = main_path,
       total_cores = args$cores,
       cores_per_model = args$cores_per_model,
+      ndraws = args$ndraws,
       timestamp = RUN_TIMESTAMP,
       dry_run = args$dry_run
     )
@@ -710,6 +736,7 @@ main <- function() {
       configs = selected_configs,
       main_path = main_path,
       cores_per_model = args$cores_per_model,
+      ndraws = args$ndraws,
       timestamp = RUN_TIMESTAMP,
       dry_run = args$dry_run
     )

@@ -21,7 +21,10 @@
 ##     source("_run_all_conditional.R")
 ##
 ##   From terminal:
-##     Rscript _run_all_conditional.R
+##     Rscript _run_all_conditional.R [options]
+##
+## OPTIONS:
+##   --ndraws=N    Number of MCMC draws (default: 50000, use 5000 for quick test)
 ##
 ## LOG FILES:
 ##   output/logs/
@@ -65,9 +68,18 @@ print_environment_info <- function() {
   cat("\nRequired Package Versions:\n")
 
   required_packages <- c(
-    "lubridate", "dplyr", "tidyr", "ggplot2",
-    "parallel", "doParallel", "foreach",
-    "MASS", "Matrix", "Hmisc", "RColorBrewer"
+    # Data manipulation
+    "lubridate", "dplyr", "tidyr", "purrr", "tibble", "data.table", "rlang",
+    # Visualization
+    "ggplot2", "RColorBrewer", "scales", "patchwork",
+    # Parallel processing
+    "parallel", "doParallel", "foreach", "doRNG",
+    # Statistics and linear algebra
+    "MASS", "Matrix", "matrixStats", "Hmisc", "proxyC",
+    # Bayesian estimation
+    "BayesianFactorZoo",
+    # Output formatting
+    "xtable"
   )
 
   for (pkg in required_packages) {
@@ -83,6 +95,34 @@ print_environment_info <- function() {
 }
 
 print_environment_info()
+
+###############################################################################
+## 0.5. PARSE COMMAND-LINE ARGUMENTS
+###############################################################################
+
+# Default MCMC draws (can be overridden by --ndraws)
+DEFAULT_NDRAWS <- 50000
+
+parse_args <- function() {
+  args <- commandArgs(trailingOnly = TRUE)
+  result <- list(ndraws = DEFAULT_NDRAWS)
+
+  for (arg in args) {
+    if (grepl("^--ndraws=", arg)) {
+      result$ndraws <- as.integer(sub("^--ndraws=", "", arg))
+    } else if (arg == "--help" || arg == "-h") {
+      cat("\nUsage: Rscript _run_all_conditional.R [options]\n\n")
+      cat("Options:\n")
+      cat("  --ndraws=N    Number of MCMC draws (default: 50000, use 5000 for quick test)\n")
+      cat("  --help, -h    Show this help message\n\n")
+      quit(save = "no", status = 0)
+    }
+  }
+
+  return(result)
+}
+
+cmd_args <- parse_args()
 
 ###############################################################################
 ## 1. CONFIGURATION (SHARED BY BOTH MODELS)
@@ -123,7 +163,7 @@ frequentist_models <- list(
 )
 
 # MCMC parameters
-ndraws         <- 50000
+ndraws         <- cmd_args$ndraws
 drop_draws_pct <- 0
 SRscale        <- c(0.20, 0.40, 0.60, 0.80)
 alpha.w        <- 1
@@ -158,7 +198,12 @@ is_windows <- .Platform$OS.type == "windows"
 RUN_TIMESTAMP <- format(Sys.time(), "%Y%m%d_%H%M%S")
 
 cat("Platform detected:", if (is_windows) "Windows" else "Unix/macOS/Linux", "\n")
-cat("Run timestamp:    ", RUN_TIMESTAMP, "\n\n")
+cat("Run timestamp:    ", RUN_TIMESTAMP, "\n")
+cat("MCMC draws:       ", ndraws, "\n")
+if (ndraws != 50000) {
+  cat("  (Quick test mode - using fewer draws)\n")
+}
+cat("\n")
 
 # Source helper scripts
 source(file.path(code_folder, "logging_helpers.R"))

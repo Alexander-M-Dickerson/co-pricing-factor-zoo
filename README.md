@@ -15,9 +15,18 @@ Bayesian Model Averaging (BMA) for asset pricing with bond and stock factors.
 
 ```r
 install.packages(c(
-  "lubridate", "dplyr", "tidyr", "ggplot2",
-  "parallel", "doParallel", "foreach",
-  "MASS", "Matrix", "Hmisc", "RColorBrewer"
+  # Data manipulation
+  "lubridate", "dplyr", "tidyr", "purrr", "tibble", "data.table", "rlang",
+  # Visualization
+  "ggplot2", "RColorBrewer", "scales", "patchwork",
+  # Parallel processing
+  "parallel", "doParallel", "foreach", "doRNG",
+  # Statistics and linear algebra
+  "MASS", "Matrix", "matrixStats", "Hmisc", "proxyC",
+  # Bayesian estimation
+  "BayesianFactorZoo",
+  # Output formatting
+  "xtable"
 ))
 ```
 
@@ -180,6 +189,21 @@ Both models run in parallel automatically (4 cores each, 8 total).
 
 ## Advanced Options
 
+### Quick test run (fewer MCMC draws)
+
+For testing purposes, you can run with fewer MCMC draws (faster but less accurate):
+
+```bash
+# Quick test with 5,000 draws (default is 50,000)
+Rscript _run_all_unconditional.R --ndraws=5000
+Rscript _run_all_conditional.R --ndraws=5000
+```
+
+| Draws | Purpose | Runtime (per model) |
+|-------|---------|---------------------|
+| 50,000 | Full estimation (paper quality) | ~6-20 min |
+| 5,000 | Quick test/debugging | ~1-2 min |
+
 ### Run models in parallel (faster on multi-core machines)
 
 ```bash
@@ -198,6 +222,7 @@ Rscript _run_all_unconditional.R --dry-run
 
 ```bash
 Rscript _run_all_unconditional.R --help
+Rscript _run_all_conditional.R --help
 ```
 
 ---
