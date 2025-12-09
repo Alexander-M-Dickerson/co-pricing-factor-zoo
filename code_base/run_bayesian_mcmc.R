@@ -859,13 +859,23 @@ run_bayesian_mcmc <- function(
     fname <- paste0(paste(fname_parts, collapse = "_"), ".Rdata")
     
     saved_path <- path_out(fname)
-    
+
+    if (verbose) message("Attempting to save to: ", saved_path)
+
     save(list = ls(envir = environment()),
          file = saved_path,
          compress = TRUE,
          envir = environment())
-    
-    if (verbose) message("Workspace saved to: ", saved_path)
+
+    # Verify the file was actually saved
+    if (!file.exists(saved_path)) {
+      stop("Save failed: file does not exist after save() call: ", saved_path)
+    }
+
+    if (verbose) {
+      message("Workspace saved to: ", saved_path)
+      message("File size: ", file.size(saved_path), " bytes")
+    }
   }
   
   invisible(list(
