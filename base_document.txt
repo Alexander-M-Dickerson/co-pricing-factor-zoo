@@ -19,8 +19,8 @@
 \usepackage{alphalph}
 \usepackage{etoc}
 \usepackage{placeins}
-\usepackage[sectionbib]{bibunits} 
-\defaultbibliographystyle{chicago} 
+\usepackage[sectionbib]{bibunits}
+\defaultbibliographystyle{apalike}
 \defaultbibliography{bibliography_2025_11_12}
 
 \renewcommand{\today}{\ifcase \month \or January\or February\or March\or %
