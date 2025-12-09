@@ -395,6 +395,116 @@ if (verbose && !is.null(thousands_oos_results_duration)) {
 
 
 ###############################################################################
+## SECTION 2.6: RELOAD bond_stock_with_sp DATA
+## ---------------------------------------------------------------------------
+## CRITICAL: The intermediate data generation functions above
+## (run_sr_decomposition_multi, run_pricing_multi, etc.) load multiple model
+## types into .GlobalEnv, ending with "bond". This corrupts f1, f2, results,
+## IS_AP, and other variables.
+##
+## We MUST reload the bond_stock_with_sp data before:
+##   - Table 6 Panel A (uses IS_AP$sdf_mim)
+##   - Figures 2-4 (use results, f1, f2, etc.)
+###############################################################################
+
+bswsp_model_type <- "bond_stock_with_sp"
+
+if (verbose) {
+  message("\n", strrep("!", 60))
+  message("RELOADING bond_stock_with_sp DATA")
+  message("  Required for: Table 6 Panel A, Figures 2-4")
+  message("  ALWAYS reloading to ensure correct data after intermediate processing")
+  message(strrep("!", 60), "\n")
+}
+
+# Construct path to bond_stock_with_sp .Rdata
+bswsp_rdata_filename <- sprintf(
+  "%s_%s_alpha.w=%s_beta.w=%s_kappa=%s_%s.Rdata",
+  cfg_return_type,
+  bswsp_model_type,
+  cfg_alpha.w,
+  cfg_beta.w,
+  cfg_kappa,
+  cfg_tag
+)
+bswsp_rdata_path <- file.path(results_path, bswsp_model_type, bswsp_rdata_filename)
+
+if (!file.exists(bswsp_rdata_path)) {
+  stop(
+    "CRITICAL ERROR: bond_stock_with_sp model required but file not found!\n",
+    "  Expected: ", bswsp_rdata_path, "\n",
+    "  Please run the bond_stock_with_sp model first."
+  )
+}
+
+# Load the correct data into GLOBAL environment
+# This is critical because some functions use get("f1", inherits = TRUE)
+# which searches parent environments including .GlobalEnv
+load(bswsp_rdata_path, envir = .GlobalEnv)
+
+# Also load into current environment for direct access
+results <- get("results", envir = .GlobalEnv)
+f1 <- get("f1", envir = .GlobalEnv)
+f2 <- get("f2", envir = .GlobalEnv)
+intercept <- get("intercept", envir = .GlobalEnv)
+if (exists("IS_AP", envir = .GlobalEnv)) {
+  IS_AP <- get("IS_AP", envir = .GlobalEnv)
+}
+if (exists("nontraded_names", envir = .GlobalEnv)) {
+  nontraded_names <- get("nontraded_names", envir = .GlobalEnv)
+}
+if (exists("bond_names", envir = .GlobalEnv)) {
+  bond_names <- get("bond_names", envir = .GlobalEnv)
+}
+if (exists("stock_names", envir = .GlobalEnv)) {
+  stock_names <- get("stock_names", envir = .GlobalEnv)
+}
+
+if (verbose) {
+  message("  Successfully reloaded: ", bswsp_rdata_filename)
+  message("  Loaded into: .GlobalEnv and current environment")
+  message("  f1: ", nrow(f1), " obs x ", ncol(f1), " factors")
+  if (!is.null(f2)) message("  f2: ", nrow(f2), " obs x ", ncol(f2), " factors")
+  message("  results: ", length(results), " prior specifications")
+  if (exists("IS_AP")) message("  IS_AP: loaded (for Table 6 Panel A)")
+}
+
+# Verify we have the correct data loaded
+if (verbose) {
+  n_factors_total <- ncol(f1) + ifelse(is.null(f2), 0, ncol(f2))
+  message("  VERIFICATION: Total factors = ", n_factors_total)
+  if (n_factors_total != 54) {
+    warning("  WARNING: Expected 54 factors for bond_stock_with_sp, got ", n_factors_total)
+  } else {
+    message("  VERIFICATION: OK - 54 factors confirmed (bond_stock_with_sp)")
+  }
+}
+
+# Verify IS_AP has expected sdf_mim columns for Table 6 Panel A
+if (exists("IS_AP") && !is.null(IS_AP$sdf_mim)) {
+  expected_sdf_mim_cols <- c("BMA-20%", "BMA-40%", "BMA-60%", "BMA-80%",
+                              "HKM", "FF5", "CAPM", "CAPMB",
+                              "KNS", "RP-PCA", "EqualWeight")
+  actual_cols <- colnames(IS_AP$sdf_mim)
+  missing_cols <- setdiff(expected_sdf_mim_cols, actual_cols)
+
+  if (length(missing_cols) > 0) {
+    warning("  IS_AP$sdf_mim missing expected columns: ",
+            paste(missing_cols, collapse = ", "))
+  } else if (verbose) {
+    message("  VERIFICATION: IS_AP$sdf_mim has all expected columns")
+  }
+
+  # Additional check: verify sdf_mim has 54-factor BMA columns (bond_stock_with_sp signature)
+  # BMA models should have been estimated with 54 factors
+  if (verbose) {
+    message("  VERIFICATION: IS_AP$sdf_mim has ", ncol(IS_AP$sdf_mim), " model columns, ",
+            nrow(IS_AP$sdf_mim), " observations")
+  }
+}
+
+
+###############################################################################
 ## SECTION 3: TABLES
 ###############################################################################
 
@@ -410,11 +520,17 @@ if (verbose) {
 #   - Table 4: BMA-SDF dimensionality & SR by factor type
 #   - Table 5: Discount rate vs cash-flow news
 # Source: res_tbl_top from SR decomposition (Section 2.5)
+# NOTE: Uses ALL model types (bond_stock_with_sp, stock, bond)
+
+if (verbose) {
+  message("Tables 1, 4, 5: SR Decomposition Tables")
+  message("  Source: res_tbl_top (multi-model: bond_stock_with_sp, stock, bond)")
+  message("  return_type = '", cfg_return_type, "'")
+}
 
 if (!exists("res_tbl_top") || is.null(res_tbl_top)) {
   warning("res_tbl_top not available. Skipping Tables 1, 4, 5.")
 } else {
-  if (verbose) message("Tables 1, 4, 5: SR Decomposition Tables")
 
   # Generate all SR tables at once using the master function
   sr_table_results <- generate_sr_tables(
@@ -437,11 +553,17 @@ if (!exists("res_tbl_top") || is.null(res_tbl_top)) {
 #   - Table 2: In-sample cross-sectional asset pricing performance
 #   - Table 3: Out-of-sample cross-sectional asset pricing performance
 # Source: pricing_results from pricing collection (Section 2.5)
+# NOTE: Uses ALL model types (bond_stock_with_sp, stock, bond)
+
+if (verbose) {
+  message("\nTables 2, 3: IS and OS Pricing Tables")
+  message("  Source: pricing_results (multi-model: bond_stock_with_sp, stock, bond)")
+  message("  return_type = '", cfg_return_type, "'")
+}
 
 if (!exists("pricing_results") || is.null(pricing_results)) {
   warning("pricing_results not available. Skipping Tables 2, 3.")
 } else {
-  if (verbose) message("Tables 2, 3: IS and OS Pricing Tables")
 
   # Generate both pricing tables at once
   pricing_table_results <- generate_pricing_tables(
@@ -463,9 +585,14 @@ if (!exists("pricing_results") || is.null(pricing_results)) {
 #   - Table 6 Panel A: In-sample trading performance of SDF mimicking portfolios
 # Computes: Mean, SR, IR, Skewness, Kurtosis
 # All factors scaled to CAPM monthly volatility
-# Source: IS_AP$sdf_mim from loaded .Rdata
+# Source: IS_AP$sdf_mim from bond_stock_with_sp .Rdata (reloaded in Section 2.6)
 
-if (verbose) message("Table 6 Panel A: Trading Performance")
+if (verbose) {
+  message("\nTable 6 Panel A: Trading Performance")
+  message("  Source: IS_AP$sdf_mim (reloaded in Section 2.6)")
+  message("  model_type  = '", bswsp_model_type, "'")
+  message("  return_type = '", cfg_return_type, "'")
+}
 
 if (!exists("IS_AP") || is.null(IS_AP$sdf_mim)) {
   warning("IS_AP$sdf_mim not available. Skipping Table 6 Panel A.")
@@ -501,92 +628,15 @@ if (verbose) {
 if (verbose) message("Figure 1: [Not yet implemented]")
 
 
-###############################################################################
-## FIGURES 2-4: REQUIRE bond_stock_with_sp DATA
-## ---------------------------------------------------------------------------
-## Figures 2-4 MUST use the bond_stock_with_sp model data.
-## CRITICAL: We ALWAYS reload here because intermediate data generation
-## functions (run_sr_decomposition_multi, run_pricing_multi, etc.) may have
-## loaded other model types into .GlobalEnv and corrupted f1/f2/results.
-###############################################################################
-
-fig234_model_type <- "bond_stock_with_sp"
-
-if (verbose) {
-  message("\n", strrep("!", 60))
-  message("RELOADING DATA FOR FIGURES 2-4")
-  message("  Figures 2-4 require: model_type = '", fig234_model_type, "'")
-  message("  ALWAYS reloading to ensure correct data after intermediate processing")
-  message(strrep("!", 60), "\n")
-}
-
-# Construct path to bond_stock_with_sp .Rdata
-fig234_rdata_filename <- sprintf(
-  "%s_%s_alpha.w=%s_beta.w=%s_kappa=%s_%s.Rdata",
-  cfg_return_type,
-  fig234_model_type,
-  cfg_alpha.w,
-  cfg_beta.w,
-  cfg_kappa,
-  cfg_tag
-)
-fig234_rdata_path <- file.path(results_path, fig234_model_type, fig234_rdata_filename)
-
-if (!file.exists(fig234_rdata_path)) {
-  stop(
-    "CRITICAL ERROR: Figures 2-4 require bond_stock_with_sp model but file not found!\n",
-    "  Expected: ", fig234_rdata_path, "\n",
-    "  Please run the bond_stock_with_sp model first."
-  )
-}
-
-# Load the correct data into GLOBAL environment
-# This is critical because plotting functions use get("f1", inherits = TRUE)
-# which searches parent environments including .GlobalEnv
-load(fig234_rdata_path, envir = .GlobalEnv)
-
-# Also load into current environment for direct access
-results <- get("results", envir = .GlobalEnv)
-f1 <- get("f1", envir = .GlobalEnv)
-f2 <- get("f2", envir = .GlobalEnv)
-intercept <- get("intercept", envir = .GlobalEnv)
-if (exists("nontraded_names", envir = .GlobalEnv)) {
-  nontraded_names <- get("nontraded_names", envir = .GlobalEnv)
-}
-if (exists("bond_names", envir = .GlobalEnv)) {
-  bond_names <- get("bond_names", envir = .GlobalEnv)
-}
-if (exists("stock_names", envir = .GlobalEnv)) {
-  stock_names <- get("stock_names", envir = .GlobalEnv)
-}
-
-if (verbose) {
-  message("  Successfully reloaded: ", fig234_rdata_filename)
-  message("  Loaded into: .GlobalEnv and current environment")
-  message("  f1: ", nrow(f1), " obs x ", ncol(f1), " factors")
-  if (!is.null(f2)) message("  f2: ", nrow(f2), " obs x ", ncol(f2), " factors")
-  message("  results: ", length(results), " prior specifications")
-}
-
-# Verify we have the correct data loaded
-if (verbose) {
-  n_factors_total <- ncol(f1) + ifelse(is.null(f2), 0, ncol(f2))
-  message("  VERIFICATION: Total factors = ", n_factors_total)
-  if (n_factors_total != 54) {
-    warning("  WARNING: Expected 54 factors for bond_stock_with_sp, got ", n_factors_total)
-  } else {
-    message("  VERIFICATION: OK - 54 factors confirmed (bond_stock_with_sp)")
-  }
-}
-
-
 #### Figure 2 + Table A.2: Posterior Probabilities ----------------------------
+# NOTE: Uses bond_stock_with_sp data reloaded in Section 2.6
 # Generates: Figure 2 (posterior probability plot) and Table A.2 (LaTeX table)
 # Source: code_base/pp_figure_table.R
 
 if (verbose) {
   message("\nFigure 2 + Table A.2: Posterior Probabilities")
-  message("  Using model_type = '", fig234_model_type, "'")
+  message("  model_type  = '", bswsp_model_type, "'")
+  message("  return_type = '", cfg_return_type, "'")
 }
 
 # Check that required objects exist from loaded .Rdata
@@ -599,7 +649,7 @@ if (!exists("results")) {
     results       = results,
     # Metadata for filenames
     return_type   = cfg_return_type,
-    model_type    = fig234_model_type,  # ENFORCED: always bond_stock_with_sp
+    model_type    = bswsp_model_type,  # ENFORCED: always bond_stock_with_sp
     tag           = cfg_tag,
     # Prior parameters (for prob_thresh calculation)
     alpha.w       = alpha.w,
@@ -622,11 +672,12 @@ if (!exists("results")) {
 #### Figure 3: Number of Factors & Sharpe Ratio Distributions -----------------
 # Generates: Figure 3 (two-panel: posterior n_factors + SR distribution)
 # Source: code_base/plot_nfac_sr.R
-# NOTE: Uses bond_stock_with_sp data loaded above (fig234_model_type)
+# NOTE: Uses bond_stock_with_sp data reloaded in Section 2.6
 
 if (verbose) {
   message("\nFigure 3: Number of Factors & Sharpe Ratio Distributions")
-  message("  Using model_type = '", fig234_model_type, "'")
+  message("  model_type  = '", bswsp_model_type, "'")
+  message("  return_type = '", cfg_return_type, "'")
 }
 
 # Check that required objects exist from loaded .Rdata
@@ -640,7 +691,7 @@ if (!exists("results")) {
     results       = results,
     # Metadata for filenames
     return_type   = cfg_return_type,
-    model_type    = fig234_model_type,  # ENFORCED: always bond_stock_with_sp
+    model_type    = bswsp_model_type,  # ENFORCED: always bond_stock_with_sp
     tag           = cfg_tag,
     # Prior selection (use highest shrinkage by default)
     prior_labels  = c("20%", "40%", "60%", "80%"),
@@ -668,11 +719,12 @@ if (!exists("results")) {
 # Panel A: Posterior inclusion probabilities for each factor
 # Panel B: Posterior mean market prices of risk (annualized)
 # Source: code_base/pp_bar_plots.R
-# NOTE: Uses bond_stock_with_sp data loaded above (fig234_model_type)
+# NOTE: Uses bond_stock_with_sp data reloaded in Section 2.6
 
 if (verbose) {
   message("\nFigure 4: Posterior Probabilities & Market Prices of Risk")
-  message("  Using model_type = '", fig234_model_type, "'")
+  message("  model_type  = '", bswsp_model_type, "'")
+  message("  return_type = '", cfg_return_type, "'")
 }
 
 # Check that required objects exist from loaded .Rdata
@@ -685,7 +737,7 @@ if (!exists("results")) {
     results       = results,
     # Metadata for filenames
     return_type   = cfg_return_type,
-    model_type    = fig234_model_type,  # ENFORCED: always bond_stock_with_sp
+    model_type    = bswsp_model_type,  # ENFORCED: always bond_stock_with_sp
     tag           = cfg_tag,
     # Prior selection (use highest shrinkage by default)
     prior_labels  = c("20%", "40%", "60%", "80%"),
@@ -716,7 +768,11 @@ if (!exists("results")) {
 # Shows distribution of metrics across thousands of test asset subsets.
 # Source: thousands_oos_results from Section 2.5
 
-if (verbose) message("Figure 5: Thousands OOS Pricing Tests (Excess Returns)")
+if (verbose) {
+  message("\nFigure 5: Thousands OOS Pricing Tests (Excess Returns)")
+  message("  Source: thousands_oos_results (generated from all model types)")
+  message("  return_type = 'excess'")
+}
 
 if (!exists("thousands_oos_results") || is.null(thousands_oos_results)) {
   warning("thousands_oos_results not available. Skipping Figure 5.")
@@ -746,7 +802,11 @@ if (!exists("thousands_oos_results") || is.null(thousands_oos_results)) {
 # Same as Figure 5 but using duration-adjusted results.
 # Source: thousands_oos_results_duration from Section 2.5
 
-if (verbose) message("Figure 8: Thousands OOS Pricing Tests (Duration-Adjusted)")
+if (verbose) {
+  message("\nFigure 8: Thousands OOS Pricing Tests (Duration-Adjusted)")
+  message("  Source: thousands_oos_results_duration (generated from all model types)")
+  message("  return_type = 'duration'")
+}
 
 if (!exists("thousands_oos_results_duration") || is.null(thousands_oos_results_duration)) {
   warning("thousands_oos_results_duration not available. Skipping Figure 8.")
