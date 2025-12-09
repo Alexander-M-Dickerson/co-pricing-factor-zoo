@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-Replicate **"The Co-Pricing Factor Zoo"** (Dickerson, Julliard, Mueller, JFE 2025) in **1 command**.
+Replicate **["The Co-Pricing Factor Zoo"](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4589786)** (Dickerson, Julliard, Mueller, JFE 2025) in **1 command**.
 
 > **Important:** All commands should be run from the **root folder** of the repository (`co-pricing-factor-zoo-jfe/`).
 
@@ -57,7 +57,7 @@ Remove-Item "djm_data.zip"
 Rscript _run_full_replication.R
 ```
 
-This runs all 5 steps automatically (~2-3 hours total).
+This runs all 5 steps automatically. Runtime varies by hardware: ~1-2 hours (server with 24+ cores), ~3-4 hours (desktop), ~6 hours (laptop).
 
 ### Option B: Step-by-Step
 
@@ -97,7 +97,7 @@ output/
 
 ## Quick Test Mode
 
-Run with fewer MCMC draws for testing (~30 min total):
+Run with fewer MCMC draws for testing (runtime varies, up to ~2 hours max):
 
 ```bash
 Rscript _run_full_replication.R --quick

@@ -1,6 +1,6 @@
 # Co-Pricing Factor Zoo
 
-Bayesian Model Averaging (BMA) for asset pricing with bond and stock factors.
+Replication package for [The Co-Pricing Factor Zoo](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4589786).
 
 **Platform:** Works on Windows, macOS, and Linux
 
@@ -93,7 +93,7 @@ This will populate the `data/` folder with all required CSV files.
 Rscript _run_full_replication.R
 ```
 
-This automatically runs all 5 steps below (~2-3 hours total). For a quick test (~30 min):
+This automatically runs all 5 steps below. Runtime varies by hardware: ~1-2 hours (server with 24+ cores), ~3-4 hours (desktop), ~6 hours (laptop). For a quick test:
 
 ```bash
 Rscript _run_full_replication.R --quick
@@ -437,11 +437,11 @@ cd co-pricing-factor-zoo-jfe
 curl -L -o djm_data.zip https://openbondassetpricing.com/wp-content/uploads/2025/12/djm_data.zip
 unzip djm_data.zip -d data && rm djm_data.zip
 
-# Run full replication (~2-3 hours)
+# Run full replication (runtime varies: ~1-2 hrs server, ~3-4 hrs desktop, ~6 hrs laptop)
 Rscript _run_full_replication.R
 ```
 
-**Quick test mode** (~30 min with fewer MCMC draws):
+**Quick test mode** (runtime varies, up to ~2 hours max):
 ```bash
 Rscript _run_full_replication.R --quick
 ```
