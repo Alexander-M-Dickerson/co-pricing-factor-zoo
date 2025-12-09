@@ -144,8 +144,24 @@ if (!file.exists(rdata_path)) {
   )
 }
 
+# Save user configuration before loading (load() may overwrite these variables)
+cfg_model_type  <- model_type
+cfg_return_type <- return_type
+cfg_tag         <- tag
+cfg_alpha.w     <- alpha.w
+cfg_beta.w      <- beta.w
+cfg_kappa       <- kappa
+
 # Load the .Rdata file
 load(rdata_path)
+
+# Restore user configuration (in case load() overwrote them)
+model_type  <- cfg_model_type
+return_type <- cfg_return_type
+tag         <- cfg_tag
+alpha.w     <- cfg_alpha.w
+beta.w      <- cfg_beta.w
+kappa       <- cfg_kappa
 
 if (verbose) {
   message("Successfully loaded: ", rdata_filename)
