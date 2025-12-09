@@ -246,8 +246,6 @@ plot_nfac_sr <- function(results,
     message("Figure exported -> ", normalizePath(save_file))
   }
 
-  print(combined)
-
   ## ---- 5. Return results ----------------------------------------------------
   invisible(list(
     plot = combined,
