@@ -10,12 +10,23 @@
 ## Both models use identical settings except for the time direction.
 ## They run in parallel using 4 cores each (8 cores total).
 ##
+## EXPECTED RUNTIME (per model, 50,000 MCMC draws):
+##   - Laptop:  ~20 minutes
+##   - Server:  ~6 minutes
+##
+## PLATFORM: Works on Windows, macOS, and Linux
+##
 ## USAGE:
 ##   From R:
 ##     source("_run_all_conditional.R")
 ##
 ##   From terminal:
 ##     Rscript _run_all_conditional.R
+##
+## OUTPUT FILES:
+##   output/time_varying/bond_stock_with_sp/
+##     SS_excess_bond_stock_with_sp_..._ExpandingForward_..._ALL_RESULTS.rds
+##     SS_excess_bond_stock_with_sp_..._ExpandingBackward_..._ALL_RESULTS.rds
 ##
 ###############################################################################
 
@@ -29,6 +40,44 @@ cat("##  Cores:   4 per model (8 total)\n")
 cat("########################################################################\n\n")
 
 gc()
+
+###############################################################################
+## 0. ENVIRONMENT INFO (for replication)
+###############################################################################
+
+print_environment_info <- function() {
+  cat("========================================\n")
+  cat("ENVIRONMENT INFORMATION\n")
+  cat("========================================\n")
+
+  # R version
+  cat("\nR Version:\n")
+  cat("  ", R.version.string, "\n")
+  cat("  Platform: ", R.version$platform, "\n")
+  cat("  OS:       ", Sys.info()["sysname"], Sys.info()["release"], "\n")
+
+  # Required packages and versions
+  cat("\nRequired Package Versions:\n")
+
+  required_packages <- c(
+    "lubridate", "dplyr", "tidyr", "ggplot2",
+    "parallel", "doParallel", "foreach",
+    "MASS", "Matrix", "Hmisc", "RColorBrewer"
+  )
+
+  for (pkg in required_packages) {
+    if (requireNamespace(pkg, quietly = TRUE)) {
+      ver <- as.character(packageVersion(pkg))
+      cat(sprintf("  %-15s %s\n", pkg, ver))
+    } else {
+      cat(sprintf("  %-15s NOT INSTALLED\n", pkg))
+    }
+  }
+
+  cat("\n========================================\n\n")
+}
+
+print_environment_info()
 
 ###############################################################################
 ## 1. CONFIGURATION (SHARED BY BOTH MODELS)
@@ -97,6 +146,11 @@ if (!dir.exists(output_folder)) dir.create(output_folder, recursive = TRUE)
 logs_folder <- file.path(output_folder, "logs")
 if (!dir.exists(logs_folder)) dir.create(logs_folder, recursive = TRUE)
 
+# Detect operating system for cross-platform compatibility
+is_windows <- .Platform$OS.type == "windows"
+
+cat("Platform detected:", if (is_windows) "Windows" else "Unix/macOS/Linux", "\n\n")
+
 # Source helper scripts
 source(file.path(code_folder, "logging_helpers.R"))
 source(file.path(code_folder, "validate_and_align_dates.R"))
@@ -108,12 +162,24 @@ source(file.path(code_folder, "run_time_varying_estimation.R"))
 ###############################################################################
 
 generate_script <- function(reverse_time, tag) {
+  # Escape backslashes for Windows paths
+  main_path_escaped <- gsub("\\\\", "/", main_path)
+
   sprintf('
 ###############################################################################
 ## Auto-generated: %s
 ###############################################################################
 
 gc()
+
+# Print environment info for replication
+cat("\\n========================================\\n")
+cat("ENVIRONMENT INFO\\n")
+cat("========================================\\n")
+cat("R Version: ", R.version.string, "\\n")
+cat("Platform:  ", R.version$platform, "\\n")
+cat("OS:        ", Sys.info()["sysname"], "\\n")
+cat("========================================\\n\\n")
 
 main_path      <- "%s"
 data_folder    <- "data"
@@ -218,12 +284,31 @@ cat("\\n========================================\\n")
 cat("COMPLETE: %s\\n")
 cat("========================================\\n")
 ',
-    tag, main_path, toupper(as.character(reverse_time)), ndraws, tag, tag, tag
+    tag, main_path_escaped, toupper(as.character(reverse_time)), ndraws, tag, tag, tag
   )
 }
 
 ###############################################################################
-## 4. RUN BOTH MODELS IN PARALLEL
+## 4. CROSS-PLATFORM BACKGROUND PROCESS LAUNCHER
+###############################################################################
+
+launch_background_process <- function(script_path, log_path, is_windows) {
+  if (is_windows) {
+    # Windows: use start /B with cmd
+    # Normalize paths to Windows format
+    script_win <- normalizePath(script_path, winslash = "\\", mustWork = FALSE)
+    log_win <- normalizePath(log_path, winslash = "\\", mustWork = FALSE)
+    cmd <- sprintf('start /B cmd /C "Rscript "%s" > "%s" 2>&1"', script_win, log_win)
+    shell(cmd, wait = FALSE)
+  } else {
+    # Unix/macOS/Linux: use & for background
+    cmd <- sprintf('Rscript "%s" > "%s" 2>&1 &', script_path, log_path)
+    system(cmd, wait = FALSE)
+  }
+}
+
+###############################################################################
+## 5. RUN BOTH MODELS IN PARALLEL
 ###############################################################################
 
 cat("Launching both models in parallel...\n\n")
@@ -243,14 +328,14 @@ writeLines(script_backward, temp_backward)
 log_forward  <- file.path(output_folder, "log_expanding_forward.txt")
 log_backward <- file.path(output_folder, "log_expanding_backward.txt")
 
-# Launch both in background
+# Launch both in background (cross-platform)
 cat("  [1] ExpandingForward  -> ", log_forward, "\n")
-system(sprintf('Rscript "%s" > "%s" 2>&1 &', temp_forward, log_forward), wait = FALSE)
+launch_background_process(temp_forward, log_forward, is_windows)
 
 Sys.sleep(2)
 
 cat("  [2] ExpandingBackward -> ", log_backward, "\n")
-system(sprintf('Rscript "%s" > "%s" 2>&1 &', temp_backward, log_backward), wait = FALSE)
+launch_background_process(temp_backward, log_backward, is_windows)
 
 cat("\n")
 cat("========================================\n")
@@ -260,9 +345,18 @@ cat("  Cores per model: 4\n")
 cat("  Total cores:     8\n")
 cat("  MCMC draws:      ", ndraws, "\n")
 cat("\n")
+cat("Expected runtime per model:\n")
+cat("  Laptop: ~20 minutes\n")
+cat("  Server: ~6 minutes\n")
+cat("\n")
 cat("Monitor progress:\n")
-cat("  tail -f ", log_forward, "\n")
-cat("  tail -f ", log_backward, "\n")
+if (is_windows) {
+  cat("  type ", log_forward, "\n")
+  cat("  type ", log_backward, "\n")
+} else {
+  cat("  tail -f ", log_forward, "\n")
+  cat("  tail -f ", log_backward, "\n")
+}
 cat("\n")
 cat("Waiting for completion...\n")
 
@@ -290,20 +384,20 @@ while (!all_done) {
     }
   }
 
-  elapsed <- difftime(Sys.time(), start_time, units = "hours")
+  elapsed <- difftime(Sys.time(), start_time, units = "mins")
   status_f <- if (done_forward) "DONE" else "running"
   status_b <- if (done_backward) "DONE" else "running"
 
-  cat(sprintf("\r  Forward: %-8s | Backward: %-8s | Elapsed: %.1f hours    ",
+  cat(sprintf("\r  Forward: %-8s | Backward: %-8s | Elapsed: %.1f min    ",
               status_f, status_b, as.numeric(elapsed)))
 
   if (done_forward && done_backward) {
     all_done <- TRUE
   }
 
-  # Timeout after 12 hours
-  if (as.numeric(elapsed) > 12) {
-    cat("\n  WARNING: Timeout reached (12 hours)\n")
+  # Timeout after 3 hours (generous for slow machines)
+  if (as.numeric(elapsed) > 180) {
+    cat("\n  WARNING: Timeout reached (3 hours)\n")
     all_done <- TRUE
   }
 }
@@ -316,5 +410,11 @@ cat("\n\n")
 cat("########################################################################\n")
 cat("##  CONDITIONAL MODEL ESTIMATION COMPLETE\n")
 cat(sprintf("##  Finished: %s\n", Sys.time()))
-cat(sprintf("##  Total time: %.2f hours\n", as.numeric(difftime(Sys.time(), start_time, units = "hours"))))
+cat(sprintf("##  Total time: %.1f minutes\n", as.numeric(difftime(Sys.time(), start_time, units = "mins"))))
 cat("########################################################################\n")
+cat("\n")
+cat("OUTPUT FILES:\n")
+cat("  output/time_varying/bond_stock_with_sp/\n")
+cat("    SS_excess_bond_stock_with_sp_..._ExpandingForward_..._ALL_RESULTS.rds\n")
+cat("    SS_excess_bond_stock_with_sp_..._ExpandingBackward_..._ALL_RESULTS.rds\n")
+cat("\n")

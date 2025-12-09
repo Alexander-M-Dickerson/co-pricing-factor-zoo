@@ -1,303 +1,276 @@
 # Co-Pricing Factor Zoo
 
-Bayesian Model Averaging (BMA) for asset pricing with bond and stock factors. This repository implements the estimation and evaluation framework for identifying which factors from a large "zoo" of candidates are important for pricing both bond and stock returns.
+Bayesian Model Averaging (BMA) for asset pricing with bond and stock factors.
 
-## Overview
+**Platform:** Works on Windows, macOS, and Linux
 
-This project estimates Stochastic Discount Factor (SDF) models using Bayesian methods that:
+---
 
-- Handle large numbers of candidate factors (54 bond and stock factors)
-- Provide posterior probabilities for factor inclusion
-- Estimate market prices of risk with uncertainty quantification
-- Compare against benchmark models (CAPM, FF5, HKM, KNS, RP-PCA)
-- Evaluate pricing performance in-sample and out-of-sample
+## Quick Start: Step-by-Step Guide
 
-## Directory Structure
+### Prerequisites
 
-```
-co-pricing-factor-zoo/
-├── _run_*.R              # Runner scripts (entry points)
-├── code_base/            # Core estimation and analysis functions
-│   ├── run_*.R           # Main estimation routines
-│   ├── *_helpers.R       # Utility functions
-│   └── *.R               # Domain-specific functions
-├── data/                 # Input data files (CSV format)
-├── output/               # Results and figures
-│   ├── *.Rdata           # Saved estimation results
-│   ├── figures/          # Generated plots (PDF)
-│   ├── tables/           # Generated tables (LaTeX)
-│   └── paper/            # Paper compilation outputs
-│       ├── latex/        # LaTeX document files
-│       └── misc/         # Miscellaneous assets
-├── CLAUDE.md             # Development guidelines
-└── README.md             # This file
-```
-
-## Requirements
-
-### R Packages
+1. **Install R** (version 4.0 or higher): https://cran.r-project.org/
+2. **Install required packages** by running this in R:
 
 ```r
 install.packages(c(
-  "lubridate",    # Date handling
-
-  "dplyr",        # Data manipulation
-  "tidyr",        # Data reshaping
-  "ggplot2",      # Plotting
-  "parallel",     # Parallel processing
-  "doParallel",   # Parallel backends
-  "MASS",         # Statistical functions
-  "Matrix",       # Sparse matrices
-  "Hmisc",        # Miscellaneous utilities
-  "RColorBrewer"  # Color palettes
+  "lubridate", "dplyr", "tidyr", "ggplot2",
+  "parallel", "doParallel", "foreach",
+  "MASS", "Matrix", "Hmisc", "RColorBrewer"
 ))
 ```
 
-## Quick Start
+### Step 1: Download and Set Up
 
-### 1. Set Up Your Data
+1. Download or clone this repository
+2. Place your data files in the `data/` folder (see [Data Files](#data-files) below)
 
-Place your CSV data files in the `data/` folder. Required files:
+### Step 2: Run the Unconditional Models
 
-| File | Description |
-|------|-------------|
-| `nontraded.csv` | Non-traded factors (14 macro/sentiment factors) |
-| `traded_equity.csv` | Traded stock factors (24 factors) |
-| `traded_bond_excess.csv` | Traded bond factors - excess returns (16 factors) |
-| `traded_bond_duration_tmt.csv` | Traded bond factors - duration-adjusted |
-| `equity_anomalies_composite_33.csv` | Stock test assets (33 portfolios) |
-| `bond_insample_test_assets_50_excess.csv` | Bond test assets - excess (50 portfolios) |
-| `bond_insample_test_assets_50_duration_tmt.csv` | Bond test assets - duration-adjusted |
-| `frequentist_factors.csv` | Factors for benchmark model comparison |
+Open a terminal/command prompt, navigate to the project folder, and run:
 
-All CSV files must have `date` as the first column in `YYYY-MM-DD` format.
-
-### 2. Run Unconditional Models
-
-The unconditional models estimate factor importance over the full sample period.
-
-**Run all 7 models:**
 ```bash
+# On Windows (Command Prompt or PowerShell):
+cd C:\path\to\co-pricing-factor-zoo
+Rscript _run_all_unconditional.R
+
+# On macOS/Linux:
+cd /path/to/co-pricing-factor-zoo
 Rscript _run_all_unconditional.R
 ```
 
-**List available models:**
-```bash
-Rscript _run_all_unconditional.R --list
-```
+**What this does:**
+- Runs 7 different model specifications
+- Each model takes ~6-20 minutes depending on your machine
+- Creates `.Rdata` files in the `output/` folder
 
-**Run specific models:**
-```bash
-Rscript _run_all_unconditional.R --models=1,4,5
-```
+**Expected runtime:**
+| Model Type | Laptop | Server |
+|------------|--------|--------|
+| Joint (bond+stock) | ~20 min | ~6 min |
+| Bond or Stock only | ~10 min | ~3 min |
 
-**Run in parallel (recommended for multi-core systems):**
-```bash
-# With 9 cores: runs 2 models at a time (4 cores each, 1 reserved)
-Rscript _run_all_unconditional.R --parallel --cores=9
-
-# With 17 cores: runs 4 models at a time
-Rscript _run_all_unconditional.R --parallel --cores=17
-```
-
-#### Available Unconditional Models
-
-| ID | Name | Description |
-|----|------|-------------|
-| 1 | `stock` | Stock factors pricing equity test assets |
-| 2 | `bond_excess` | Bond factors pricing bond excess returns |
-| 3 | `bond_duration` | Bond factors pricing duration-adjusted returns |
-| 4 | `joint_excess` | Joint bond+stock factors with excess returns |
-| 5 | `joint_duration` | Joint bond+stock factors with duration-adjusted returns |
-| 6 | `treasury_stock` | Stock factors pricing Treasury component |
-| 7 | `treasury_bond` | Bond factors pricing Treasury component |
-
-### 3. Run Conditional (Time-Varying) Models
-
-The conditional models estimate factor importance using expanding windows to track how factor relevance changes over time.
+### Step 3: Run the Conditional (Time-Varying) Models
 
 ```bash
 Rscript _run_all_conditional.R
 ```
 
-### 4. Generate Paper Tables and Figures
+**What this does:**
+- Runs 2 models (forward and backward expanding windows) in parallel
+- Uses 8 cores total (4 per model)
+- Creates `.rds` files in `output/time_varying/`
 
-After running the models, generate all tables and figures:
+**Expected runtime:** ~20-40 minutes total
+
+### Step 4: Generate Paper Tables and Figures
 
 ```bash
 Rscript _run_paper_results.R
 ```
 
-### 5. Compile LaTeX Document
+**What this does:**
+- Reads the estimation results
+- Creates all tables (`.tex` files) in `output/tables/`
+- Creates all figures (`.pdf` files) in `output/figures/`
 
-Generate the LaTeX document with all tables and figures:
+### Step 5: Compile the LaTeX Document
 
 ```bash
 Rscript _create_djm_tabs_figs.R
 ```
 
-Output files are created in `output/paper/latex/`.
+**What this does:**
+- Generates the main LaTeX document
+- Output files in `output/paper/latex/`
 
-## Model Configuration
+---
 
-### MCMC Parameters
+## Output Files: Where to Find Everything
 
-Default settings in runner scripts:
+After running all scripts, your output folder will contain:
 
-```r
-ndraws   <- 50000                      # MCMC iterations
-SRscale  <- c(0.20, 0.40, 0.60, 0.80)  # Prior SR shrinkage levels
-alpha.w  <- 1                          # Beta prior hyperparameter
-beta.w   <- 1                          # Beta prior hyperparameter
-kappa    <- 0                          # Factor tilt (0 = no tilt)
+```
+output/
+├── *.Rdata                    # Unconditional model results
+├── figures/                   # All PDF figures
+│   ├── figure_2_*.pdf         # Posterior probabilities
+│   ├── figure_3_*.pdf         # SDF dimensionality
+│   ├── figure_4_*.pdf         # Factor bars
+│   ├── fig5_*.pdf             # Pricing distributions
+│   ├── fig6a_*.pdf, fig6b_*.pdf  # Time-varying heatmaps
+│   ├── fig7_*.pdf             # Cumulative returns
+│   └── ...
+├── tables/                    # All LaTeX tables
+│   ├── table_1_*.tex          # Top 5 factors
+│   ├── table_2_*.tex          # In-sample pricing
+│   ├── table_3_*.tex          # Out-of-sample pricing
+│   └── ...
+├── time_varying/              # Conditional model results
+│   └── bond_stock_with_sp/
+│       └── SS_*.rds           # Time-varying estimation results
+└── paper/
+    └── latex/                 # Final LaTeX document
+        ├── djm_main.tex       # Main document
+        ├── tables.tex         # Table includes
+        ├── figures.tex        # Figure includes
+        └── bibliography_*.bib # References
 ```
 
-### Prior Sharpe Ratio Shrinkage
+---
 
-The `SRscale` parameter controls prior shrinkage toward zero:
-- **20%**: Strong shrinkage (conservative factor selection)
-- **40%**: Moderate-strong shrinkage
-- **60%**: Moderate shrinkage
-- **80%**: Light shrinkage (more aggressive factor selection)
+## Data Files
 
-Results are reported for all four levels.
+Place these CSV files in the `data/` folder. All files must have `date` as the first column in `YYYY-MM-DD` format.
 
-## Output Files
+### Required Files
 
-### Estimation Results (`.Rdata`)
+| File | Description |
+|------|-------------|
+| `nontraded.csv` | 14 non-traded factors (macro, sentiment) |
+| `traded_equity.csv` | 24 traded stock factors |
+| `traded_bond_excess.csv` | 16 traded bond factors (excess returns) |
+| `traded_bond_duration_tmt.csv` | Bond factors (duration-adjusted) |
+| `equity_anomalies_composite_33.csv` | 33 stock test asset portfolios |
+| `bond_insample_test_assets_50_excess.csv` | 50 bond test assets (excess) |
+| `bond_insample_test_assets_50_duration_tmt.csv` | Bond test assets (duration-adjusted) |
+| `bond_insample_test_assets_50_duration_tmt_tbond.csv` | Treasury test assets |
+| `frequentist_factors.csv` | Factors for benchmark comparisons |
 
-Each model estimation produces an `.Rdata` file containing:
+---
 
-| Object | Description |
-|--------|-------------|
-| `results` | List of MCMC output per shrinkage level |
-| `f1`, `f2` | Factor matrices (non-traded, traded) |
-| `R_matrix` | Test asset returns |
-| `IS_AP` | In-sample asset pricing results |
-| `kns_out` | Kozak-Nagel-Shanken OOS results |
-| `rp_out` | RP-PCA results |
+## The 7 Unconditional Models
 
-### Key Results Objects
+| # | Model | Description | Output File |
+|---|-------|-------------|-------------|
+| 1 | `stock` | Stock factors only | `excess_stock_*_baseline.Rdata` |
+| 2 | `bond_excess` | Bond factors (excess returns) | `excess_bond_*_baseline.Rdata` |
+| 3 | `bond_duration` | Bond factors (duration-adjusted) | `duration_bond_*_baseline.Rdata` |
+| 4 | `joint_excess` | Joint bond+stock (excess) | `excess_bond_stock_with_sp_*_baseline.Rdata` |
+| 5 | `joint_duration` | Joint bond+stock (duration) | `duration_bond_stock_with_sp_*_baseline.Rdata` |
+| 6 | `treasury_stock` | Treasury with stock factors | `excess_treasury_*_stock_treasury.Rdata` |
+| 7 | `treasury_bond` | Treasury with bond factors | `excess_treasury_*_bond_treasury.Rdata` |
 
-**`results[[i]]$gamma_path`**: Binary inclusion indicators
-- Dimensions: `ndraws × N_factors`
-- `colMeans()` gives posterior inclusion probabilities
+### Run specific models only:
 
-**`results[[i]]$lambda_path`**: Market prices of risk
-- Dimensions: `ndraws × (1 + N_factors)` if intercept
-- Multiply by `sqrt(12)` for annualization
-
-**`IS_AP$is_pricing_result`**: Pricing metrics
-- Rows: `RMSEdm`, `MAPEdm`, `R2OLS`, `R2GLS`
-- Columns: Model names (BMA-20%, CAPM, FF5, KNS, etc.)
-
-### Generated Figures
-
-| Figure | Description |
-|--------|-------------|
-| `figure_2_posterior_probs_*.pdf` | Posterior factor probabilities |
-| `figure_3_nfac_sr_*.pdf` | SDF dimensionality and Sharpe ratios |
-| `figure_4_posterior_bars_*.pdf` | Factor probabilities and risk prices |
-| `fig5_*.pdf`, `fig8_*.pdf` | BMA pricing performance distributions |
-| `fig6a/b_top5_prob_*.pdf` | Time-varying factor importance |
-| `fig7_oos_cumret.pdf` | Out-of-sample cumulative returns |
-| `fig10_sdf_time_series_*.pdf` | SDF time series |
-| `fig11_sdf_volatility_*.pdf` | SDF volatility dynamics |
-| `fig12a/b_predictability_*.pdf` | Return predictability with SDF |
-
-### Generated Tables
-
-| Table | Description |
-|-------|-------------|
-| `table_1_top5_factors.tex` | Top 5 factors by posterior probability |
-| `table_2_is_pricing.tex` | In-sample pricing performance |
-| `table_3_os_pricing.tex` | Out-of-sample pricing performance |
-| `table_4_sr_by_factor_type.tex` | Sharpe ratios by factor type |
-| `table_5_dr_vs_cf.tex` | Discount rate vs. cash flow news |
-| `table_6_trading.tex` | Trading strategy performance |
-| `table_a1_posterior_probs_*.tex` | Full posterior probabilities (Appendix) |
-
-## Benchmark Models
-
-The framework compares BMA results against:
-
-| Model | Factors |
-|-------|---------|
-| CAPM | MKTS (stock market) |
-| CAPMB | MKTB (bond market) |
-| FF5 | MKTS, HML, SMB, DEF, TERM |
-| HKM | MKTS, CPTLT |
-| KNS | Kozak-Nagel-Shanken latent factors |
-| RP-PCA | Risk-premium PCA factors |
-| TOP | Top factors by posterior probability |
-
-## Advanced Usage
-
-### Running a Single Model Manually
-
-Edit `_run_unconditional_model.R` directly:
-
-```r
-# Set model configuration
-model_type  <- "bond_stock_with_sp"
-return_type <- "excess"
-tag         <- "my_custom_run"
-
-# Set data files
-f1 <- "nontraded.csv"
-f2 <- c("traded_bond_excess.csv", "traded_equity.csv")
-R  <- c("bond_insample_test_assets_50_excess.csv",
-        "equity_anomalies_composite_33.csv")
-
-# Run
-source("_run_unconditional_model.R")
-```
-
-### Customizing Frequentist Benchmarks
-
-```r
-frequentist_models <- list(
-  CAPM  = "MKTS",
-  FF3   = c("MKTS", "HML", "SMB"),
-  MyModel = c("MKTS", "MOM", "BAB")
-)
-```
-
-### Parallel Processing
-
-Each model uses 4 cores by default for the 4 shrinkage levels. Adjust with:
-
-```r
-num_cores <- 4  # Cores per model
-```
-
-Or via command line:
 ```bash
-Rscript _run_all_unconditional.R --cores-per-model=2
+# Run only models 1 and 4
+Rscript _run_all_unconditional.R --models=1,4
+
+# List all available models
+Rscript _run_all_unconditional.R --list
 ```
+
+---
+
+## The 2 Conditional Models
+
+| Model | Direction | Output File |
+|-------|-----------|-------------|
+| `ExpandingForward` | 1986→2004, 1986→2005, ..., 1986→2022 | `SS_*_ExpandingForward_*_ALL_RESULTS.rds` |
+| `ExpandingBackward` | 2004→2022, 2003→2022, ..., 1986→2022 | `SS_*_ExpandingBackward_*_ALL_RESULTS.rds` |
+
+Both models run in parallel automatically (4 cores each, 8 total).
+
+---
+
+## Advanced Options
+
+### Run models in parallel (faster on multi-core machines)
+
+```bash
+# Run unconditional models in parallel with 9 cores
+# (2 models at a time, 4 cores each, 1 reserved)
+Rscript _run_all_unconditional.R --parallel --cores=9
+```
+
+### Dry run (see what would happen without running)
+
+```bash
+Rscript _run_all_unconditional.R --dry-run
+```
+
+### Get help
+
+```bash
+Rscript _run_all_unconditional.R --help
+```
+
+---
+
+## Replication Information
+
+When scripts run, they automatically log:
+- **R version** (e.g., R 4.3.1)
+- **Platform** (Windows/macOS/Linux)
+- **Package versions** for all required packages
+
+This information appears in the console output and log files for reproducibility.
+
+---
 
 ## Troubleshooting
 
-### Memory Issues
-
-For large datasets, run garbage collection between models:
+### "Package not found" error
+Install the missing package:
 ```r
-gc()
+install.packages("package_name")
 ```
 
-### Date Alignment Errors
+### "File not found" error
+- Make sure you're running the script from the project root folder
+- Check that all data files are in the `data/` folder
 
-Ensure all CSV files have:
-- First column named `date`
-- Format: `YYYY-MM-DD`
-- Overlapping date ranges
+### Scripts seem to hang
+- Unconditional models take 6-20 minutes each
+- Conditional models take 20-40 minutes total
+- Check `output/log_*.txt` files for progress
 
-### Missing Packages
+### Memory issues
+Close other applications. Each model uses ~2-4 GB RAM.
 
-Install all required packages:
-```r
-source("code_base/install_packages.R")  # If available
+---
+
+## Summary: Complete Replication in 5 Commands
+
+```bash
+# 1. Navigate to project folder
+cd /path/to/co-pricing-factor-zoo
+
+# 2. Run unconditional models (~1-2 hours total)
+Rscript _run_all_unconditional.R
+
+# 3. Run conditional models (~30-40 min)
+Rscript _run_all_conditional.R
+
+# 4. Generate tables and figures
+Rscript _run_paper_results.R
+
+# 5. Compile LaTeX document
+Rscript _create_djm_tabs_figs.R
 ```
+
+Done! Check `output/paper/latex/` for the final document.
+
+---
+
+## Project Structure
+
+```
+co-pricing-factor-zoo/
+├── _run_all_unconditional.R   # Run all 7 unconditional models
+├── _run_all_conditional.R     # Run 2 conditional models
+├── _run_paper_results.R       # Generate tables and figures
+├── _create_djm_tabs_figs.R    # Compile LaTeX document
+├── code_base/                 # Core functions (don't modify)
+├── data/                      # Your input data files (CSV)
+├── output/                    # All results go here
+├── CLAUDE.md                  # Development guidelines
+└── README.md                  # This file
+```
+
+---
 
 ## Citation
 
