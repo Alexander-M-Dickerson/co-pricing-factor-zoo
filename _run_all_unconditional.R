@@ -385,14 +385,60 @@ verbose        <- TRUE
 fac_to_drop    <- NULL
 weighting      <- "GLS"
 
-#### Source and run the estimation code
+#### Source helper files
 setwd(main_path)
+source(file.path(code_folder, "logging_helpers.R"))
+source(file.path(code_folder, "validate_and_align_dates.R"))
+source(file.path(code_folder, "data_loading_helpers.R"))
 source(file.path(code_folder, "run_bayesian_mcmc.R"))
 
-cat("\\n========================================\\n")
-cat("MODEL COMPLETE: %s\\n")
-cat("Finished: ", as.character(Sys.time()), "\\n")
-cat("========================================\\n")
+#### Run the estimation
+tryCatch({
+  res <- run_bayesian_mcmc(
+    main_path          = main_path,
+    data_folder        = data_folder,
+    output_folder      = output_folder,
+    code_folder        = code_folder,
+    model_type         = model_type,
+    return_type        = return_type,
+    f1                 = f1,
+    f2                 = f2,
+    R                  = R,
+    fac_freq           = fac_freq,
+    n_bond_factors     = n_bond_factors,
+    date_start         = date_start,
+    date_end           = date_end,
+    frequentist_models = frequentist_models,
+    ndraws             = ndraws,
+    SRscale            = SRscale,
+    alpha.w            = alpha.w,
+    beta.w             = beta.w,
+    kappa              = kappa,
+    kappa_fac          = kappa_fac,
+    drop_draws_pct     = drop_draws_pct,
+    tag                = tag,
+    num_cores          = num_cores,
+    seed               = seed,
+    intercept          = intercept,
+    save_flag          = save_flag,
+    verbose            = verbose,
+    fac_to_drop        = fac_to_drop,
+    weighting          = weighting
+  )
+
+  cat("\\n========================================\\n")
+  cat("MODEL COMPLETE: %s\\n")
+  cat("Results saved to: ", res$saved_path, "\\n")
+  cat("Finished: ", as.character(Sys.time()), "\\n")
+  cat("========================================\\n")
+
+}, error = function(e) {
+  cat("\\n========================================\\n")
+  cat("ERROR in model %s:\\n")
+  cat(e$message, "\\n")
+  cat("========================================\\n")
+  stop(e)
+})
 ',
     cfg$name,
     as.character(Sys.time()),
@@ -406,6 +452,7 @@ cat("========================================\\n")
     ndraws,
     cfg$tag,
     cores_per_model,
+    cfg$name,
     cfg$name
   )
 
