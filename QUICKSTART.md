@@ -2,6 +2,8 @@
 
 Replicate **"The Co-Pricing Factor Zoo"** (Dickerson, Julliard, Mueller, JFE 2025) in **1 command**.
 
+> **Important:** All commands should be run from the **root folder** of the repository (`co-pricing-factor-zoo-jfe/`).
+
 ---
 
 ## 1. Install R and Packages
@@ -21,9 +23,15 @@ install.packages(c(
 
 ---
 
-## 2. Download Data
+## 2. Clone Repository and Download Data
 
-Open RStudio, set working directory to the project folder, then run in the **Terminal** tab:
+**Clone the repository:**
+```bash
+git clone https://github.com/Alexander-M-Dickerson/co-pricing-factor-zoo-jfe.git
+cd co-pricing-factor-zoo-jfe
+```
+
+**Download the data:**
 
 **macOS/Linux:**
 ```bash
@@ -52,6 +60,8 @@ Rscript _run_full_replication.R
 This runs all 5 steps automatically (~2-3 hours total).
 
 ### Option B: Step-by-Step
+
+From the project root folder (`co-pricing-factor-zoo-jfe/`):
 
 ```bash
 # 1. Unconditional models (~1-2 hours, parallel by default)
