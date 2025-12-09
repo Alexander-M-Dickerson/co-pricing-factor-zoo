@@ -505,55 +505,67 @@ if (verbose) message("Figure 1: [Not yet implemented]")
 ## FIGURES 2-4: REQUIRE bond_stock_with_sp DATA
 ## ---------------------------------------------------------------------------
 ## Figures 2-4 MUST use the bond_stock_with_sp model data.
-## If the user configured a different model_type, we reload the correct file.
+## CRITICAL: We ALWAYS reload here because intermediate data generation
+## functions (run_sr_decomposition_multi, run_pricing_multi, etc.) may have
+## loaded other model types into .GlobalEnv and corrupted f1/f2/results.
 ###############################################################################
 
 fig234_model_type <- "bond_stock_with_sp"
 
-# Check if we need to reload data for Figures 2-4
-if (cfg_model_type != fig234_model_type) {
-  if (verbose) {
-    message("\n", strrep("!", 60))
-    message("RELOADING DATA FOR FIGURES 2-4")
-    message("  User configured: model_type = '", cfg_model_type, "'")
-    message("  Figures 2-4 require: model_type = '", fig234_model_type, "'")
-    message("  Reloading correct .Rdata file...")
-    message(strrep("!", 60), "\n")
-  }
+if (verbose) {
+  message("\n", strrep("!", 60))
+  message("RELOADING DATA FOR FIGURES 2-4")
+  message("  Figures 2-4 require: model_type = '", fig234_model_type, "'")
+  message("  ALWAYS reloading to ensure correct data after intermediate processing")
+  message(strrep("!", 60), "\n")
+}
 
-  # Construct path to bond_stock_with_sp .Rdata
-  fig234_rdata_filename <- sprintf(
-    "%s_%s_alpha.w=%s_beta.w=%s_kappa=%s_%s.Rdata",
-    cfg_return_type,
-    fig234_model_type,
-    cfg_alpha.w,
-    cfg_beta.w,
-    cfg_kappa,
-    cfg_tag
+# Construct path to bond_stock_with_sp .Rdata
+fig234_rdata_filename <- sprintf(
+  "%s_%s_alpha.w=%s_beta.w=%s_kappa=%s_%s.Rdata",
+  cfg_return_type,
+  fig234_model_type,
+  cfg_alpha.w,
+  cfg_beta.w,
+  cfg_kappa,
+  cfg_tag
+)
+fig234_rdata_path <- file.path(results_path, fig234_model_type, fig234_rdata_filename)
+
+if (!file.exists(fig234_rdata_path)) {
+  stop(
+    "CRITICAL ERROR: Figures 2-4 require bond_stock_with_sp model but file not found!\n",
+    "  Expected: ", fig234_rdata_path, "\n",
+    "  Please run the bond_stock_with_sp model first."
   )
-  fig234_rdata_path <- file.path(results_path, fig234_model_type, fig234_rdata_filename)
+}
 
-  if (!file.exists(fig234_rdata_path)) {
-    stop(
-      "CRITICAL ERROR: Figures 2-4 require bond_stock_with_sp model but file not found!\n",
-      "  Expected: ", fig234_rdata_path, "\n",
-      "  Please run the bond_stock_with_sp model first."
-    )
-  }
+# Load the correct data into GLOBAL environment
+# This is critical because plotting functions use get("f1", inherits = TRUE)
+# which searches parent environments including .GlobalEnv
+load(fig234_rdata_path, envir = .GlobalEnv)
 
-  # Load the correct data (this overwrites results, f1, f2, etc.)
-  load(fig234_rdata_path)
+# Also load into current environment for direct access
+results <- get("results", envir = .GlobalEnv)
+f1 <- get("f1", envir = .GlobalEnv)
+f2 <- get("f2", envir = .GlobalEnv)
+intercept <- get("intercept", envir = .GlobalEnv)
+if (exists("nontraded_names", envir = .GlobalEnv)) {
+  nontraded_names <- get("nontraded_names", envir = .GlobalEnv)
+}
+if (exists("bond_names", envir = .GlobalEnv)) {
+  bond_names <- get("bond_names", envir = .GlobalEnv)
+}
+if (exists("stock_names", envir = .GlobalEnv)) {
+  stock_names <- get("stock_names", envir = .GlobalEnv)
+}
 
-  if (verbose) {
-    message("  Successfully reloaded: ", fig234_rdata_filename)
-    message("  f1: ", nrow(f1), " obs x ", ncol(f1), " factors")
-    if (!is.null(f2)) message("  f2: ", nrow(f2), " obs x ", ncol(f2), " factors")
-    message("  results: ", length(results), " prior specifications\n")
-  }
-} else {
-  if (verbose) {
-    message("\nFigures 2-4: Using already loaded bond_stock_with_sp data")
-  }
+if (verbose) {
+  message("  Successfully reloaded: ", fig234_rdata_filename)
+  message("  Loaded into: .GlobalEnv and current environment")
+  message("  f1: ", nrow(f1), " obs x ", ncol(f1), " factors")
+  if (!is.null(f2)) message("  f2: ", nrow(f2), " obs x ", ncol(f2), " factors")
+  message("  results: ", length(results), " prior specifications")
 }
 
 # Verify we have the correct data loaded
