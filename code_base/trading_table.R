@@ -210,13 +210,13 @@ generate_table_6_panel_a <- function(IS_AP,
   ## 5. Generate LaTeX table                                               ##
   ##-----------------------------------------------------------------------##
 
-  # Format numbers
+  # Format numbers - always 2 decimal places
   format_num <- function(x, digits = 2) {
     if (is.na(x)) return("--")
     if (x < 0) {
-      return(sprintf("$-$%.*f", digits, abs(x)))
+      return(sprintf("$-$%.2f", abs(x)))
     } else {
-      return(sprintf("%.*f", digits, x))
+      return(sprintf("%.2f", x))
     }
   }
 
