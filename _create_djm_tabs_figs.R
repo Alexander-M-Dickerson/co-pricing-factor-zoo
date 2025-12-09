@@ -50,8 +50,7 @@ main_table_order <- c(
   "table_3_os_pricing.tex",
   "table_4_sr_by_factor_type.tex",
   "table_5_dr_vs_cf.tex",
-  "table_6_panel_a_trading.tex",
-  "table_6_panel_b_trading.tex"
+  "table_6_trading.tex"
 )
 
 # Appendix tables (if any exist, pattern: table_a* or table_ia*)

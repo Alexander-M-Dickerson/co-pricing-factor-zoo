@@ -157,6 +157,7 @@ This SDF, as well as its conditional mean and volatility, are persistent, track 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%% References %%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\clearpage
 {\footnotesize
 \singlespacing
 \setlength{\bibsep}{4pt}

@@ -213,8 +213,8 @@ tables_dir  <- file.path(output_folder, "paper", "tables")
 cat("Figure 7 saved to:\n")
 cat("  ", file.path(figures_dir, "fig7_oos_cumret.pdf"), "\n\n")
 
-cat("Table 6 Panel B saved to:\n")
-cat("  ", file.path(tables_dir, "table_6_panel_b_trading.tex"), "\n\n")
+cat("Table 6 (combined Panel A + Panel B) saved to:\n")
+cat("  ", file.path(tables_dir, "table_6_trading.tex"), "\n\n")
 
 cat("========================================\n")
 cat("PAPER RESULTS COMPLETE\n")
