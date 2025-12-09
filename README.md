@@ -34,6 +34,8 @@ All data files are provided in the download package. Monthly observations from J
 
 ## Quick Start: Step-by-Step Guide
 
+> **Important:** All commands should be run from the **root folder** of the repository (`co-pricing-factor-zoo-jfe/`).
+
 ### Prerequisites
 
 1. **Install R** (version 4.0 or higher): https://cran.r-project.org/
@@ -56,11 +58,16 @@ install.packages(c(
 ))
 ```
 
-### Step 1: Download Data and Set Up
+### Step 1: Clone the Repository and Download Data
 
-1. Download or clone this repository
-2. Open RStudio and set your working directory to the project folder
-3. **Download and extract the data** by running this in the RStudio **Terminal** tab:
+**Clone the repository** using the terminal:
+
+```bash
+git clone https://github.com/Alexander-M-Dickerson/co-pricing-factor-zoo-jfe.git
+cd co-pricing-factor-zoo-jfe
+```
+
+**Download and extract the data** by running in the terminal:
 
 ```bash
 # macOS/Linux:
@@ -76,13 +83,29 @@ Remove-Item "djm_data.zip"
 
 This will populate the `data/` folder with all required CSV files.
 
-### Step 2: Run the Unconditional Models
+> **Tip:** If using RStudio, open the project and use the **Terminal** tab (next to Console) for running commands.
 
-**Recommended: Use the Terminal tab in RStudio** (works on all platforms without PATH issues)
+### Step 2: Run Full Replication (Single Command)
 
-1. Open RStudio and set your working directory to the project folder
-2. Click on the **Terminal** tab (next to Console)
-3. Run:
+**Recommended:** Run the entire replication pipeline with one command:
+
+```bash
+Rscript _run_full_replication.R
+```
+
+This automatically runs all 5 steps below (~2-3 hours total). For a quick test (~30 min):
+
+```bash
+Rscript _run_full_replication.R --quick
+```
+
+If you prefer to run each step individually, continue with Steps 3-7 below.
+
+---
+
+### Step 3: Run the Unconditional Models (Alternative)
+
+From the project root folder, run:
 
 ```bash
 Rscript _run_all_unconditional.R
@@ -104,9 +127,9 @@ Rscript _run_all_unconditional.R --ndraws=5000 --parallel
 | Joint (bond+stock) | ~20 min | ~6 min |
 | Bond or Stock only | ~10 min | ~3 min |
 
-### Step 3: Run the Conditional (Time-Varying) Models
+### Step 4: Run the Conditional (Time-Varying) Models
 
-In the RStudio Terminal tab:
+From the project root folder:
 ```bash
 Rscript _run_all_conditional.R
 ```
@@ -123,9 +146,9 @@ Rscript _run_all_conditional.R --ndraws=5000
 
 **Expected runtime:** ~20-40 minutes total (per estimation window: ~20 min laptop, ~6 min server)
 
-### Step 4: Generate Paper Tables and Figures (Unconditional)
+### Step 5: Generate Paper Tables and Figures (Unconditional)
 
-In the RStudio Terminal tab:
+From the project root folder:
 ```bash
 Rscript _run_paper_results.R
 ```
@@ -135,9 +158,9 @@ Rscript _run_paper_results.R
 - Creates Tables 1-6 (Panel A) and Table A.2 (`.tex` files) in `output/paper/tables/`
 - Creates Figures 2-6, 8-12 (`.pdf` files) in `output/paper/figures/`
 
-### Step 5: Generate Paper Tables and Figures (Conditional)
+### Step 6: Generate Paper Tables and Figures (Conditional)
 
-In the RStudio Terminal tab:
+From the project root folder:
 ```bash
 Rscript _run_paper_conditional_results.R
 ```
@@ -147,9 +170,9 @@ Rscript _run_paper_conditional_results.R
 - Creates Figure 7 (cumulative returns) in `output/paper/figures/`
 - Creates Table 6 Panel B (out-of-sample trading) in `output/paper/tables/`
 
-### Step 6: Compile the LaTeX Document
+### Step 7: Compile the LaTeX Document
 
-In the RStudio Terminal tab:
+From the project root folder:
 ```bash
 Rscript _create_djm_tabs_figs.R
 ```
@@ -259,6 +282,7 @@ Place these CSV files in the `data/` folder. All files must have `date` as the f
 | `bond_insample_test_assets_50_duration_tmt_tbond.csv` | Treasury test assets |
 | `frequentist_factors.csv` | Factors for benchmark comparisons |
 | `treasury_oosample_all_excess.csv` | 29 out-of-sample U.S. Treasury returns |
+| `variance_decomp_results_vuol.rds` | Discount rate (DR) vs cash-flow (CF) news decomposition |
 
 ---
 
@@ -404,13 +428,18 @@ This happens when R is not in your system PATH. **Solution:** Use the RStudio Te
 
 ### Option 1: Single Command (Recommended)
 
-Open RStudio, set your working directory to the project folder, then run in the **Terminal** tab:
-
 ```bash
+# Clone the repository
+git clone https://github.com/Alexander-M-Dickerson/co-pricing-factor-zoo-jfe.git
+cd co-pricing-factor-zoo-jfe
+
+# Download data (macOS/Linux)
+curl -L -o djm_data.zip https://openbondassetpricing.com/wp-content/uploads/2025/12/djm_data.zip
+unzip djm_data.zip -d data && rm djm_data.zip
+
+# Run full replication (~2-3 hours)
 Rscript _run_full_replication.R
 ```
-
-This runs all 5 steps automatically (~2-3 hours total).
 
 **Quick test mode** (~30 min with fewer MCMC draws):
 ```bash
@@ -418,6 +447,8 @@ Rscript _run_full_replication.R --quick
 ```
 
 ### Option 2: Step-by-Step (5 Commands)
+
+From the project root folder (`co-pricing-factor-zoo-jfe/`):
 
 ```bash
 # 1. Run unconditional models (~1-2 hours, parallel by default)
@@ -443,7 +474,7 @@ Done! Check `output/paper/latex/` for the final document.
 ## Project Structure
 
 ```
-co-pricing-factor-zoo/
+co-pricing-factor-zoo-jfe/
 ├── _run_full_replication.R         # Single-command full replication (recommended)
 ├── _run_all_unconditional.R        # Run all 7 unconditional models
 ├── _run_all_conditional.R          # Run 2 conditional models
