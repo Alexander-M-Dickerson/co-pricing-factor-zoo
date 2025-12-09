@@ -23,6 +23,11 @@
 ##   From terminal:
 ##     Rscript _run_all_conditional.R
 ##
+## LOG FILES:
+##   output/logs/
+##     log_conditional_ExpandingForward_YYYYMMDD_HHMMSS.txt
+##     log_conditional_ExpandingBackward_YYYYMMDD_HHMMSS.txt
+##
 ## OUTPUT FILES:
 ##   output/time_varying/bond_stock_with_sp/
 ##     SS_excess_bond_stock_with_sp_..._ExpandingForward_..._ALL_RESULTS.rds
@@ -149,7 +154,11 @@ if (!dir.exists(logs_folder)) dir.create(logs_folder, recursive = TRUE)
 # Detect operating system for cross-platform compatibility
 is_windows <- .Platform$OS.type == "windows"
 
-cat("Platform detected:", if (is_windows) "Windows" else "Unix/macOS/Linux", "\n\n")
+# Generate timestamp for this run (used for log file names)
+RUN_TIMESTAMP <- format(Sys.time(), "%Y%m%d_%H%M%S")
+
+cat("Platform detected:", if (is_windows) "Windows" else "Unix/macOS/Linux", "\n")
+cat("Run timestamp:    ", RUN_TIMESTAMP, "\n\n")
 
 # Source helper scripts
 source(file.path(code_folder, "logging_helpers.R"))
@@ -324,9 +333,9 @@ temp_backward <- file.path(main_path, ".temp_expanding_backward.R")
 writeLines(script_forward,  temp_forward)
 writeLines(script_backward, temp_backward)
 
-# Log files
-log_forward  <- file.path(output_folder, "log_expanding_forward.txt")
-log_backward <- file.path(output_folder, "log_expanding_backward.txt")
+# Log files (in output/logs/ with timestamp)
+log_forward  <- file.path(logs_folder, sprintf("log_conditional_ExpandingForward_%s.txt", RUN_TIMESTAMP))
+log_backward <- file.path(logs_folder, sprintf("log_conditional_ExpandingBackward_%s.txt", RUN_TIMESTAMP))
 
 # Launch both in background (cross-platform)
 cat("  [1] ExpandingForward  -> ", log_forward, "\n")
@@ -412,6 +421,10 @@ cat("##  CONDITIONAL MODEL ESTIMATION COMPLETE\n")
 cat(sprintf("##  Finished: %s\n", Sys.time()))
 cat(sprintf("##  Total time: %.1f minutes\n", as.numeric(difftime(Sys.time(), start_time, units = "mins"))))
 cat("########################################################################\n")
+cat("\n")
+cat("LOG FILES:\n")
+cat(sprintf("  %s\n", log_forward))
+cat(sprintf("  %s\n", log_backward))
 cat("\n")
 cat("OUTPUT FILES:\n")
 cat("  output/time_varying/bond_stock_with_sp/\n")

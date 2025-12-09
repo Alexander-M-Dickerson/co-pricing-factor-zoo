@@ -94,6 +94,9 @@ After running all scripts, your output folder will contain:
 ```
 output/
 ├── *.Rdata                    # Unconditional model results
+├── logs/                      # Timestamped log files
+│   ├── log_model_*_YYYYMMDD_HHMMSS.txt    # Unconditional model logs
+│   └── log_conditional_*_YYYYMMDD_HHMMSS.txt  # Conditional model logs
 ├── figures/                   # All PDF figures
 │   ├── figure_2_*.pdf         # Posterior probabilities
 │   ├── figure_3_*.pdf         # SDF dimensionality
@@ -206,7 +209,25 @@ When scripts run, they automatically log:
 - **Platform** (Windows/macOS/Linux)
 - **Package versions** for all required packages
 
-This information appears in the console output and log files for reproducibility.
+This information appears in the console output and in timestamped log files for reproducibility.
+
+### Log Files
+
+Each model run creates a timestamped log file in `output/logs/`:
+
+| Script | Log File Pattern |
+|--------|-----------------|
+| `_run_all_unconditional.R` | `log_model_{id}_{name}_YYYYMMDD_HHMMSS.txt` |
+| `_run_all_conditional.R` | `log_conditional_{direction}_YYYYMMDD_HHMMSS.txt` |
+
+Example log files:
+```
+output/logs/
+├── log_model_1_stock_20241209_143052.txt
+├── log_model_2_bond_excess_20241209_143052.txt
+├── log_conditional_ExpandingForward_20241209_160000.txt
+└── log_conditional_ExpandingBackward_20241209_160000.txt
+```
 
 ---
 
@@ -225,7 +246,14 @@ install.packages("package_name")
 ### Scripts seem to hang
 - Unconditional models take 6-20 minutes each
 - Conditional models take 20-40 minutes total
-- Check `output/log_*.txt` files for progress
+- Check log files in `output/logs/` for progress:
+  ```bash
+  # On macOS/Linux:
+  tail -f output/logs/log_model_*.txt
+
+  # On Windows:
+  type output\logs\log_model_*.txt
+  ```
 
 ### Memory issues
 Close other applications. Each model uses ~2-4 GB RAM.
