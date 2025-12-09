@@ -40,11 +40,11 @@ unzip djm_data.zip -d data
 rm djm_data.zip
 ```
 
-**Windows (PowerShell):**
-```powershell
-Invoke-WebRequest -Uri "https://openbondassetpricing.com/wp-content/uploads/2025/12/djm_data.zip" -OutFile "djm_data.zip"
-Expand-Archive -Path "djm_data.zip" -DestinationPath "data"
-Remove-Item "djm_data.zip"
+**Windows (Command Prompt):**
+```cmd
+curl -L -o djm_data.zip https://openbondassetpricing.com/wp-content/uploads/2025/12/djm_data.zip
+tar -xf djm_data.zip -C data
+del djm_data.zip
 ```
 
 ---

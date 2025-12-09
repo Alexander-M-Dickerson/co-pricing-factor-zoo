@@ -105,7 +105,7 @@ build_latex_row <- function(label, values, digits = 2, is_integer = FALSE,
 # =========================================================================
 #  Table 1: Top 5 Factor Contributions to SDF
 # =========================================================================
-#' Generate Table 1: Most likely (top five) factor contribution to the SDF
+#' Generate Table 1: Most likely (top five) factor contributions to the SDF
 #'
 #' @param res_tbl_top Named list from run_sr_decomposition_multi()
 #' @param output_path Path to save .tex file (NULL = don't save)
@@ -133,7 +133,7 @@ generate_table_1 <- function(res_tbl_top,
   latex_lines <- c(
     "\\begin{table}[tb!]",
     "\\begin{center}",
-    "\\caption{Most likely (top five) factor contribution to the SDF}\\label{tab:table-model-dim2-top-non-top}\\vspace{-2mm}",
+    "\\caption{Most likely (top five) factor contributions to the SDF}\\label{tab:table-model-dim2-top-non-top}\\vspace{-2mm}",
     "\\scalebox{.8}{",
     "\\begin{tabular}{lcccccccccccccc}",
     "\\toprule",

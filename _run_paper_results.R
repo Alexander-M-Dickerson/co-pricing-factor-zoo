@@ -20,6 +20,9 @@
 
 gc()
 
+# Close any stray graphics devices to prevent Rplots.pdf in root folder
+if (length(dev.list()) > 0) graphics.off()
+
 ###############################################################################
 ## SECTION 1: USER CONFIGURATION
 ###############################################################################
@@ -1177,4 +1180,20 @@ save_figure <- function(plot_fn, name, width = 8, height = 6, format = figure_fo
     dev.off()
     if (verbose) message("  Saved: ", png_path)
   }
+}
+
+
+###############################################################################
+## CLEANUP
+###############################################################################
+
+# Close any remaining graphics devices to prevent Rplots.pdf
+if (length(dev.list()) > 0) graphics.off()
+
+if (verbose) {
+  message("\n========================================")
+  message("Paper results generation complete!")
+  message("========================================")
+  message("Tables saved to: ", tables_dir)
+  message("Figures saved to: ", figures_dir)
 }
