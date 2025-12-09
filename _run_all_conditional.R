@@ -208,6 +208,7 @@ cat("\n")
 # Source helper scripts
 source(file.path(code_folder, "logging_helpers.R"))
 source(file.path(code_folder, "validate_and_align_dates.R"))
+source(file.path(code_folder, "data_loading_helpers.R"))
 source(file.path(code_folder, "run_bayesian_mcmc.R"))
 source(file.path(code_folder, "run_time_varying_estimation.R"))
 
@@ -290,6 +291,7 @@ if (!dir.exists(logs_folder)) dir.create(logs_folder, recursive = TRUE)
 
 source(file.path(code_folder, "logging_helpers.R"))
 source(file.path(code_folder, "validate_and_align_dates.R"))
+source(file.path(code_folder, "data_loading_helpers.R"))
 source(file.path(code_folder, "run_bayesian_mcmc.R"))
 source(file.path(code_folder, "run_time_varying_estimation.R"))
 
