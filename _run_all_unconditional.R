@@ -387,7 +387,7 @@ weighting      <- "GLS"
 
 #### Source and run the estimation code
 setwd(main_path)
-source(file.path(code_folder, "run_unconditional_mcmc.R"))
+source(file.path(code_folder, "run_bayesian_mcmc.R"))
 
 cat("\\n========================================\\n")
 cat("MODEL COMPLETE: %s\\n")
