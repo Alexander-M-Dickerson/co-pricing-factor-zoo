@@ -163,6 +163,20 @@ alpha.w     <- cfg_alpha.w
 beta.w      <- cfg_beta.w
 kappa       <- cfg_kappa
 
+# CRITICAL: Verify configuration was restored correctly
+if (verbose) {
+  message("\n*** CONFIGURATION VERIFICATION ***")
+  message("  model_type  = '", model_type, "'")
+  message("  return_type = '", return_type, "'")
+  message("  tag         = '", tag, "'")
+  message("**********************************\n")
+}
+
+# ENFORCE: Figures 2-4 require bond_stock_with_sp model
+if (model_type != "bond_stock_with_sp") {
+  warning("WARNING: model_type is '", model_type, "' but expected 'bond_stock_with_sp' for main paper figures!")
+}
+
 if (verbose) {
   message("Successfully loaded: ", rdata_filename)
   message("Objects loaded: ", paste(ls(), collapse = ", "))
@@ -487,11 +501,93 @@ if (verbose) {
 if (verbose) message("Figure 1: [Not yet implemented]")
 
 
+###############################################################################
+## FIGURES 2-4: REQUIRE bond_stock_with_sp DATA
+## ---------------------------------------------------------------------------
+## Figures 2-4 MUST use the bond_stock_with_sp model data.
+## CRITICAL: We ALWAYS reload here because intermediate data generation
+## functions (run_sr_decomposition_multi, run_pricing_multi, etc.) may have
+## loaded other model types into .GlobalEnv and corrupted f1/f2/results.
+###############################################################################
+
+fig234_model_type <- "bond_stock_with_sp"
+
+if (verbose) {
+  message("\n", strrep("!", 60))
+  message("RELOADING DATA FOR FIGURES 2-4")
+  message("  Figures 2-4 require: model_type = '", fig234_model_type, "'")
+  message("  ALWAYS reloading to ensure correct data after intermediate processing")
+  message(strrep("!", 60), "\n")
+}
+
+# Construct path to bond_stock_with_sp .Rdata
+fig234_rdata_filename <- sprintf(
+  "%s_%s_alpha.w=%s_beta.w=%s_kappa=%s_%s.Rdata",
+  cfg_return_type,
+  fig234_model_type,
+  cfg_alpha.w,
+  cfg_beta.w,
+  cfg_kappa,
+  cfg_tag
+)
+fig234_rdata_path <- file.path(results_path, fig234_model_type, fig234_rdata_filename)
+
+if (!file.exists(fig234_rdata_path)) {
+  stop(
+    "CRITICAL ERROR: Figures 2-4 require bond_stock_with_sp model but file not found!\n",
+    "  Expected: ", fig234_rdata_path, "\n",
+    "  Please run the bond_stock_with_sp model first."
+  )
+}
+
+# Load the correct data into GLOBAL environment
+# This is critical because plotting functions use get("f1", inherits = TRUE)
+# which searches parent environments including .GlobalEnv
+load(fig234_rdata_path, envir = .GlobalEnv)
+
+# Also load into current environment for direct access
+results <- get("results", envir = .GlobalEnv)
+f1 <- get("f1", envir = .GlobalEnv)
+f2 <- get("f2", envir = .GlobalEnv)
+intercept <- get("intercept", envir = .GlobalEnv)
+if (exists("nontraded_names", envir = .GlobalEnv)) {
+  nontraded_names <- get("nontraded_names", envir = .GlobalEnv)
+}
+if (exists("bond_names", envir = .GlobalEnv)) {
+  bond_names <- get("bond_names", envir = .GlobalEnv)
+}
+if (exists("stock_names", envir = .GlobalEnv)) {
+  stock_names <- get("stock_names", envir = .GlobalEnv)
+}
+
+if (verbose) {
+  message("  Successfully reloaded: ", fig234_rdata_filename)
+  message("  Loaded into: .GlobalEnv and current environment")
+  message("  f1: ", nrow(f1), " obs x ", ncol(f1), " factors")
+  if (!is.null(f2)) message("  f2: ", nrow(f2), " obs x ", ncol(f2), " factors")
+  message("  results: ", length(results), " prior specifications")
+}
+
+# Verify we have the correct data loaded
+if (verbose) {
+  n_factors_total <- ncol(f1) + ifelse(is.null(f2), 0, ncol(f2))
+  message("  VERIFICATION: Total factors = ", n_factors_total)
+  if (n_factors_total != 54) {
+    warning("  WARNING: Expected 54 factors for bond_stock_with_sp, got ", n_factors_total)
+  } else {
+    message("  VERIFICATION: OK - 54 factors confirmed (bond_stock_with_sp)")
+  }
+}
+
+
 #### Figure 2 + Table A.2: Posterior Probabilities ----------------------------
 # Generates: Figure 2 (posterior probability plot) and Table A.2 (LaTeX table)
 # Source: code_base/pp_figure_table.R
 
-if (verbose) message("Figure 2 + Table A.2: Posterior Probabilities")
+if (verbose) {
+  message("\nFigure 2 + Table A.2: Posterior Probabilities")
+  message("  Using model_type = '", fig234_model_type, "'")
+}
 
 # Check that required objects exist from loaded .Rdata
 if (!exists("results")) {
@@ -502,9 +598,9 @@ if (!exists("results")) {
   fig2_result <- pp_figure_table(
     results       = results,
     # Metadata for filenames
-    return_type   = return_type,
-    model_type    = model_type,
-    tag           = tag,
+    return_type   = cfg_return_type,
+    model_type    = fig234_model_type,  # ENFORCED: always bond_stock_with_sp
+    tag           = cfg_tag,
     # Prior parameters (for prob_thresh calculation)
     alpha.w       = alpha.w,
     beta.w        = beta.w,
@@ -526,8 +622,12 @@ if (!exists("results")) {
 #### Figure 3: Number of Factors & Sharpe Ratio Distributions -----------------
 # Generates: Figure 3 (two-panel: posterior n_factors + SR distribution)
 # Source: code_base/plot_nfac_sr.R
+# NOTE: Uses bond_stock_with_sp data loaded above (fig234_model_type)
 
-if (verbose) message("Figure 3: Number of Factors & Sharpe Ratio Distributions")
+if (verbose) {
+  message("\nFigure 3: Number of Factors & Sharpe Ratio Distributions")
+  message("  Using model_type = '", fig234_model_type, "'")
+}
 
 # Check that required objects exist from loaded .Rdata
 if (!exists("results")) {
@@ -539,9 +639,9 @@ if (!exists("results")) {
   fig3_result <- plot_nfac_sr(
     results       = results,
     # Metadata for filenames
-    return_type   = return_type,
-    model_type    = model_type,
-    tag           = tag,
+    return_type   = cfg_return_type,
+    model_type    = fig234_model_type,  # ENFORCED: always bond_stock_with_sp
+    tag           = cfg_tag,
     # Prior selection (use highest shrinkage by default)
     prior_labels  = c("20%", "40%", "60%", "80%"),
     prior_choice  = "80%",
@@ -568,8 +668,12 @@ if (!exists("results")) {
 # Panel A: Posterior inclusion probabilities for each factor
 # Panel B: Posterior mean market prices of risk (annualized)
 # Source: code_base/pp_bar_plots.R
+# NOTE: Uses bond_stock_with_sp data loaded above (fig234_model_type)
 
-if (verbose) message("Figure 4: Posterior Probabilities & Market Prices of Risk")
+if (verbose) {
+  message("\nFigure 4: Posterior Probabilities & Market Prices of Risk")
+  message("  Using model_type = '", fig234_model_type, "'")
+}
 
 # Check that required objects exist from loaded .Rdata
 if (!exists("results")) {
@@ -580,9 +684,9 @@ if (!exists("results")) {
   fig4_result <- pp_bar_plots(
     results       = results,
     # Metadata for filenames
-    return_type   = return_type,
-    model_type    = model_type,
-    tag           = tag,
+    return_type   = cfg_return_type,
+    model_type    = fig234_model_type,  # ENFORCED: always bond_stock_with_sp
+    tag           = cfg_tag,
     # Prior selection (use highest shrinkage by default)
     prior_labels  = c("20%", "40%", "60%", "80%"),
     prior_choice  = "80%",
