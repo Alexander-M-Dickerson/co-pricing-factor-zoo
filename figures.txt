@@ -303,14 +303,14 @@ The sample period is 1986:01 to 2022:12 ($T=444$).
     \centering
     \begin{subfigure}[b]{\textwidth}
         \centering
-        \includegraphics[scale=.4, trim = 0cm .75cm 0cm 2cm,clip]{Figures/fig12a_predictability1m_bma.pdf}
+        \includegraphics[scale=.4, trim = 0cm 0cm 0cm 0cm,clip]{Figures/fig12a_predictability1m_bma.pdf}
         \caption{Predictability of monthly log returns}
         \label{fig:first_image}
     \end{subfigure}
     \vfill
     \begin{subfigure}[b]{\textwidth}
         \centering
-        \includegraphics[scale=.4, trim = 0cm .75cm 0cm 2cm,clip]{Figures/fig12b_predictability12m_bma.pdf}
+        \includegraphics[scale=.4, trim = 0cm 0cm 0cm 0cm,clip]{Figures/fig12b_predictability12m_bma.pdf}
         \caption{Predictability of twelve months cumulative log returns}
         \label{fig:second_image}
     \end{subfigure}
