@@ -263,7 +263,7 @@ fit_sdf_models <- function(
         guide = ggplot2::guide_legend(override.aes = list(linewidth = 1))
       ) +
       ggplot2::scale_x_date(date_breaks = "5 years", date_labels = "%Y") +
-      ggplot2::labs(x = "Date", y = "SDF", colour = NULL) +
+      ggplot2::labs(x = "", y = "SDF", colour = NULL) +
       ggplot2::theme_bw() +
       ggplot2::theme(
         panel.grid.major = ggplot2::element_blank(),
