@@ -101,7 +101,9 @@ for (pattern in appendix_table_patterns) {
 }
 
 # Any tables not in main_table_order and not matching appendix patterns go at the end
-other_tables <- setdiff(all_tables, c(main_tables, appendix_tables))
+# Exclude component/intermediate table files (e.g., table_6_panel_a is part of table_6)
+excluded_tables <- c("table_6_panel_a_trading.tex")
+other_tables <- setdiff(all_tables, c(main_tables, appendix_tables, excluded_tables))
 
 # Build tables.tex content
 tables_tex <- character()
