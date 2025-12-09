@@ -309,9 +309,10 @@ launch_background_process <- function(script_path, log_path, is_windows) {
     cmd <- sprintf('start /B cmd /C "Rscript "%s" > "%s" 2>&1"', script_win, log_win)
     shell(cmd, wait = FALSE)
   } else {
-    # Unix/macOS/Linux: use & for background
-    cmd <- sprintf('Rscript "%s" > "%s" 2>&1 &', script_path, log_path)
-    system(cmd, wait = FALSE)
+    # Unix/macOS/Linux: use nohup with explicit bash for reliable backgrounding
+    # This works on both bash and dash shells
+    cmd <- sprintf('nohup bash -c \'Rscript "%s" > "%s" 2>&1\' &', script_path, log_path)
+    system(cmd, ignore.stdout = TRUE, ignore.stderr = TRUE, wait = FALSE)
   }
 }
 
