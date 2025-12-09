@@ -301,17 +301,28 @@ parse_args <- function() {
 }
 
 #' Launch background process (cross-platform)
-launch_background_process <- function(script_path, log_path, is_windows) {
+launch_background_process <- function(script_path, log_path, is_windows, working_dir = NULL) {
+  # Normalize paths to absolute paths
+  script_path <- normalizePath(script_path, winslash = "/", mustWork = FALSE)
+  log_path <- normalizePath(log_path, winslash = "/", mustWork = FALSE)
+
+  if (is.null(working_dir)) {
+    working_dir <- dirname(script_path)
+  }
+  working_dir <- normalizePath(working_dir, winslash = "/", mustWork = FALSE)
+
   if (is_windows) {
     # Windows: use start /B with cmd
     script_win <- normalizePath(script_path, winslash = "\\", mustWork = FALSE)
     log_win <- normalizePath(log_path, winslash = "\\", mustWork = FALSE)
-    cmd <- sprintf('start /B cmd /C "Rscript "%s" > "%s" 2>&1"', script_win, log_win)
+    work_win <- normalizePath(working_dir, winslash = "\\", mustWork = FALSE)
+    cmd <- sprintf('start /B cmd /C "cd /d "%s" && Rscript "%s" > "%s" 2>&1"', work_win, script_win, log_win)
     shell(cmd, wait = FALSE)
   } else {
     # Unix/macOS/Linux: use nohup with explicit bash for reliable backgrounding
-    # This works on both bash and dash shells
-    cmd <- sprintf('nohup bash -c \'Rscript "%s" > "%s" 2>&1\' &', script_path, log_path)
+    # cd to working directory first, then run Rscript
+    cmd <- sprintf('nohup bash -c \'cd "%s" && Rscript "%s" > "%s" 2>&1\' &',
+                   working_dir, script_path, log_path)
     system(cmd, ignore.stdout = TRUE, ignore.stderr = TRUE, wait = FALSE)
   }
 }
@@ -597,7 +608,7 @@ run_parallel_models <- function(configs, main_path, total_cores, cores_per_model
       # Launch R process in background (cross-platform)
       cat(sprintf("  Launching model %d (%s)...\n", cfg$id, cfg$name))
       cat(sprintf("    Log: %s\n", basename(log_file)))
-      launch_background_process(temp_script, log_file, is_windows)
+      launch_background_process(temp_script, log_file, is_windows, working_dir = main_path)
 
       # Small delay to avoid race conditions
       Sys.sleep(1)
