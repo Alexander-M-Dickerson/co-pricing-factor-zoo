@@ -433,11 +433,43 @@ co-pricing-factor-zoo/
 ├── _run_paper_results.R            # Generate tables/figures (unconditional)
 ├── _run_paper_conditional_results.R # Generate Figure 7 & Table 6B (conditional)
 ├── _create_djm_tabs_figs.R         # Compile LaTeX document
+├── base_document.txt               # LaTeX skeleton for main document
+├── figures.txt                     # LaTeX skeleton for figure includes
 ├── code_base/                      # Core functions (don't modify)
 ├── data/                           # Your input data files (CSV)
 ├── output/                         # All results go here
+├── requirements.txt                # R version and package versions
+├── QUICKSTART.md                   # Quick start guide
 ├── CLAUDE.md                       # Development guidelines
+├── LICENSE                         # CC BY-NC-SA 3.0 license
 └── README.md                       # This file
+```
+
+### LaTeX Template Files
+
+| File | Description |
+|------|-------------|
+| `base_document.txt` | LaTeX document skeleton defining the main paper structure, preamble, and section organization |
+| `figures.txt` | LaTeX skeleton with figure environments and captions for all paper figures |
+
+These templates are used by `_create_djm_tabs_figs.R` to assemble the final LaTeX document in `output/paper/latex/`.
+
+---
+
+## Requirements
+
+- **R version:** 4.4.2 or higher
+- **Required packages:** See `requirements.txt` for exact versions
+
+Install all required packages:
+```r
+install.packages(c(
+  "lubridate", "dplyr", "tidyr", "purrr", "tibble", "data.table", "rlang",
+  "ggplot2", "RColorBrewer", "scales", "patchwork",
+  "parallel", "doParallel", "foreach", "doRNG",
+  "MASS", "Matrix", "matrixStats", "Hmisc", "proxyC",
+  "BayesianFactorZoo", "xtable"
+))
 ```
 
 ---
