@@ -243,7 +243,7 @@ The sample period is 1986:01 to 2022:12 ($T=444$).
 % Figure 10
 \begin{figure}[tb!]
 \begin{center}
- \includegraphics[scale=.4, trim = 0cm .5cm 0cm 2cm,clip]{Figures/fig10_sdf_time_series_bma.pdf} 
+ \includegraphics[scale=.4, trim = 0cm 0cm 0cm 0cm,clip]{Figures/fig10_sdf_time_series_bma.pdf} 
 \end{center} 
 \vspace{-4mm}
 \caption{The co-pricing SDF and its conditional mean.}
@@ -264,7 +264,7 @@ The sample period is 1986:01 to 2022:12 ($T=444$).
 % Figure 11
 \begin{figure}[htb!]
 \begin{center}
-\includegraphics[scale=.4, trim = 0cm .5cm 0cm 2cm,clip]{Figures/fig11_sdf_volatility_bma_capmb_ff5.pdf}
+\includegraphics[scale=.4, trim = 0cm 0cm 0cm 0cm,clip]{Figures/fig11_sdf_volatility_bma_capmb_ff5.pdf}
 \end{center} 
 \vspace{-4mm}
 \caption{Volatility of the co-pricing BMA-SDF.}
@@ -303,14 +303,14 @@ The sample period is 1986:01 to 2022:12 ($T=444$).
     \centering
     \begin{subfigure}[b]{\textwidth}
         \centering
-        \includegraphics[scale=.4, trim = 0cm .75cm 0cm 2cm,clip]{Figures/fig12a_predictability1m_bma.pdf}
+        \includegraphics[scale=.4, trim = 0cm 0cm 0cm 0cm,clip]{Figures/fig12a_predictability1m_bma.pdf}
         \caption{Predictability of monthly log returns}
         \label{fig:first_image}
     \end{subfigure}
     \vfill
     \begin{subfigure}[b]{\textwidth}
         \centering
-        \includegraphics[scale=.4, trim = 0cm .75cm 0cm 2cm,clip]{Figures/fig12b_predictability12m_bma.pdf}
+        \includegraphics[scale=.4, trim = 0cm 0cm 0cm 0cm,clip]{Figures/fig12b_predictability12m_bma.pdf}
         \caption{Predictability of twelve months cumulative log returns}
         \label{fig:second_image}
     \end{subfigure}
