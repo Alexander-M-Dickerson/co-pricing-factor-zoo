@@ -65,7 +65,7 @@ The sample period is 1986:01 to 2022:12 ($T = 444$).
 % Figure 5
 \begin{figure}[tbp]
 \begin{center}
- \includegraphics[scale=.8, trim = 0cm 0cm 0cm 0cm, clip]{../misc/BMAs_bond_R2_legend.pdf}
+ \includegraphics[scale=.8, trim = 0cm 0cm 0cm 0cm, clip]{../../../misc/BMAs_bond_R2_legend.pdf}
  
 \vspace{.25cm}
 \begin{subfigure}[b]{0.45\textwidth}
@@ -163,7 +163,7 @@ The results are shown for prior level of Sharpe ratio shrinkage set to 80\% of t
 % Figure 8
 \begin{figure}[tbp!]
 \begin{center}
- \includegraphics[scale=.8, trim = 0cm 0cm 0cm 0cm, clip]{../misc/BMAs_bond_R2_legend.pdf}
+ \includegraphics[scale=.8, trim = 0cm 0cm 0cm 0cm, clip]{../../../misc/BMAs_bond_R2_legend.pdf}
  
 \vspace{.25cm}
 \begin{subfigure}[b]{0.45\textwidth}
