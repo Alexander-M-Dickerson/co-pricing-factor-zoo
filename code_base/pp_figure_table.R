@@ -67,7 +67,7 @@ pp_figure_table <- function(results,
   ## ---- 0b. Construct filename with metadata --------------------------------
   fig_basename <- sprintf("figure_2_posterior_probs_%s_%s_%s",
                           return_type, model_type, tag)
-  tex_basename <- sprintf("table_a2_posterior_probs_%s_%s_%s",
+  tex_basename <- sprintf("table_a1_posterior_probs_%s_%s_%s",
                           return_type, model_type, tag)
   fig_name <- paste0(fig_basename, ".pdf")
   tex_name <- paste0(tex_basename, ".tex")
@@ -249,7 +249,10 @@ pp_figure_table <- function(results,
     "\\vspace{-0.2cm}",
     "\\begin{spacing}{0.8}",
     "{\\footnotesize",
-    "Posterior probabilities $\\mathbb{E}[\\gamma_j|\\text{data}]$ and annualised risk prices $\\mathbb{E}[\\lambda_j|\\text{data}]$.",
+    "The table reports posterior probabilities, $\\mathbb{E}[\\gamma_j|\\text{data}]$, and posterior means of annualized market prices of risk, $\\mathbb{E}[\\lambda_j|\\text{data}]$, of the 54 bond and stock factors described in Appendix \\ref{sec:factor_zoo}.",
+    "The prior for each factor inclusion is a Beta(1, 1), yielding a prior expectation for $\\gamma_j$ of 50\\%. Results are tabulated for different values of the prior Sharpe ratio, $\\sqrt{\\mathbb{E}_\\pi [SR^2_{\\bm{f}} \\mid \\sigma^2]}$, with values set to 20\\%, 40\\%, 60\\% and 80\\% of the ex post maximum Sharpe ratio of the test assets.",
+    "The factors are ordered by the average posterior probability across the four levels of shrinkage.",
+    "Test assets are the 83 bond and stock portfolios and 40 tradable bond and stock factors described in Section \\ref{sec:data}. The sample period is 1986:01 to 2022:12 ($T = 444$).",
     "}",
     "\\end{spacing}",
     "\\end{table}"
