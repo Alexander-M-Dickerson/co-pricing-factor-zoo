@@ -26,6 +26,7 @@ All portfolio data required for full replication is available for download from 
 | `bond_insample_test_assets_50_duration_tmt_tbond.csv` | Authors | Yes | Treasury test assets |
 | `frequentist_factors.csv` | Authors | Yes | Factors for benchmark model comparisons |
 | `treasury_oosample_all_excess.csv` | Authors | Yes | 29 out-of-sample U.S. Treasury returns |
+| `variance_decomp_results_vuol.rds` | Authors | Yes | Discount rate (DR) vs cash-flow (CF) news decomposition |
 
 All data files are provided in the download package. Monthly observations from January 1986 to December 2022.
 
