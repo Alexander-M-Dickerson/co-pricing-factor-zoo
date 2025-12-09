@@ -1,0 +1,49 @@
+# Requirements for "The Co-Pricing Factor Zoo" Replication
+# Dickerson, Julliard, Mueller (JFE 2025)
+#
+# This file lists the R version and package versions used for replication.
+# Install packages in R with: install.packages("package_name")
+
+# R Version
+R                   4.4.2
+
+# Data Manipulation
+lubridate           1.9.3
+dplyr               1.1.4
+tidyr               1.3.1
+purrr               1.0.2
+tibble              3.2.1
+data.table          1.16.2
+rlang               1.1.4
+
+# Visualization
+ggplot2             3.5.2
+RColorBrewer        1.1.3
+scales              1.3.0
+patchwork           1.3.0
+
+# Parallel Processing
+parallel            4.4.2
+doParallel          1.0.17
+foreach             1.5.2
+doRNG               1.8.6.1
+
+# Statistics and Linear Algebra
+MASS                7.3.61
+Matrix              1.7.1
+matrixStats         1.5.0
+Hmisc               5.2.2
+proxyC              0.4.1
+
+# Bayesian Estimation
+BayesianFactorZoo   0.0.0.3
+
+# Output Formatting
+xtable              1.8.4
+
+# Quick Install Command (run in R):
+# install.packages(c("lubridate", "dplyr", "tidyr", "purrr", "tibble", "data.table", "rlang",
+#                    "ggplot2", "RColorBrewer", "scales", "patchwork",
+#                    "parallel", "doParallel", "foreach", "doRNG",
+#                    "MASS", "Matrix", "matrixStats", "Hmisc", "proxyC",
+#                    "BayesianFactorZoo", "xtable"))
