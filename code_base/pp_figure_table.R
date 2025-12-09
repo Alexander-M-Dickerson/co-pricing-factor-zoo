@@ -166,8 +166,6 @@ pp_figure_table <- function(results,
   ggsave(save_file, g, width = width, height = height, units = "in")
   if (verbose) message("Plot exported → ", normalizePath(save_file))
 
-  print(g)
-
   ## ---- 5b. Build LaTeX table: merge & sort by AVERAGE probability ----------
   # Sort by average posterior probability across all priors (not just the last one)
   avg_probs <- rowMeans(prob_mat)
