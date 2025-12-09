@@ -41,10 +41,9 @@
 ##     ... etc.
 ##
 ## OUTPUT FILES:
-##   output/
-##     excess_stock_alpha.w=1_beta.w=1_kappa=0_baseline.Rdata
-##     excess_bond_alpha.w=1_beta.w=1_kappa=0_baseline.Rdata
-##     ... etc.
+##   output/unconditional/{model_type}/
+##     {return_type}_{model_type}_alpha.w=1_beta.w=1_kappa=0_{tag}.Rdata
+##     e.g., excess_stock_alpha.w=1_beta.w=1_kappa=0_baseline.Rdata
 ##
 ###############################################################################
 
@@ -399,6 +398,16 @@ weighting      <- "GLS"
 
 #### Source helper files
 setwd(main_path)
+
+# Debug: verify working directory and paths
+cat("\\n--- DEBUG INFO ---\\n")
+cat("Working directory: ", getwd(), "\\n")
+cat("main_path: ", main_path, "\\n")
+cat("code_folder exists: ", dir.exists(code_folder), "\\n")
+cat("data_folder exists: ", dir.exists(data_folder), "\\n")
+cat("output_folder exists: ", dir.exists(output_folder), "\\n")
+cat("------------------\\n\\n")
+
 source(file.path(code_folder, "logging_helpers.R"))
 source(file.path(code_folder, "validate_and_align_dates.R"))
 source(file.path(code_folder, "data_loading_helpers.R"))
@@ -441,6 +450,10 @@ tryCatch({
   cat("\\n========================================\\n")
   cat("MODEL COMPLETE: %s\\n")
   cat("Results saved to: ", res$saved_path, "\\n")
+  cat("File exists: ", file.exists(res$saved_path), "\\n")
+  if (file.exists(res$saved_path)) {
+    cat("File size: ", file.size(res$saved_path), " bytes\\n")
+  }
   cat("Finished: ", as.character(Sys.time()), "\\n")
   cat("========================================\\n")
 
@@ -805,8 +818,10 @@ main <- function() {
   cat("#", rep("#", 70), "\n", sep = "")
   cat("\n")
   cat("OUTPUT FILES:\n")
-  cat("  Results: output/*.Rdata\n")
-  cat("  Logs:    output/logs/log_model_*_%s.txt\n", RUN_TIMESTAMP)
+  cat("  Results: output/unconditional/{model_type}/*.Rdata\n")
+  cat(sprintf("  Logs:    output/logs/log_model_*_%s.txt\n", RUN_TIMESTAMP))
+  cat("\n")
+  cat("Check the log files above for 'Results saved to:' to see exact output paths.\n")
   cat("\n")
 }
 
