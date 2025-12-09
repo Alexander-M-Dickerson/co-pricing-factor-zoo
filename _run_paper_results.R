@@ -163,6 +163,20 @@ alpha.w     <- cfg_alpha.w
 beta.w      <- cfg_beta.w
 kappa       <- cfg_kappa
 
+# CRITICAL: Verify configuration was restored correctly
+if (verbose) {
+  message("\n*** CONFIGURATION VERIFICATION ***")
+  message("  model_type  = '", model_type, "'")
+  message("  return_type = '", return_type, "'")
+  message("  tag         = '", tag, "'")
+  message("**********************************\n")
+}
+
+# ENFORCE: Figures 2-4 require bond_stock_with_sp model
+if (model_type != "bond_stock_with_sp") {
+  warning("WARNING: model_type is '", model_type, "' but expected 'bond_stock_with_sp' for main paper figures!")
+}
+
 if (verbose) {
   message("Successfully loaded: ", rdata_filename)
   message("Objects loaded: ", paste(ls(), collapse = ", "))
@@ -491,7 +505,12 @@ if (verbose) message("Figure 1: [Not yet implemented]")
 # Generates: Figure 2 (posterior probability plot) and Table A.2 (LaTeX table)
 # Source: code_base/pp_figure_table.R
 
-if (verbose) message("Figure 2 + Table A.2: Posterior Probabilities")
+# ENFORCE: Use bond_stock_with_sp for Figure 2
+fig2_model_type <- "bond_stock_with_sp"
+if (verbose) {
+  message("Figure 2 + Table A.2: Posterior Probabilities")
+  message("  [ENFORCED] Using model_type = '", fig2_model_type, "'")
+}
 
 # Check that required objects exist from loaded .Rdata
 if (!exists("results")) {
@@ -503,7 +522,7 @@ if (!exists("results")) {
     results       = results,
     # Metadata for filenames
     return_type   = return_type,
-    model_type    = model_type,
+    model_type    = fig2_model_type,  # ENFORCED: always bond_stock_with_sp
     tag           = tag,
     # Prior parameters (for prob_thresh calculation)
     alpha.w       = alpha.w,
@@ -527,7 +546,12 @@ if (!exists("results")) {
 # Generates: Figure 3 (two-panel: posterior n_factors + SR distribution)
 # Source: code_base/plot_nfac_sr.R
 
-if (verbose) message("Figure 3: Number of Factors & Sharpe Ratio Distributions")
+# ENFORCE: Use bond_stock_with_sp for Figure 3
+fig3_model_type <- "bond_stock_with_sp"
+if (verbose) {
+  message("Figure 3: Number of Factors & Sharpe Ratio Distributions")
+  message("  [ENFORCED] Using model_type = '", fig3_model_type, "'")
+}
 
 # Check that required objects exist from loaded .Rdata
 if (!exists("results")) {
@@ -540,7 +564,7 @@ if (!exists("results")) {
     results       = results,
     # Metadata for filenames
     return_type   = return_type,
-    model_type    = model_type,
+    model_type    = fig3_model_type,  # ENFORCED: always bond_stock_with_sp
     tag           = tag,
     # Prior selection (use highest shrinkage by default)
     prior_labels  = c("20%", "40%", "60%", "80%"),
@@ -569,7 +593,12 @@ if (!exists("results")) {
 # Panel B: Posterior mean market prices of risk (annualized)
 # Source: code_base/pp_bar_plots.R
 
-if (verbose) message("Figure 4: Posterior Probabilities & Market Prices of Risk")
+# ENFORCE: Use bond_stock_with_sp for Figure 4
+fig4_model_type <- "bond_stock_with_sp"
+if (verbose) {
+  message("Figure 4: Posterior Probabilities & Market Prices of Risk")
+  message("  [ENFORCED] Using model_type = '", fig4_model_type, "'")
+}
 
 # Check that required objects exist from loaded .Rdata
 if (!exists("results")) {
@@ -581,7 +610,7 @@ if (!exists("results")) {
     results       = results,
     # Metadata for filenames
     return_type   = return_type,
-    model_type    = model_type,
+    model_type    = fig4_model_type,  # ENFORCED: always bond_stock_with_sp
     tag           = tag,
     # Prior selection (use highest shrinkage by default)
     prior_labels  = c("20%", "40%", "60%", "80%"),
