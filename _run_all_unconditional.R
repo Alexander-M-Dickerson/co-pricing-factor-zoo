@@ -12,6 +12,12 @@
 ##   6. treasury_stock     - Treasury test assets with stock factors
 ##   7. treasury_bond      - Treasury test assets with bond factors
 ##
+## EXPECTED RUNTIME (per model, 50,000 MCMC draws):
+##   - Joint models (bond_stock_with_sp): ~20 min laptop, ~6 min server
+##   - Bond/Stock only models:            ~10 min laptop, ~3 min server
+##
+## PLATFORM: Works on Windows, macOS, and Linux
+##
 ## USAGE:
 ##   From R:
 ##     source("_run_all_unconditional.R")
@@ -33,7 +39,54 @@
 ##   Rscript _run_all_unconditional.R --models=4,5 --sequential
 ##   Rscript _run_all_unconditional.R --parallel --cores=17
 ##
+## OUTPUT FILES:
+##   output/
+##     excess_stock_alpha.w=1_beta.w=1_kappa=0_baseline.Rdata
+##     excess_bond_alpha.w=1_beta.w=1_kappa=0_baseline.Rdata
+##     duration_bond_alpha.w=1_beta.w=1_kappa=0_baseline.Rdata
+##     excess_bond_stock_with_sp_alpha.w=1_beta.w=1_kappa=0_baseline.Rdata
+##     duration_bond_stock_with_sp_alpha.w=1_beta.w=1_kappa=0_baseline.Rdata
+##     excess_treasury_alpha.w=1_beta.w=1_kappa=0_stock_treasury.Rdata
+##     excess_treasury_alpha.w=1_beta.w=1_kappa=0_bond_treasury.Rdata
+##
 ###############################################################################
+
+###############################################################################
+## SECTION 0: ENVIRONMENT INFO (for replication)
+###############################################################################
+
+print_environment_info <- function() {
+  cat("\n")
+  cat("========================================\n")
+  cat("ENVIRONMENT INFORMATION\n")
+  cat("========================================\n")
+
+  # R version
+  cat("\nR Version:\n")
+  cat("  ", R.version.string, "\n")
+  cat("  Platform: ", R.version$platform, "\n")
+  cat("  OS:       ", Sys.info()["sysname"], Sys.info()["release"], "\n")
+
+  # Required packages and versions
+  cat("\nRequired Package Versions:\n")
+
+  required_packages <- c(
+    "lubridate", "dplyr", "tidyr", "ggplot2",
+    "parallel", "doParallel", "foreach",
+    "MASS", "Matrix", "Hmisc", "RColorBrewer"
+  )
+
+  for (pkg in required_packages) {
+    if (requireNamespace(pkg, quietly = TRUE)) {
+      ver <- as.character(packageVersion(pkg))
+      cat(sprintf("  %-15s %s\n", pkg, ver))
+    } else {
+      cat(sprintf("  %-15s NOT INSTALLED\n", pkg))
+    }
+  }
+
+  cat("\n========================================\n\n")
+}
 
 ###############################################################################
 ## SECTION 1: USER CONFIGURATION
@@ -48,6 +101,9 @@ DEFAULT_TOTAL_CORES     <- parallel::detectCores() - 1
 RUN_PARALLEL            <- FALSE
 MODELS_TO_RUN           <- 1:7  # All models by default
 DRY_RUN                 <- FALSE
+
+# Detect operating system for cross-platform compatibility
+is_windows <- .Platform$OS.type == "windows"
 
 ###############################################################################
 ## SECTION 2: MODEL DEFINITIONS
@@ -153,6 +209,10 @@ print_model_list <- function() {
   cat("  AVAILABLE UNCONDITIONAL MODELS\n")
   cat("=", rep("=", 70), "\n", sep = "")
   cat("\n")
+  cat("  Expected runtime (50,000 MCMC draws):\n")
+  cat("    Joint models:      ~20 min (laptop) / ~6 min (server)\n")
+  cat("    Bond/Stock models: ~10 min (laptop) / ~3 min (server)\n")
+  cat("\n")
 
   for (cfg in MODEL_CONFIGS) {
     cat(sprintf("  [%d] %-20s - %s\n", cfg$id, cfg$name, cfg$description))
@@ -213,8 +273,25 @@ parse_args <- function() {
   return(result)
 }
 
+#' Launch background process (cross-platform)
+launch_background_process <- function(script_path, log_path, is_windows) {
+  if (is_windows) {
+    # Windows: use start /B with cmd
+    script_win <- normalizePath(script_path, winslash = "\\", mustWork = FALSE)
+    log_win <- normalizePath(log_path, winslash = "\\", mustWork = FALSE)
+    cmd <- sprintf('start /B cmd /C "Rscript "%s" > "%s" 2>&1"', script_win, log_win)
+    shell(cmd, wait = FALSE)
+  } else {
+    # Unix/macOS/Linux: use & for background
+    cmd <- sprintf('Rscript "%s" > "%s" 2>&1 &', script_path, log_path)
+    system(cmd, wait = FALSE)
+  }
+}
+
 #' Generate R script for a single model
 generate_model_script <- function(cfg, main_path, cores_per_model) {
+  # Escape backslashes for Windows paths
+  main_path_escaped <- gsub("\\\\", "/", main_path)
 
   script <- sprintf('
 ###############################################################################
@@ -222,6 +299,15 @@ generate_model_script <- function(cfg, main_path, cores_per_model) {
 ###############################################################################
 
 gc()
+
+# Print environment info for replication
+cat("\\n========================================\\n")
+cat("ENVIRONMENT INFO\\n")
+cat("========================================\\n")
+cat("R Version: ", R.version.string, "\\n")
+cat("Platform:  ", R.version$platform, "\\n")
+cat("OS:        ", Sys.info()["sysname"], "\\n")
+cat("========================================\\n\\n")
 
 #### Paths
 main_path      <- "%s"
@@ -274,15 +360,20 @@ weighting      <- "GLS"
 #### Source and run the estimation code
 setwd(main_path)
 source(file.path(code_folder, "run_unconditional_mcmc.R"))
+
+cat("\\n========================================\\n")
+cat("MODEL COMPLETE: %s\\n")
+cat("========================================\\n")
 ',
     cfg$name,
-    main_path,
+    main_path_escaped,
     cfg$model_type,
     cfg$return_type,
     cfg$f2,
     cfg$R,
     cfg$tag,
-    cores_per_model
+    cores_per_model,
+    cfg$name
   )
 
   return(script)
@@ -346,6 +437,7 @@ run_parallel_models <- function(configs, main_path, total_cores, cores_per_model
   cat("=", rep("=", 70), "\n", sep = "")
   cat("  PARALLEL EXECUTION MODE\n")
   cat("=", rep("=", 70), "\n", sep = "")
+  cat(sprintf("  Platform:              %s\n", if (is_windows) "Windows" else "Unix/macOS/Linux"))
   cat(sprintf("  Total cores available: %d\n", total_cores))
   cat(sprintf("  Reserved cores:        1\n"))
   cat(sprintf("  Cores per model:       %d\n", cores_per_model))
@@ -382,7 +474,6 @@ run_parallel_models <- function(configs, main_path, total_cores, cores_per_model
     cat("*", rep("*", 70), "\n", sep = "")
 
     # Generate scripts and launch processes
-    processes <- list()
     temp_scripts <- character()
     log_files <- character()
 
@@ -396,11 +487,9 @@ run_parallel_models <- function(configs, main_path, total_cores, cores_per_model
       temp_scripts <- c(temp_scripts, temp_script)
       log_files <- c(log_files, log_file)
 
-      # Launch R process in background
-      cmd <- sprintf('Rscript "%s" > "%s" 2>&1 &', temp_script, log_file)
-
+      # Launch R process in background (cross-platform)
       cat(sprintf("  Launching model %d (%s)...\n", cfg$id, cfg$name))
-      system(cmd, wait = FALSE)
+      launch_background_process(temp_script, log_file, is_windows)
 
       # Small delay to avoid race conditions
       Sys.sleep(1)
@@ -410,21 +499,18 @@ run_parallel_models <- function(configs, main_path, total_cores, cores_per_model
     cat(sprintf("  Log files in: %s/output/\n", main_path))
 
     # Wait for all processes to complete by checking log files
-    # This is a simple polling approach
     all_done <- FALSE
     start_time <- Sys.time()
 
     while (!all_done) {
       Sys.sleep(30)  # Check every 30 seconds
 
-      # Check if all temp scripts have been removed or logs show completion
-      # For simplicity, we'll wait for log files to contain "Completed" or error
       done_count <- 0
       for (j in seq_along(log_files)) {
         if (file.exists(log_files[j])) {
-          log_content <- tryCatch(readLines(log_files[j]), error = function(e) "")
+          log_content <- tryCatch(readLines(log_files[j], warn = FALSE), error = function(e) "")
           log_text <- paste(log_content, collapse = "\n")
-          if (grepl("Results saved|Error|error|ERROR", log_text, ignore.case = FALSE)) {
+          if (grepl("MODEL COMPLETE|Results saved|Error|error|ERROR", log_text, ignore.case = FALSE)) {
             done_count <- done_count + 1
           }
         }
@@ -438,9 +524,9 @@ run_parallel_models <- function(configs, main_path, total_cores, cores_per_model
         all_done <- TRUE
       }
 
-      # Timeout after 8 hours per batch
-      if (as.numeric(elapsed) > 480) {
-        cat("\n  WARNING: Batch timeout reached (8 hours)\n")
+      # Timeout after 2 hours per batch (generous for slow machines)
+      if (as.numeric(elapsed) > 120) {
+        cat("\n  WARNING: Batch timeout reached (2 hours)\n")
         all_done <- TRUE
       }
     }
@@ -468,8 +554,13 @@ run_sequential_models <- function(configs, main_path, cores_per_model, dry_run =
   cat("=", rep("=", 70), "\n", sep = "")
   cat("  SEQUENTIAL EXECUTION MODE\n")
   cat("=", rep("=", 70), "\n", sep = "")
+  cat(sprintf("  Platform:        %s\n", if (is_windows) "Windows" else "Unix/macOS/Linux"))
   cat(sprintf("  Cores per model: %d\n", cores_per_model))
   cat(sprintf("  Models to run:   %d\n", length(configs)))
+  cat("\n")
+  cat("  Expected runtime (50,000 MCMC draws):\n")
+  cat("    Joint models:      ~20 min (laptop) / ~6 min (server)\n")
+  cat("    Bond/Stock models: ~10 min (laptop) / ~3 min (server)\n")
   cat("=", rep("=", 70), "\n", sep = "")
 
   results <- list()
@@ -512,14 +603,16 @@ run_sequential_models <- function(configs, main_path, cores_per_model, dry_run =
 main <- function() {
 
   # Parse command-line arguments
-
-args <- parse_args()
+  args <- parse_args()
 
   # Handle --list option
   if (args$list_only) {
     print_model_list()
     return(invisible(NULL))
   }
+
+  # Print environment info
+  print_environment_info()
 
   # Validate model selection
   valid_ids <- sapply(MODEL_CONFIGS, function(x) x$id)
@@ -563,6 +656,10 @@ args <- parse_args()
 
   cat(sprintf("\n##  Finished: %s\n", Sys.time()))
   cat("#", rep("#", 70), "\n", sep = "")
+  cat("\n")
+  cat("OUTPUT FILES:\n")
+  cat("  Check output/ folder for .Rdata files\n")
+  cat("\n")
 }
 
 # Run main function
