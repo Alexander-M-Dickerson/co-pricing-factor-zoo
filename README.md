@@ -232,6 +232,7 @@ output/
 
 | Program | Description | Inputs | Outputs |
 |---------|-------------|--------|---------|
+| `_run_full_replication.R` | **Single-command full replication** | `data/*.csv` | All outputs below |
 | `_run_all_unconditional.R` | Run 7 unconditional BMA models | `data/*.csv` | `output/unconditional/*.Rdata` |
 | `_run_all_conditional.R` | Run 2 conditional (time-varying) models | `data/*.csv` | `output/time_varying/**/*.rds` |
 | `_run_paper_results.R` | Generate tables and figures (unconditional) | `output/unconditional/*.Rdata` | `output/paper/tables/*.tex`, `output/paper/figures/*.pdf` |
@@ -399,15 +400,30 @@ This happens when R is not in your system PATH. **Solution:** Use the RStudio Te
 
 ---
 
-## Summary: Complete Replication in 5 Commands
+## Summary: Complete Replication
 
-Open RStudio, set your working directory to the project folder, then run these in the **Terminal** tab:
+### Option 1: Single Command (Recommended)
+
+Open RStudio, set your working directory to the project folder, then run in the **Terminal** tab:
 
 ```bash
-# 1. Run unconditional models (~1-2 hours total)
+Rscript _run_full_replication.R
+```
+
+This runs all 5 steps automatically (~2-3 hours total).
+
+**Quick test mode** (~30 min with fewer MCMC draws):
+```bash
+Rscript _run_full_replication.R --quick
+```
+
+### Option 2: Step-by-Step (5 Commands)
+
+```bash
+# 1. Run unconditional models (~1-2 hours, parallel by default)
 Rscript _run_all_unconditional.R
 
-# 2. Run conditional models (~30-40 min)
+# 2. Run conditional models (~30-40 min, parallel by default)
 Rscript _run_all_conditional.R
 
 # 3. Generate tables and figures (unconditional)
@@ -428,6 +444,7 @@ Done! Check `output/paper/latex/` for the final document.
 
 ```
 co-pricing-factor-zoo/
+├── _run_full_replication.R         # Single-command full replication (recommended)
 ├── _run_all_unconditional.R        # Run all 7 unconditional models
 ├── _run_all_conditional.R          # Run 2 conditional models
 ├── _run_paper_results.R            # Generate tables/figures (unconditional)

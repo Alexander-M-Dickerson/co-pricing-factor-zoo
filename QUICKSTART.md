@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-Replicate **"The Co-Pricing Factor Zoo"** (Dickerson, Julliard, Mueller, JFE 2025) in 5 commands.
+Replicate **"The Co-Pricing Factor Zoo"** (Dickerson, Julliard, Mueller, JFE 2025) in **1 command**.
 
 ---
 
@@ -41,15 +41,23 @@ Remove-Item "djm_data.zip"
 
 ---
 
-## 3. Run Replication (5 Commands)
+## 3. Run Replication
 
-In the RStudio **Terminal** tab:
+### Option A: Single Command (Recommended)
 
 ```bash
-# 1. Unconditional models (~1-2 hours)
+Rscript _run_full_replication.R
+```
+
+This runs all 5 steps automatically (~2-3 hours total).
+
+### Option B: Step-by-Step
+
+```bash
+# 1. Unconditional models (~1-2 hours, parallel by default)
 Rscript _run_all_unconditional.R
 
-# 2. Conditional models (~30-40 min)
+# 2. Conditional models (~30-40 min, parallel by default)
 Rscript _run_all_conditional.R
 
 # 3. Tables & figures (unconditional)
@@ -77,10 +85,15 @@ output/
 
 ---
 
-## Quick Test (Optional)
+## Quick Test Mode
 
-Run with fewer MCMC draws for testing (~5 min per model):
+Run with fewer MCMC draws for testing (~30 min total):
 
+```bash
+Rscript _run_full_replication.R --quick
+```
+
+Or step-by-step:
 ```bash
 Rscript _run_all_unconditional.R --ndraws=5000
 Rscript _run_all_conditional.R --ndraws=5000
@@ -96,7 +109,7 @@ Rscript _run_all_conditional.R --ndraws=5000
 | Package not found | Run `install.packages("package_name")` |
 | Memory issues | Close other applications (needs ~4 GB RAM) |
 
-**Help:** `Rscript _run_all_unconditional.R --help`
+**Help:** `Rscript _run_full_replication.R --help`
 
 **Contact:** alexander.dickerson1@unsw.edu.au
 

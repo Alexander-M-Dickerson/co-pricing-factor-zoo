@@ -28,7 +28,7 @@
 ## OPTIONS:
 ##   --models=1,2,3      Run specific models (comma-separated, default: all)
 ##   --ndraws=N          Number of MCMC draws (default: 50000, use 5000 for quick test)
-##   --parallel          Run models in parallel (default: sequential)
+##   --parallel          Run models in parallel (default)
 ##   --cores=N           Total available cores (default: auto-detect)
 ##   --cores-per-model=N Cores per model (default: 4)
 ##   --dry-run           Show what would be run without executing
@@ -112,7 +112,7 @@ main_path <- getwd()  # Assumes script is run from project root
 DEFAULT_CORES_PER_MODEL <- 4
 DEFAULT_TOTAL_CORES     <- parallel::detectCores() - 1
 DEFAULT_NDRAWS          <- 50000  # Use 5000 for quick test runs
-RUN_PARALLEL            <- FALSE
+RUN_PARALLEL            <- TRUE   # Parallel by default (use --sequential to disable)
 MODELS_TO_RUN           <- 1:7  # All models by default
 DRY_RUN                 <- FALSE
 
@@ -286,8 +286,8 @@ parse_args <- function() {
       cat("Options:\n")
       cat("  --models=1,2,3      Run specific models (comma-separated)\n")
       cat("  --ndraws=N          Number of MCMC draws (default: 50000, use 5000 for quick test)\n")
-      cat("  --parallel          Run models in parallel\n")
-      cat("  --sequential        Run models sequentially (default)\n")
+      cat("  --parallel          Run models in parallel (default)\n")
+      cat("  --sequential        Run models sequentially\n")
       cat("  --cores=N           Total available cores (default: auto-detect)\n")
       cat("  --cores-per-model=N Cores per model (default: 4)\n")
       cat("  --dry-run           Show what would be run without executing\n")
