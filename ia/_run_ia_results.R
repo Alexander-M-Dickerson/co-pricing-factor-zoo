@@ -129,6 +129,7 @@ if (verbose) message("\nLoading helper functions...")
 source(file.path(code_folder, "pp_figure_table.R"))
 source(file.path(code_folder, "pricing_tables.R"))
 source(file.path(code_folder, "insample_asset_pricing.R"))
+source(file.path(code_folder, "plot_cumulative_sr.R"))
 
 # Load additional helpers as needed
 if (file.exists(file.path(code_folder, "oos_pricing_helpers.R"))) {
@@ -376,6 +377,72 @@ if (!is.null(prob_table_results[["joint_no_intercept"]])) {
 } else {
   warning("Figure 2 equivalent not generated - joint model results missing")
 }
+
+###############################################################################
+## SECTION 5.4: CUMULATIVE SR FIGURE (uses main paper's duration model)
+###############################################################################
+
+if (verbose) {
+  message("\n")
+  message(strrep("=", 60))
+  message("SECTION 4: Cumulative Co-Pricing SDF-Implied Sharpe Ratio")
+  message(strrep("=", 60))
+}
+
+# This figure uses the MAIN paper's duration_bond_stock_with_sp model
+# (not IA-specific), but outputs to the IA figures directory
+main_results_path <- "output/unconditional"
+duration_rdata_file <- file.path(
+  main_results_path, "bond_stock_with_sp",
+  "duration_bond_stock_with_sp_alpha.w=1_beta.w=1_kappa=0_baseline.Rdata"
+)
+
+fig13_output_path <- file.path(figures_dir, "fig13_cum_sr_80pct.pdf")
+
+if (file.exists(fig13_output_path)) {
+  if (verbose) message("  Skipping Figure 13: file already exists")
+} else if (!file.exists(duration_rdata_file)) {
+  warning("Duration .Rdata not found. Skipping Figure 13.\n  ", duration_rdata_file)
+} else {
+  if (verbose) message("  Computing cumulative Sharpe ratios...")
+
+  # Compute cumulative Sharpe ratios
+  sharpe_tbl <- cumulative_sharpe_ratio(
+    main_path     = main_path,
+    output_folder = "output",
+    model_type    = "bond_stock_with_sp",
+    return_type   = "duration",
+    kappa         = 0,
+    alpha.w       = 1,
+    beta.w        = 1,
+    tag           = "baseline",
+    prior_labels  = c("20%", "40%", "60%", "80%"),
+    verbose       = verbose
+  )
+
+  # Generate the figure
+  fig13_result <- plot_cumulative_sr(
+    sharpe_tbl          = sharpe_tbl,
+    sr_shrinkage        = "80%",
+    use_ratio           = FALSE,
+    main_path           = paper_output,
+    output_folder       = "figures",
+    fig_name            = "fig13_cum_sr_80pct.pdf",
+    width               = 12,
+    height              = 7,
+    units               = "in",
+    y_axis_text_size    = 12,
+    x_axis_text_size    = 9,
+    y_label_text_size   = 16,
+    legend_text_size    = 12,
+    verbose             = verbose
+  )
+
+  if (verbose) {
+    message("  Generated: fig13_cum_sr_80pct.pdf")
+  }
+}
+
 
 ###############################################################################
 ## CLEANUP
