@@ -3,6 +3,9 @@
 ## _run_treasury_weighted.R - Treasury Model with DR-Tilt Kappa Weights
 ## ---------------------------------------------------------------------------
 ##
+## NOTE: This standalone script is deprecated. Use the integrated pipeline:
+##   Rscript ia/_run_ia_estimation.R --models=7
+##
 ## This script runs the treasury model with kappa weights loaded from w_all.rds.
 ## The weights provide DR-tilt (discount rate tilt) to the factor selection.
 ##

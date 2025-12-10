@@ -13,6 +13,10 @@
 ##     4. stock_no_intercept  - Stock factors without intercept
 ##     5. joint_no_intercept  - Joint bond+stock without intercept
 ##
+##   TREASURY MODELS:
+##     6. treasury_base       - Treasury bond component (kappa=0)
+##     7. treasury_weighted   - Treasury with DR-tilt kappa weights
+##
 ## All models use return_type = "excess"
 ##
 ## USAGE:
@@ -70,7 +74,7 @@ DEFAULT_CORES_PER_MODEL <- 4
 DEFAULT_TOTAL_CORES     <- parallel::detectCores() - 1
 DEFAULT_NDRAWS          <- 50000
 RUN_PARALLEL            <- TRUE   # Parallel by default
-MODELS_TO_RUN           <- 1:5
+MODELS_TO_RUN           <- 1:7
 DRY_RUN                 <- FALSE
 
 ###############################################################################
@@ -143,6 +147,48 @@ MODEL_CONFIGS <- list(
     tag         = "ia_no_intercept",
     f2          = 'c("traded_bond_excess.csv", "traded_equity.csv")',
     R           = 'c("bond_insample_test_assets_50_excess.csv", "equity_anomalies_composite_33.csv")'
+  ),
+
+  # Model 6: Treasury (bond component) - base model
+  list(
+    id          = 6,
+    name        = "treasury_base",
+    description = "Treasury bond component (excess returns)",
+    model_type  = "treasury",
+    return_type = "excess",
+    intercept   = TRUE,
+    tag         = "bond_treasury",
+    f1          = "nontraded_complete.csv",
+    f2          = 'c("traded_bond_excess.csv")',
+    R           = 'c("bond_insample_test_assets_50_duration_tmt_tbond.csv")',
+    kappa_file  = NULL,  # No kappa weighting
+    frequentist = list(
+      CAPM  = c("MKTB"),
+      CAPMB = c("MKTB", "MKTBD"),
+      HKM   = c("MKTB", "DEF", "TERM"),
+      FF5   = c("MKTB", "SZE", "HMLB", "CRF", "DRF")
+    )
+  ),
+
+  # Model 7: Treasury (bond component) with DR-tilt kappa weights
+  list(
+    id          = 7,
+    name        = "treasury_weighted",
+    description = "Treasury bond component with DR-tilt kappa (excess returns)",
+    model_type  = "treasury",
+    return_type = "excess",
+    intercept   = TRUE,
+    tag         = "bond_treasury",
+    f1          = "nontraded_complete.csv",
+    f2          = 'c("traded_bond_excess.csv")',
+    R           = 'c("bond_insample_test_assets_50_duration_tmt_tbond.csv")',
+    kappa_file  = "ia/data/w_all.rds",  # DR-tilt kappa weights
+    frequentist = list(
+      CAPM  = c("MKTB"),
+      CAPMB = c("MKTB", "MKTBD"),
+      HKM   = c("MKTB", "DEF", "TERM"),
+      FF5   = c("MKTB", "SZE", "HMLB", "CRF", "DRF")
+    )
   )
 )
 
@@ -250,6 +296,61 @@ generate_model_script <- function(cfg, main_path, cores_per_model, ndraws) {
   env_info <- paste(get_environment_info(), collapse = "\\n")
   intercept_str <- if (cfg$intercept) "TRUE" else "FALSE"
 
+  # Determine f1 file (custom for treasury, default for others)
+  f1_file <- if (!is.null(cfg$f1)) cfg$f1 else "nontraded.csv"
+
+  # Build frequentist models string
+  if (!is.null(cfg$frequentist)) {
+    freq_lines <- sapply(names(cfg$frequentist), function(nm) {
+      vals <- cfg$frequentist[[nm]]
+      sprintf('  %s = c(%s)', nm, paste0('"', vals, '"', collapse = ", "))
+    })
+    freq_str <- paste0("list(\n", paste(freq_lines, collapse = ",\n"), "\n)")
+  } else {
+    freq_str <- 'list(
+  CAPM = "MKTS",
+  CAPMB= "MKTB",
+  FF5  = c("MKTS","HML","SMB","DEF","TERM"),
+  HKM  = c("MKTS","CPTLT")
+)'
+  }
+
+  # Build kappa loading code
+  if (!is.null(cfg$kappa_file)) {
+    kappa_code <- sprintf('
+#### Load kappa weights from file
+kappa_file <- "%s"
+cat("\\n--- Kappa Weights Loading ---\\n")
+cat("  Looking for: ", kappa_file, "\\n")
+if (!file.exists(kappa_file)) {
+  stop("Kappa weights file not found: ", kappa_file,
+       "\\n  Working directory: ", getwd(),
+       "\\n  Expected location: ", normalizePath(kappa_file, mustWork = FALSE))
+}
+w_all <- tryCatch({
+  readRDS(kappa_file)
+}, error = function(e) {
+  stop("Failed to read kappa file: ", e$message)
+})
+if (!is.numeric(w_all) || is.null(names(w_all))) {
+  stop("kappa_file must contain a named numeric vector. Got: ",
+       "numeric=", is.numeric(w_all), ", has_names=", !is.null(names(w_all)))
+}
+cat("  Loaded ", length(w_all), " kappa weights\\n")
+cat("  Weight range: [", round(min(w_all), 4), ", ", round(max(w_all), 4), "]\\n")
+cat("  First 5 factors: ", paste(head(names(w_all), 5), collapse = ", "), "\\n")
+kappa     <- w_all
+kappa_fac <- names(w_all)
+cat("--- Kappa Weights Loaded Successfully ---\\n\\n")
+', cfg$kappa_file)
+  } else {
+    kappa_code <- '
+#### Kappa parameters (no weighting)
+kappa          <- 0
+kappa_fac      <- NULL
+'
+  }
+
   script <- sprintf('
 ###############################################################################
 ## Auto-generated script for IA model: %s
@@ -274,33 +375,26 @@ model_type     <- "%s"
 return_type    <- "%s"
 
 #### Data Files
-f1             <- "nontraded.csv"
+f1             <- "%s"
 f2             <- %s
 R              <- %s
 n_bond_factors <- NULL
 fac_freq       <- "frequentist_factors.csv"
 
 #### Date Range
-date_start     <- "1986-01-31"
-date_end       <- "2022-12-31"
+date_start     <- NULL
+date_end       <- NULL
 
 #### Frequentist Models
-frequentist_models <- list(
-  CAPM = "MKTS",
-  CAPMB= "MKTB",
-  FF5  = c("MKTS","HML","SMB","DEF","TERM"),
-  HKM  = c("MKTS","CPTLT")
-)
+frequentist_models <- %s
 
 #### MCMC Parameters
 ndraws         <- %d
 SRscale        <- c(0.20, 0.40, 0.60, 0.80)
 alpha.w        <- 1
 beta.w         <- 1
-kappa          <- 0
-kappa_fac      <- NULL
 drop_draws_pct <- 0
-
+%s
 #### Other Settings
 tag            <- "%s"
 num_cores      <- %d
@@ -318,6 +412,38 @@ source(file.path(code_folder, "logging_helpers.R"))
 source(file.path(code_folder, "validate_and_align_dates.R"))
 source(file.path(code_folder, "data_loading_helpers.R"))
 source(file.path(code_folder, "run_bayesian_mcmc.R"))
+
+#### Validate data files exist
+cat("\\n--- Data File Validation ---\\n")
+cat("  Working directory: ", getwd(), "\\n")
+cat("  Data folder: ", data_folder, "\\n")
+
+# Check f1 file
+f1_path <- file.path(data_folder, f1)
+if (!file.exists(f1_path)) {
+  stop("f1 data file not found: ", f1_path)
+}
+cat("  f1 file OK: ", f1, "\\n")
+
+# Check f2 files (may be a vector)
+for (f2_file in f2) {
+  f2_path <- file.path(data_folder, f2_file)
+  if (!file.exists(f2_path)) {
+    stop("f2 data file not found: ", f2_path)
+  }
+  cat("  f2 file OK: ", f2_file, "\\n")
+}
+
+# Check R files (test assets, may be a vector)
+for (R_file in R) {
+  R_path <- file.path(data_folder, R_file)
+  if (!file.exists(R_path)) {
+    stop("R (test assets) data file not found: ", R_path)
+  }
+  cat("  R file OK: ", R_file, "\\n")
+}
+
+cat("--- All Data Files Validated ---\\n\\n")
 
 #### Run the estimation
 tryCatch({
@@ -362,7 +488,17 @@ tryCatch({
 }, error = function(e) {
   cat("\\n========================================\\n")
   cat("ERROR in model %s:\\n")
-  cat(e$message, "\\n")
+  cat("Message: ", e$message, "\\n")
+  cat("\\nStack trace:\\n")
+  traceback_output <- capture.output(traceback())
+  cat(paste(traceback_output, collapse = "\\n"), "\\n")
+  cat("\\nModel configuration:\\n")
+  cat("  model_type: ", model_type, "\\n")
+  cat("  return_type: ", return_type, "\\n")
+  cat("  tag: ", tag, "\\n")
+  cat("  intercept: ", intercept, "\\n")
+  cat("  ndraws: ", ndraws, "\\n")
+  cat("  kappa type: ", if(is.numeric(kappa) && length(kappa) > 1) "weighted vector" else as.character(kappa), "\\n")
   cat("========================================\\n")
   stop(e)
 })
@@ -375,9 +511,12 @@ tryCatch({
     main_path_escaped,
     cfg$model_type,
     cfg$return_type,
+    f1_file,
     cfg$f2,
     cfg$R,
+    freq_str,
     ndraws,
+    kappa_code,
     cfg$tag,
     cores_per_model,
     intercept_str,
