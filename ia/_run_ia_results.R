@@ -429,8 +429,9 @@ if (file.exists(joint_rdata_path)) {
     source(file.path(code_folder, "outsample_asset_pricing.R"))
   }
 
-  # Check if we can run OOS pricing
-  if (exists("IS_AP") && exists("results") && exists("f1")) {
+  # Check if we can run OOS pricing - need all required objects
+  if (exists("IS_AP") && exists("results") && exists("f1") &&
+      exists("kns_out") && exists("rp_out") && exists("frequentist_models")) {
 
     tryCatch({
       # Load OOS test assets
@@ -442,15 +443,22 @@ if (file.exists(joint_rdata_path)) {
         Rs_oos <- read.csv(stock_oos_file, check.names = FALSE)[, -1, drop = FALSE]
         R_oos <- cbind(Rb_oos, Rs_oos)
 
-        # Run OOS pricing
+        # Load frequentist factors
+        fac_freq_data <- read.csv(file.path(data_folder, "frequentist_factors.csv"), check.names = FALSE)
+
+        # Run OOS pricing with correct parameters
         os_result <- os_asset_pricing(
-          IS_AP      = IS_AP,
-          R_oos_data = R_oos,
-          f1         = f1,
-          f2         = if (exists("f2")) f2 else NULL,
-          intercept  = FALSE,  # No intercept for IA
-          weighting  = "GLS",
-          verbose    = verbose
+          R_oss              = R_oos,
+          IS_AP              = IS_AP,
+          f1                 = f1,
+          f2                 = if (exists("f2")) f2 else NULL,
+          fac_freq           = fac_freq_data,
+          frequentist_models = frequentist_models,
+          kns_out            = kns_out,
+          rp_out             = rp_out,
+          pca_out            = if (exists("pca_out")) pca_out else NULL,
+          intercept          = FALSE,  # No intercept for IA
+          verbose            = verbose
         )
 
         if (!is.null(os_result) && !is.null(os_result$os_pricing_result)) {
@@ -497,7 +505,7 @@ if (file.exists(joint_rdata_path)) {
       warning("  Error generating OOS pricing table: ", e$message)
     })
   } else {
-    warning("  Required objects not found for OOS pricing. Skipping Table IA.7.")
+    warning("  Required objects not found for OOS pricing (need IS_AP, results, f1, kns_out, rp_out, frequentist_models). Skipping Table IA.7.")
   }
 } else {
   warning("  Joint model .Rdata not found. Skipping Table IA.7.")
