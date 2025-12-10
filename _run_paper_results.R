@@ -100,8 +100,7 @@ helper_files <- c(
   "plot_mean_vs_cov.R",
   "fit_sdf_models.R",
   "trading_table.R",
-  "expanding_runs_plots.R",
-  "plot_cumulative_sr.R"
+  "expanding_runs_plots.R"
   # Add more helper files as needed
 )
 
@@ -759,72 +758,6 @@ if (!exists("results")) {
     message("  Factor types: ", paste(names(fig4_result$factor_types),
                                        fig4_result$factor_types,
                                        sep = "=", collapse = ", "))
-  }
-}
-
-
-#### Figure 13: Cumulative Co-Pricing SDF-Implied Sharpe Ratio -----------------
-# Generates: Figure 13 (cumulative SR as factors are added by posterior probability)
-# Source: code_base/plot_cumulative_sr.R
-# NOTE: Requires bond_stock_with_sp model with intercept=TRUE (excess returns)
-# The .Rdata file is: excess_bond_stock_with_sp_alpha.w=1_beta.w=1_kappa=0_baseline.Rdata
-
-if (verbose) {
-  message("\nFigure 13: Cumulative Co-Pricing SDF-Implied Sharpe Ratio")
-  message("  model_type  = 'bond_stock_with_sp'")
-  message("  return_type = 'excess'")
-}
-
-fig13_output_path <- file.path(figures_dir, "fig13_cum_sr_80pct.pdf")
-
-if (file.exists(fig13_output_path)) {
-  if (verbose) message("  Skipping Figure 13: file already exists")
-} else {
-  # Check if required excess .Rdata file exists
-  excess_rdata_file <- file.path(
-    results_path, "bond_stock_with_sp",
-    "excess_bond_stock_with_sp_alpha.w=1_beta.w=1_kappa=0_baseline.Rdata"
-  )
-
-  if (!file.exists(excess_rdata_file)) {
-    warning("Excess .Rdata not found. Skipping Figure 13.\n  ", excess_rdata_file)
-  } else {
-    # Compute cumulative Sharpe ratios
-    if (verbose) message("  Computing cumulative Sharpe ratios...")
-    sharpe_tbl <- cumulative_sharpe_ratio(
-      main_path     = project_root,
-      output_folder = "output",
-      model_type    = "bond_stock_with_sp",
-      return_type   = "excess",
-      kappa         = 0,
-      alpha.w       = 1,
-      beta.w        = 1,
-      tag           = "baseline",
-      prior_labels  = c("20%", "40%", "60%", "80%"),
-      verbose       = verbose
-    )
-
-    # Generate the figure
-    fig13_result <- plot_cumulative_sr(
-      sharpe_tbl          = sharpe_tbl,
-      sr_shrinkage        = "80%",
-      use_ratio           = FALSE,
-      main_path           = paper_output,
-      output_folder       = "figures",
-      fig_name            = "fig13_cum_sr_80pct.pdf",
-      width               = 12,
-      height              = 7,
-      units               = "in",
-      y_axis_text_size    = 12,
-      x_axis_text_size    = 9,
-      y_label_text_size   = 16,
-      legend_text_size    = 12,
-      verbose             = verbose
-    )
-
-    if (verbose) {
-      message("  Generated: fig13_cum_sr_80pct.pdf")
-    }
   }
 }
 
