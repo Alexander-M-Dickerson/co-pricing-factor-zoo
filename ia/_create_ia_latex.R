@@ -53,6 +53,11 @@ main_table_order <- c(
 # Pattern for probability tables (generated per model)
 prob_table_pattern <- "^table_a1_posterior_probs_"
 
+# Treasury tables (appear after probability tables)
+treasury_table_order <- c(
+  "table_treasury_posterior_probs.tex"
+)
+
 # Tables that should appear LAST (in order)
 last_table_order <- c(
   "table_duration_pricing.tex"
@@ -93,11 +98,12 @@ cat("\n")
 
 cat("Creating ia_tables.tex...\n")
 
-# Separate main tables from probability tables and last tables
+# Separate main tables from probability tables, treasury, and last tables
 main_tables <- intersect(main_table_order, all_tables)
 prob_tables <- all_tables[grepl(prob_table_pattern, all_tables)]
+treasury_tables <- intersect(treasury_table_order, all_tables)
 last_tables <- intersect(last_table_order, all_tables)
-other_tables <- setdiff(all_tables, c(main_tables, prob_tables, last_tables))
+other_tables <- setdiff(all_tables, c(main_tables, prob_tables, treasury_tables, last_tables))
 
 # Build tables.tex content
 tables_tex <- character()
@@ -121,6 +127,17 @@ if (length(prob_tables) > 0) {
   tables_tex <- c(tables_tex, "% Posterior Probability Tables")
   tables_tex <- c(tables_tex, "% ============================")
   for (tbl in sort(prob_tables)) {
+    tables_tex <- c(tables_tex, paste0("\\input{../tables/", tbl, "}"))
+    tables_tex <- c(tables_tex, "\\clearpage")
+    tables_tex <- c(tables_tex, "")
+  }
+}
+
+# Treasury tables (treasury component analysis)
+if (length(treasury_tables) > 0) {
+  tables_tex <- c(tables_tex, "% Treasury Component Tables")
+  tables_tex <- c(tables_tex, "% =========================")
+  for (tbl in treasury_tables) {
     tables_tex <- c(tables_tex, paste0("\\input{../tables/", tbl, "}"))
     tables_tex <- c(tables_tex, "\\clearpage")
     tables_tex <- c(tables_tex, "")
