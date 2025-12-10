@@ -69,7 +69,7 @@ is_windows <- .Platform$OS.type == "windows"
 DEFAULT_CORES_PER_MODEL <- 4
 DEFAULT_TOTAL_CORES     <- parallel::detectCores() - 1
 DEFAULT_NDRAWS          <- 50000
-RUN_PARALLEL            <- TRUE
+RUN_PARALLEL            <- TRUE   # Parallel by default
 MODELS_TO_RUN           <- 1:5
 DRY_RUN                 <- FALSE
 
@@ -468,41 +468,135 @@ run_single_model <- function(cfg, main_path, cores_per_model, ndraws, timestamp,
   })
 }
 
-#' Run models in parallel
-run_parallel_models <- function(configs, main_path, cores_per_model, ndraws, timestamp, dry_run = FALSE) {
+#' Run models in parallel (with proper batching and waiting)
+run_parallel_models <- function(configs, main_path, total_cores, cores_per_model, ndraws, timestamp, dry_run = FALSE) {
 
-  temp_dir <- file.path(main_path, "ia", "output", "temp_scripts")
-  if (!dir.exists(temp_dir)) dir.create(temp_dir, recursive = TRUE)
+  # Calculate how many models can run simultaneously
+  available_cores <- total_cores - 1
+  max_concurrent <- floor(available_cores / cores_per_model)
+  max_concurrent <- max(1, max_concurrent)
 
   cat("\n")
   cat("=", rep("=", 70), "\n", sep = "")
-  cat("  LAUNCHING PARALLEL ESTIMATION\n")
+  cat("  PARALLEL EXECUTION MODE\n")
   cat("=", rep("=", 70), "\n", sep = "")
-  cat("\n")
+  cat(sprintf("  Platform:              %s\n", if (is_windows) "Windows" else "Unix/macOS/Linux"))
+  cat(sprintf("  Total cores available: %d\n", total_cores))
+  cat(sprintf("  Cores per model:       %d\n", cores_per_model))
+  cat(sprintf("  MCMC draws:            %d\n", ndraws))
+  cat(sprintf("  Max concurrent models: %d\n", max_concurrent))
+  cat(sprintf("  Models to run:         %d\n", length(configs)))
+  cat(sprintf("  Log folder:            ia/output/logs/\n"))
+  cat("=", rep("=", 70), "\n", sep = "")
 
-  for (cfg in configs) {
-    log_file <- get_log_path(cfg, main_path, timestamp)
-    intercept_str <- if (cfg$intercept) "YES" else "NO"
-
-    cat(sprintf("  [%d] %s (intercept=%s)\n", cfg$id, cfg$name, intercept_str))
-    cat(sprintf("      Log: %s\n", basename(log_file)))
-
-    if (!dry_run) {
-      script_content <- generate_model_script(cfg, main_path, cores_per_model, ndraws)
-      script_path <- file.path(temp_dir, sprintf("ia_model_%d_%s.R", cfg$id, cfg$name))
-      writeLines(script_content, script_path)
-      launch_background_process(script_path, log_file, is_windows, main_path)
-    }
-  }
-
-  cat("\n")
   if (dry_run) {
-    cat("  [DRY RUN] No processes launched.\n")
-  } else {
-    cat(sprintf("  %d models launched in background.\n", length(configs)))
-    cat("  Monitor progress with: tail -f ia/output/logs/log_ia_model_*.txt\n")
+    cat("\n[DRY RUN] Would run the following batches:\n\n")
+    batch_num <- 1
+    for (i in seq(1, length(configs), by = max_concurrent)) {
+      batch_end <- min(i + max_concurrent - 1, length(configs))
+      batch_configs <- configs[i:batch_end]
+      cat(sprintf("  Batch %d: Models %s\n", batch_num,
+                  paste(sapply(batch_configs, function(x) x$name), collapse = ", ")))
+      batch_num <- batch_num + 1
+    }
+    return(invisible(NULL))
   }
+
+  # Collect all log files for summary
+  all_log_files <- character()
+
+  # Process in batches
+  batch_num <- 1
+
+  for (i in seq(1, length(configs), by = max_concurrent)) {
+    batch_end <- min(i + max_concurrent - 1, length(configs))
+    batch_configs <- configs[i:batch_end]
+
+    cat("\n")
+    cat("*", rep("*", 70), "\n", sep = "")
+    cat(sprintf("  BATCH %d: Running %d model(s) in parallel\n",
+                batch_num, length(batch_configs)))
+    cat(sprintf("  Models: %s\n", paste(sapply(batch_configs, function(x) x$name), collapse = ", ")))
+    cat("*", rep("*", 70), "\n", sep = "")
+
+    # Generate scripts and launch processes
+    temp_scripts <- character()
+    log_files <- character()
+
+    for (cfg in batch_configs) {
+      # Generate script - write to project root like main script does
+      script_content <- generate_model_script(cfg, main_path, cores_per_model, ndraws)
+      temp_script <- file.path(main_path, sprintf(".temp_ia_model_%d_%s.R", cfg$id, cfg$name))
+      log_file <- get_log_path(cfg, main_path, timestamp)
+
+      writeLines(script_content, temp_script)
+      temp_scripts <- c(temp_scripts, temp_script)
+      log_files <- c(log_files, log_file)
+      all_log_files <- c(all_log_files, log_file)
+
+      # Launch R process in background
+      intercept_str <- if (cfg$intercept) "YES" else "NO"
+      cat(sprintf("  Launching model %d (%s, intercept=%s)...\n", cfg$id, cfg$name, intercept_str))
+      cat(sprintf("    Log: %s\n", basename(log_file)))
+      launch_background_process(temp_script, log_file, is_windows, working_dir = main_path)
+
+      # Small delay to avoid race conditions
+      Sys.sleep(1)
+    }
+
+    cat("\n  Waiting for batch to complete...\n")
+
+    # Wait for all processes to complete by checking log files
+    all_done <- FALSE
+    start_time <- Sys.time()
+
+    while (!all_done) {
+      Sys.sleep(10)  # Check every 10 seconds (faster for small ndraws)
+
+      done_count <- 0
+      for (j in seq_along(log_files)) {
+        if (file.exists(log_files[j])) {
+          log_content <- tryCatch(readLines(log_files[j], warn = FALSE), error = function(e) "")
+          log_text <- paste(log_content, collapse = "\n")
+          if (grepl("MODEL COMPLETE|Results saved|Error|error|ERROR", log_text, ignore.case = FALSE)) {
+            done_count <- done_count + 1
+          }
+        }
+      }
+
+      elapsed <- difftime(Sys.time(), start_time, units = "mins")
+      cat(sprintf("\r  Progress: %d/%d models complete (%.1f min elapsed)    ",
+                  done_count, length(batch_configs), as.numeric(elapsed)))
+
+      if (done_count >= length(batch_configs)) {
+        all_done <- TRUE
+      }
+
+      # Timeout after 2 hours per batch
+      if (as.numeric(elapsed) > 120) {
+        cat("\n  WARNING: Batch timeout reached (2 hours)\n")
+        all_done <- TRUE
+      }
+    }
+
+    cat(sprintf("\n  Batch %d complete!\n", batch_num))
+
+    # Cleanup temp scripts
+    for (ts in temp_scripts) {
+      if (file.exists(ts)) unlink(ts)
+    }
+
+    batch_num <- batch_num + 1
+  }
+
   cat("\n")
+  cat("=", rep("=", 70), "\n", sep = "")
+  cat("  ALL BATCHES COMPLETE\n")
+  cat("=", rep("=", 70), "\n", sep = "")
+  cat("\n  Log files:\n")
+  for (lf in all_log_files) {
+    cat(sprintf("    %s\n", lf))
+  }
 }
 
 ###############################################################################
@@ -542,7 +636,7 @@ if (!dir.exists(ia_output)) {
 
 # Run models
 if (opts$parallel && length(selected_configs) > 1) {
-  run_parallel_models(selected_configs, main_path, opts$cores_per_model,
+  run_parallel_models(selected_configs, main_path, opts$cores, opts$cores_per_model,
                       opts$ndraws, RUN_TIMESTAMP, opts$dry_run)
 } else {
   # Sequential execution
