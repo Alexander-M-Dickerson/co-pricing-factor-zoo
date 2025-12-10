@@ -561,7 +561,7 @@ generate_table_treasury_sr <- function(sr_decomp_data,
 
   # Footnote text
   footnote <- sprintf(
-    "The table reports posterior means of number of factors (along with the $90\\%%%% confidence intervals), implied Sharpe ratios $\\mathbb{E}[SR_f|\\text{data}]$, and the ratio of $SR_f^2$ to the total SDF-implied squared Sharpe ratio $\\mathbb{E}\\big[SR^2_f/SR^2_m|\\text{data}\\big]$,
+    "The table reports posterior means of number of factors (along with the $90\\%%$ confidence intervals), implied Sharpe ratios $\\mathbb{E}[SR_f|\\text{data}]$, and the ratio of $SR_f^2$ to the total SDF-implied squared Sharpe ratio $\\mathbb{E}\\big[SR^2_f/SR^2_m|\\text{data}\\big]$,
 of the %d nontradable and %d tradable bond factors described in Appendix \\ref{sec:factor_zoo}.
 Test assets are the Treasury components of the 50 corporate bond portfolios described in Section \\ref{sec:data}. The sample period is 1986:01 to 2022:12 ($T = 444$).",
     n_nontraded, n_traded
