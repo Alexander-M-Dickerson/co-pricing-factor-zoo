@@ -21,6 +21,10 @@
 ##     8. sparse_joint        - Joint bond+stock with sparsity-inducing prior
 ##                              (uses beta_params_auto_sd(5,54) for ~5 active factors)
 ##
+##   IS/OS SWITCH MODEL:
+##     9. isos_switch         - Joint bond+stock estimated on OOS test assets
+##                              (swaps IS/OOS test assets for robustness check)
+##
 ## All models use return_type = "excess"
 ##
 ## USAGE:
@@ -78,14 +82,14 @@ DEFAULT_CORES_PER_MODEL <- 4
 DEFAULT_TOTAL_CORES     <- parallel::detectCores() - 1
 DEFAULT_NDRAWS          <- 50000
 RUN_PARALLEL            <- TRUE   # Parallel by default
-MODELS_TO_RUN           <- 1:8
+MODELS_TO_RUN           <- 1:9
 DRY_RUN                 <- FALSE
 
 ###############################################################################
 ## SECTION 2: MODEL DEFINITIONS
 ###############################################################################
 
-# Define all 8 IA models
+# Define all 9 IA models
 MODEL_CONFIGS <- list(
 
   # Model 1: Bond with intercept
@@ -211,6 +215,22 @@ MODEL_CONFIGS <- list(
     # Sparse prior: beta_params_auto_sd(5, 54) -> alpha ≈ 3.537, beta ≈ 34.663
     alpha_w     = 3.537037,
     beta_w      = 34.662963
+  ),
+
+  # Model 9: IS/OS Switch - Joint bond+stock estimated on OOS test assets
+  # Uses OOS test assets (equity_os_77, bond_oosample_all_excess) as IN-SAMPLE
+  # Then tests OOS on the original IS assets (equity_anomalies_composite_33, bond_insample_test_assets_50_excess)
+  list(
+    id          = 9,
+    name        = "isos_switch",
+    description = "Joint bond+stock IS/OS switch (excess returns)",
+    model_type  = "bond_stock_with_sp",
+    return_type = "excess",
+    intercept   = TRUE,
+    tag         = "isos_switch",
+    f2          = 'c("traded_bond_excess.csv", "traded_equity.csv")',
+    # SWAPPED: Use OOS assets as IS test assets for estimation
+    R           = 'c("bond_oosample_all_excess.csv", "equity_os_77.csv")'
   )
 )
 
