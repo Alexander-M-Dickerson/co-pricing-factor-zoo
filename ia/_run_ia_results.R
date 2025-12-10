@@ -140,6 +140,7 @@ if (verbose) message("\nLoading helper functions...")
 
 source(file.path(code_folder, "pp_figure_table.R"))
 source(file.path(code_folder, "pricing_tables.R"))  # provides build_pricing_panel_rows()
+source(file.path(code_folder, "validate_and_align_dates.R"))  # required by os_asset_pricing()
 source(file.path(code_folder, "insample_asset_pricing.R"))
 source(file.path(code_folder, "outsample_asset_pricing.R"))  # provides os_asset_pricing()
 source(file.path(code_folder, "plot_cumulative_sr.R"))
