@@ -54,7 +54,8 @@ del djm_data.zip
 ### Option A: Single Command (Recommended)
 
 ```bash
-Rscript _run_full_replication.R
+mkdir -p logs
+nohup Rscript _run_full_replication.R > logs/full_replication_$(date +%Y%m%d_%H%M%S).log 2>&1 & disown
 ```
 
 This runs all 5 steps automatically. Runtime varies by hardware: ~1-2 hours (server with 24+ cores), ~3-4 hours (desktop), ~6 hours (laptop).
@@ -100,7 +101,8 @@ output/
 Run with fewer MCMC draws for testing (runtime varies, up to ~2 hours max):
 
 ```bash
-Rscript _run_full_replication.R --quick
+mkdir -p logs
+nohup Rscript _run_full_replication.R --quick > logs/full_replication_quick_$(date +%Y%m%d_%H%M%S).log 2>&1 & disown
 ```
 
 Or step-by-step:
