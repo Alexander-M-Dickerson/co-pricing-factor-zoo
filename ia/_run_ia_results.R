@@ -462,9 +462,10 @@ if (file.exists(joint_rdata_path)) {
           verbose            = verbose
         )
 
-        if (!is.null(os_result) && !is.null(os_result$os_pricing_result)) {
-          # Build OOS pricing table
-          os_pricing <- os_result$os_pricing_result
+        # os_asset_pricing() returns a data frame directly, not a list
+        if (!is.null(os_result) && is.data.frame(os_result) && nrow(os_result) > 0) {
+          if (verbose) message("  Building OOS LaTeX table with ", ncol(os_result) - 1, " models...")
+          os_pricing <- os_result
 
           os_latex_lines <- c(
             "\\begin{table}[tbh!]",
@@ -498,6 +499,10 @@ if (file.exists(joint_rdata_path)) {
           os_tex_path <- file.path(tables_dir, "table_ia_7_os_pricing.tex")
           writeLines(os_latex_lines, os_tex_path)
           if (verbose) message("  Saved: ", os_tex_path)
+        } else {
+          warning("  os_asset_pricing() returned invalid result. is.null=", is.null(os_result),
+                  ", is.data.frame=", is.data.frame(os_result),
+                  ", nrow=", if(is.data.frame(os_result)) nrow(os_result) else "NA")
         }
       } else {
         warning("  OOS test asset files not found. Skipping Table IA.7.")
