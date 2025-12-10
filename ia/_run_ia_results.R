@@ -22,6 +22,7 @@
 ##     - Treasury posterior probabilities figure (like Figure 2)
 ##     - Treasury nfac/SR distribution figure (like Figure 3)
 ##     - Treasury bar plots figure (like Figure 4)
+##     - Treasury DR-tilt bar plots figure (weighted kappa model)
 ##
 ## USAGE:
 ##   From R:
@@ -1419,6 +1420,177 @@ if (!file.exists(treasury_rdata_path)) {
 # Final check: ensure globals are cleaned up (belt and suspenders)
 if (treasury_globals_assigned) {
   cleanup_treasury_globals()
+}
+
+
+###############################################################################
+## SECTION 5.7: TREASURY WEIGHTED MODEL (DR-TILT) FIGURE
+###############################################################################
+# Generate Figure 4 equivalent for the treasury model with DR-tilt kappa weights.
+# This requires the weighted estimation to have been run via:
+#   Rscript ia/_run_treasury_weighted.R
+#
+# Output: figure_4_posterior_bars_excess_treasury_bond_treasury_dr_tilt.pdf
+
+if (verbose) {
+  message("\n")
+  message(strrep("=", 60))
+  message("SECTION 7: Treasury Weighted (DR-Tilt) Figure")
+  message(strrep("=", 60))
+}
+
+# Path to weighted treasury model
+treasury_weighted_rdata_path <- file.path(
+  "output/unconditional/treasury",
+  "excess_treasury_alpha.w=1_beta.w=1_kappa=weighted_bond_treasury.Rdata"
+)
+
+# Track globals for cleanup
+treasury_wt_globals_assigned <- FALSE
+
+# Helper function to clean up weighted treasury global variables
+cleanup_treasury_wt_globals <- function() {
+  globals_to_clean <- c("f1", "f2", "intercept", "nontraded_names", "bond_names", "stock_names")
+  for (g in globals_to_clean) {
+    if (exists(g, envir = .GlobalEnv)) {
+      rm(list = g, envir = .GlobalEnv)
+      if (verbose) message("  Cleaned up global: ", g)
+    }
+  }
+}
+
+if (!file.exists(treasury_weighted_rdata_path)) {
+  warning("Treasury weighted model not found: ", treasury_weighted_rdata_path)
+  if (verbose) {
+    message("  Skipping Treasury DR-Tilt figure.")
+    message("  To generate, run: Rscript ia/_run_treasury_weighted.R")
+  }
+} else {
+  if (verbose) message("  Loading: ", treasury_weighted_rdata_path)
+
+  # Load weighted treasury model into environment
+  treasury_wt_env <- new.env()
+  load_success <- tryCatch({
+    load(treasury_weighted_rdata_path, envir = treasury_wt_env)
+    TRUE
+  }, error = function(e) {
+    warning("  Failed to load treasury weighted .Rdata: ", e$message)
+    FALSE
+  })
+
+  if (!load_success) {
+    if (verbose) message("  Skipping Treasury DR-Tilt due to load failure")
+  } else {
+    # List what was loaded
+    loaded_objects <- ls(envir = treasury_wt_env)
+    if (verbose) message("  Loaded objects: ", paste(loaded_objects, collapse = ", "))
+
+    # Check required objects
+    treasury_wt_required <- c("results", "f1", "intercept")
+    treasury_wt_missing <- treasury_wt_required[!sapply(treasury_wt_required, exists, envir = treasury_wt_env)]
+
+    if (length(treasury_wt_missing) > 0) {
+      warning("  Missing objects: ", paste(treasury_wt_missing, collapse = ", "))
+      if (verbose) message("  Skipping Treasury DR-Tilt due to missing objects")
+    } else {
+
+      # Extract objects from environment
+      f1_treasury_wt <- get("f1", envir = treasury_wt_env)
+      f2_treasury_wt <- if (exists("f2", envir = treasury_wt_env)) get("f2", envir = treasury_wt_env) else NULL
+      intercept_treasury_wt <- get("intercept", envir = treasury_wt_env)
+      results_treasury_wt <- get("results", envir = treasury_wt_env)
+
+      # Extract factor name vectors (with fallbacks)
+      nontraded_names_treasury_wt <- if (exists("nontraded_names", envir = treasury_wt_env)) {
+        get("nontraded_names", envir = treasury_wt_env)
+      } else {
+        colnames(f1_treasury_wt)
+      }
+      bond_names_treasury_wt <- if (exists("bond_names", envir = treasury_wt_env)) {
+        get("bond_names", envir = treasury_wt_env)
+      } else {
+        character(0)
+      }
+      stock_names_treasury_wt <- if (exists("stock_names", envir = treasury_wt_env)) {
+        get("stock_names", envir = treasury_wt_env)
+      } else {
+        character(0)
+      }
+
+      # Log dimensions
+      if (verbose) {
+        message("  f1 dimensions: ", nrow(f1_treasury_wt), " x ", ncol(f1_treasury_wt))
+        message("  f2 dimensions: ", if(is.null(f2_treasury_wt)) "NULL" else paste(nrow(f2_treasury_wt), "x", ncol(f2_treasury_wt)))
+        message("  intercept: ", intercept_treasury_wt)
+        message("  results: ", length(results_treasury_wt), " prior levels")
+        message("  nontraded_names: ", length(nontraded_names_treasury_wt), " factors")
+        message("  bond_names: ", length(bond_names_treasury_wt), " factors")
+        message("  stock_names: ", length(stock_names_treasury_wt), " factors")
+      }
+
+      # Assign to global environment for pp_bar_plots
+      assign("f1", f1_treasury_wt, envir = .GlobalEnv)
+      assign("f2", f2_treasury_wt, envir = .GlobalEnv)
+      assign("intercept", intercept_treasury_wt, envir = .GlobalEnv)
+      assign("nontraded_names", nontraded_names_treasury_wt, envir = .GlobalEnv)
+      assign("bond_names", bond_names_treasury_wt, envir = .GlobalEnv)
+      assign("stock_names", stock_names_treasury_wt, envir = .GlobalEnv)
+      treasury_wt_globals_assigned <- TRUE
+
+      # Ensure cleanup on exit
+      on.exit(cleanup_treasury_wt_globals(), add = TRUE)
+
+      # ---- Figure: Posterior Probabilities Bar Plots (Treasury DR-Tilt) ----
+      if (verbose) message("\n--- Treasury DR-Tilt: Posterior Probabilities Bar Plots ---")
+
+      tryCatch({
+        if (verbose) {
+          message("  Calling pp_bar_plots()...")
+        }
+
+        treasury_wt_bar_result <- pp_bar_plots(
+          results       = results_treasury_wt,
+          return_type   = "excess",
+          model_type    = "treasury",
+          tag           = "bond_treasury_dr_tilt",  # Different tag for weighted version
+          prior_labels  = c("20%", "40%", "60%", "80%"),
+          prior_choice  = "80%",
+          panelA_title  = "(A)  Posterior probabilities",
+          panelB_title  = "(B)  Posterior market prices of risk",
+          main_path     = paper_output,
+          output_folder = "figures",
+          verbose       = verbose
+        )
+
+        if (!is.null(treasury_wt_bar_result)) {
+          if (verbose) {
+            message("  SUCCESS: Bar plots figure generated")
+            message("  Figure saved: ", treasury_wt_bar_result$fig_file)
+            message("  Prior used: ", treasury_wt_bar_result$prior_used)
+            message("  N factors: ", treasury_wt_bar_result$n_factors)
+            message("  Factor types: ", paste(names(treasury_wt_bar_result$factor_types),
+                                               treasury_wt_bar_result$factor_types,
+                                               sep = "=", collapse = ", "))
+          }
+        } else {
+          warning("  pp_bar_plots returned NULL")
+        }
+      }, error = function(e) {
+        warning("  ERROR in Treasury DR-Tilt bar plots figure: ", e$message)
+        if (verbose) message("  Stack trace: ", paste(capture.output(traceback()), collapse = "\n"))
+      })
+    }
+
+    # Clean up environment
+    rm(treasury_wt_env)
+  }
+
+  gc(verbose = FALSE)
+}
+
+# Final cleanup for weighted treasury globals
+if (treasury_wt_globals_assigned) {
+  cleanup_treasury_wt_globals()
 }
 
 
