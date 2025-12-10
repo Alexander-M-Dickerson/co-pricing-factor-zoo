@@ -850,122 +850,165 @@ Rs_dur_oos <- if (file.exists(stock_oos_file_dur)) {
 if (verbose) message("\n--- Panel C: bond_stock_with_sp OOS (duration) ---")
 
 if (!is.null(bswsp_dur_env) && !is.null(Rb_dur_oos) && !is.null(Rs_dur_oos)) {
-  tryCatch({
-    # Combine bond and stock OOS assets (remove date from Rs to avoid duplicate)
-    R_oos_combined_dur <- cbind(Rb_dur_oos, Rs_dur_oos[, -1, drop = FALSE])
-    if (verbose) message("  Combined OOS assets: ", ncol(R_oos_combined_dur) - 1, " portfolios")
 
-    # Extract required objects from environment
-    IS_AP_local <- get("IS_AP", envir = bswsp_dur_env)
-    frequentist_models_local <- get("frequentist_models", envir = bswsp_dur_env)
-    kns_out_local <- get("kns_out", envir = bswsp_dur_env)
-    rp_out_local <- get("rp_out", envir = bswsp_dur_env)
-    pca_out_local <- if (exists("pca_out", envir = bswsp_dur_env)) get("pca_out", envir = bswsp_dur_env) else NULL
-    intercept_local <- get("intercept", envir = bswsp_dur_env)
+  # Check required objects exist before proceeding
+  required_objs_dur <- c("IS_AP", "f1", "kns_out", "rp_out", "frequentist_models", "intercept")
+  missing_objs_dur <- required_objs_dur[!sapply(required_objs_dur, exists, envir = bswsp_dur_env)]
 
-    # Get f1, f2, fac_freq from data_list if available
-    if (exists("data_list", envir = bswsp_dur_env)) {
-      data_list_local <- get("data_list", envir = bswsp_dur_env)
-      f1_local <- data_list_local$f1
-      f2_local <- data_list_local$f2
-      fac_freq_local <- data_list_local$fac_freq
-    } else {
-      f1_local <- get("f1", envir = bswsp_dur_env)
-      f2_local <- if (exists("f2", envir = bswsp_dur_env)) get("f2", envir = bswsp_dur_env) else NULL
-      fac_freq_local <- read.csv(file.path(data_folder, "frequentist_factors.csv"), check.names = FALSE)
-    }
+  if (length(missing_objs_dur) > 0) {
+    warning("  Missing objects in bond_stock_with_sp duration: ", paste(missing_objs_dur, collapse = ", "))
+    if (verbose) message("  Skipping Panel C due to missing objects")
+  } else {
 
-    if (verbose) {
-      message("  f1: ", nrow(f1_local), " x ", ncol(f1_local))
-      message("  f2: ", if(is.null(f2_local)) "NULL" else paste(nrow(f2_local), "x", ncol(f2_local)))
-    }
+    tryCatch({
+      # Combine bond and stock OOS assets (remove date from Rs to avoid duplicate)
+      R_oos_combined_dur <- cbind(Rb_dur_oos, Rs_dur_oos[, -1, drop = FALSE])
+      if (verbose) message("  Combined OOS assets: ", ncol(R_oos_combined_dur) - 1, " portfolios")
 
-    # Run OOS pricing
-    if (verbose) message("  Running os_asset_pricing()...")
-    os_result_bswsp_dur <- os_asset_pricing(
-      R_oss              = R_oos_combined_dur,
-      IS_AP              = IS_AP_local,
-      f1                 = f1_local,
-      f2                 = f2_local,
-      fac_freq           = fac_freq_local,
-      frequentist_models = frequentist_models_local,
-      kns_out            = kns_out_local,
-      rp_out             = rp_out_local,
-      pca_out            = pca_out_local,
-      intercept          = intercept_local,
-      verbose            = verbose
-    )
+      # Extract required objects from environment
+      IS_AP_local <- get("IS_AP", envir = bswsp_dur_env)
+      frequentist_models_local <- get("frequentist_models", envir = bswsp_dur_env)
+      kns_out_local <- get("kns_out", envir = bswsp_dur_env)
+      rp_out_local <- get("rp_out", envir = bswsp_dur_env)
+      pca_out_local <- if (exists("pca_out", envir = bswsp_dur_env)) get("pca_out", envir = bswsp_dur_env) else NULL
+      intercept_local <- get("intercept", envir = bswsp_dur_env)
 
-    if (!is.null(os_result_bswsp_dur) && is.data.frame(os_result_bswsp_dur)) {
-      dur_os_results$bond_stock_with_sp <- os_result_bswsp_dur
-      if (verbose) message("  SUCCESS: ", ncol(os_result_bswsp_dur) - 1, " models evaluated")
-    }
+      # Get f1, f2, fac_freq from data_list if available
+      if (exists("data_list", envir = bswsp_dur_env)) {
+        data_list_local <- get("data_list", envir = bswsp_dur_env)
+        f1_local <- data_list_local$f1
+        f2_local <- data_list_local$f2
+        fac_freq_local <- data_list_local$fac_freq
+        if (verbose) message("  Using data from data_list (f1, f2, fac_freq)")
+      } else {
+        f1_local <- get("f1", envir = bswsp_dur_env)
+        f2_local <- if (exists("f2", envir = bswsp_dur_env)) get("f2", envir = bswsp_dur_env) else NULL
+        fac_freq_local <- read.csv(file.path(data_folder, "frequentist_factors.csv"), check.names = FALSE)
+        if (verbose) message("  Using f1/f2 from env, fac_freq from CSV")
+      }
 
-  }, error = function(e) {
-    warning("  ERROR in bond_stock_with_sp duration OOS pricing: ", e$message)
-  })
+      if (verbose) {
+        message("  f1: ", nrow(f1_local), " x ", ncol(f1_local))
+        message("  f2: ", if(is.null(f2_local)) "NULL" else paste(nrow(f2_local), "x", ncol(f2_local)))
+        message("  fac_freq: ", nrow(fac_freq_local), " x ", ncol(fac_freq_local))
+      }
+
+      # Run OOS pricing
+      if (verbose) message("  Running os_asset_pricing()...")
+      os_result_bswsp_dur <- os_asset_pricing(
+        R_oss              = R_oos_combined_dur,
+        IS_AP              = IS_AP_local,
+        f1                 = f1_local,
+        f2                 = f2_local,
+        fac_freq           = fac_freq_local,
+        frequentist_models = frequentist_models_local,
+        kns_out            = kns_out_local,
+        rp_out             = rp_out_local,
+        pca_out            = pca_out_local,
+        intercept          = intercept_local,
+        verbose            = verbose
+      )
+
+      if (!is.null(os_result_bswsp_dur) && is.data.frame(os_result_bswsp_dur)) {
+        dur_os_results$bond_stock_with_sp <- os_result_bswsp_dur
+        if (verbose) message("  SUCCESS: ", ncol(os_result_bswsp_dur) - 1, " models evaluated")
+      } else {
+        warning("  os_asset_pricing returned NULL or invalid result")
+      }
+
+    }, error = function(e) {
+      warning("  ERROR in bond_stock_with_sp duration OOS pricing: ", e$message)
+      if (verbose) message("  Stack trace: ", paste(capture.output(traceback()), collapse = "\n"))
+    })
+  }
 } else {
-  warning("  Skipping Panel C: missing model or OOS data")
+  if (verbose) {
+    message("  Skipping Panel C: missing requirements")
+    message("    bswsp_dur_env: ", if(is.null(bswsp_dur_env)) "NULL" else "OK")
+    message("    Rb_dur_oos: ", if(is.null(Rb_dur_oos)) "NULL" else "OK")
+    message("    Rs_dur_oos: ", if(is.null(Rs_dur_oos)) "NULL" else "OK")
+  }
 }
 
 # ---- Panel D: bond OS (duration) ----
 if (verbose) message("\n--- Panel D: bond OOS (duration) ---")
 
 if (!is.null(bond_dur_env) && !is.null(Rb_dur_oos)) {
-  tryCatch({
-    if (verbose) message("  Bond OOS assets: ", ncol(Rb_dur_oos) - 1, " portfolios")
 
-    # Extract required objects from environment
-    IS_AP_local <- get("IS_AP", envir = bond_dur_env)
-    frequentist_models_local <- get("frequentist_models", envir = bond_dur_env)
-    kns_out_local <- get("kns_out", envir = bond_dur_env)
-    rp_out_local <- get("rp_out", envir = bond_dur_env)
-    pca_out_local <- if (exists("pca_out", envir = bond_dur_env)) get("pca_out", envir = bond_dur_env) else NULL
-    intercept_local <- get("intercept", envir = bond_dur_env)
+  # Check required objects exist before proceeding
+  required_objs_bond <- c("IS_AP", "f1", "kns_out", "rp_out", "frequentist_models", "intercept")
+  missing_objs_bond <- required_objs_bond[!sapply(required_objs_bond, exists, envir = bond_dur_env)]
 
-    # Get f1, f2, fac_freq from data_list if available
-    if (exists("data_list", envir = bond_dur_env)) {
-      data_list_local <- get("data_list", envir = bond_dur_env)
-      f1_local <- data_list_local$f1
-      f2_local <- data_list_local$f2
-      fac_freq_local <- data_list_local$fac_freq
-    } else {
-      f1_local <- get("f1", envir = bond_dur_env)
-      f2_local <- if (exists("f2", envir = bond_dur_env)) get("f2", envir = bond_dur_env) else NULL
-      fac_freq_local <- read.csv(file.path(data_folder, "frequentist_factors.csv"), check.names = FALSE)
-    }
+  if (length(missing_objs_bond) > 0) {
+    warning("  Missing objects in bond duration: ", paste(missing_objs_bond, collapse = ", "))
+    if (verbose) message("  Skipping Panel D due to missing objects")
+  } else {
 
-    if (verbose) {
-      message("  f1: ", nrow(f1_local), " x ", ncol(f1_local))
-      message("  f2: ", if(is.null(f2_local)) "NULL" else paste(nrow(f2_local), "x", ncol(f2_local)))
-    }
+    tryCatch({
+      if (verbose) message("  Bond OOS assets: ", ncol(Rb_dur_oos) - 1, " portfolios")
 
-    # Run OOS pricing
-    if (verbose) message("  Running os_asset_pricing()...")
-    os_result_bond_dur <- os_asset_pricing(
-      R_oss              = Rb_dur_oos,
-      IS_AP              = IS_AP_local,
-      f1                 = f1_local,
-      f2                 = f2_local,
-      fac_freq           = fac_freq_local,
-      frequentist_models = frequentist_models_local,
-      kns_out            = kns_out_local,
-      rp_out             = rp_out_local,
-      pca_out            = pca_out_local,
-      intercept          = intercept_local,
-      verbose            = verbose
-    )
+      # Extract required objects from environment
+      IS_AP_local <- get("IS_AP", envir = bond_dur_env)
+      frequentist_models_local <- get("frequentist_models", envir = bond_dur_env)
+      kns_out_local <- get("kns_out", envir = bond_dur_env)
+      rp_out_local <- get("rp_out", envir = bond_dur_env)
+      pca_out_local <- if (exists("pca_out", envir = bond_dur_env)) get("pca_out", envir = bond_dur_env) else NULL
+      intercept_local <- get("intercept", envir = bond_dur_env)
 
-    if (!is.null(os_result_bond_dur) && is.data.frame(os_result_bond_dur)) {
-      dur_os_results$bond <- os_result_bond_dur
-      if (verbose) message("  SUCCESS: ", ncol(os_result_bond_dur) - 1, " models evaluated")
-    }
+      # Get f1, f2, fac_freq from data_list if available
+      if (exists("data_list", envir = bond_dur_env)) {
+        data_list_local <- get("data_list", envir = bond_dur_env)
+        f1_local <- data_list_local$f1
+        f2_local <- data_list_local$f2
+        fac_freq_local <- data_list_local$fac_freq
+        if (verbose) message("  Using data from data_list (f1, f2, fac_freq)")
+      } else {
+        f1_local <- get("f1", envir = bond_dur_env)
+        f2_local <- if (exists("f2", envir = bond_dur_env)) get("f2", envir = bond_dur_env) else NULL
+        fac_freq_local <- read.csv(file.path(data_folder, "frequentist_factors.csv"), check.names = FALSE)
+        if (verbose) message("  Using f1/f2 from env, fac_freq from CSV")
+      }
 
-  }, error = function(e) {
-    warning("  ERROR in bond duration OOS pricing: ", e$message)
-  })
+      if (verbose) {
+        message("  f1: ", nrow(f1_local), " x ", ncol(f1_local))
+        message("  f2: ", if(is.null(f2_local)) "NULL" else paste(nrow(f2_local), "x", ncol(f2_local)))
+        message("  fac_freq: ", nrow(fac_freq_local), " x ", ncol(fac_freq_local))
+      }
+
+      # Run OOS pricing
+      if (verbose) message("  Running os_asset_pricing()...")
+      os_result_bond_dur <- os_asset_pricing(
+        R_oss              = Rb_dur_oos,
+        IS_AP              = IS_AP_local,
+        f1                 = f1_local,
+        f2                 = f2_local,
+        fac_freq           = fac_freq_local,
+        frequentist_models = frequentist_models_local,
+        kns_out            = kns_out_local,
+        rp_out             = rp_out_local,
+        pca_out            = pca_out_local,
+        intercept          = intercept_local,
+        verbose            = verbose
+      )
+
+      if (!is.null(os_result_bond_dur) && is.data.frame(os_result_bond_dur)) {
+        dur_os_results$bond <- os_result_bond_dur
+        if (verbose) message("  SUCCESS: ", ncol(os_result_bond_dur) - 1, " models evaluated")
+      } else {
+        warning("  os_asset_pricing returned NULL or invalid result")
+      }
+
+    }, error = function(e) {
+      warning("  ERROR in bond duration OOS pricing: ", e$message)
+      if (verbose) message("  Stack trace: ", paste(capture.output(traceback()), collapse = "\n"))
+    })
+  }
 } else {
-  warning("  Skipping Panel D: missing model or OOS data")
+  if (verbose) {
+    message("  Skipping Panel D: missing requirements")
+    message("    bond_dur_env: ", if(is.null(bond_dur_env)) "NULL" else "OK")
+    message("    Rb_dur_oos: ", if(is.null(Rb_dur_oos)) "NULL" else "OK")
+  }
 }
 
 # ---- Build Duration Pricing Table ----
