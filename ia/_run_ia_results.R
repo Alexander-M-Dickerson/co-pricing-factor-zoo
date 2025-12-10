@@ -20,6 +20,7 @@
 ##     - Cumulative SR figure (from main paper's excess model)
 ##     - Treasury posterior probabilities figure (like Figure 2)
 ##     - Treasury nfac/SR distribution figure (like Figure 3)
+##     - Treasury bar plots figure (like Figure 4)
 ##
 ## USAGE:
 ##   From R:
@@ -150,6 +151,7 @@ source(file.path(code_folder, "insample_asset_pricing.R"))
 source(file.path(code_folder, "outsample_asset_pricing.R"))  # provides os_asset_pricing()
 source(file.path(code_folder, "plot_cumulative_sr.R"))
 source(file.path(code_folder, "plot_nfac_sr.R"))  # provides plot_nfac_sr() for Figure 3 equivalent
+source(file.path(code_folder, "pp_bar_plots.R"))  # provides pp_bar_plots() for Figure 4 equivalent
 
 # Load additional helpers as needed
 if (file.exists(file.path(code_folder, "oos_pricing_helpers.R"))) {
@@ -1113,10 +1115,11 @@ gc(verbose = FALSE)
 ###############################################################################
 ## SECTION 5.6: TREASURY MODEL FIGURES AND TABLE
 ###############################################################################
-# Generate Figure and Table for Treasury component:
+# Generate Figures and Table for Treasury component:
 # - Posterior probability figure (like Figure 2)
 # - Posterior probability table (like Table A.2)
 # - Number of factors & SR distribution figure (like Figure 3)
+# - Bar plots of posterior probabilities & risk prices (like Figure 4)
 # Uses MAIN paper's treasury model from output/unconditional/treasury/
 
 if (verbose) {
@@ -1137,17 +1140,12 @@ treasury_globals_assigned <- FALSE
 
 # Helper function to clean up treasury global variables
 cleanup_treasury_globals <- function() {
-  if (exists("f1", envir = .GlobalEnv)) {
-    rm("f1", envir = .GlobalEnv)
-    if (verbose) message("  Cleaned up global: f1")
-  }
-  if (exists("f2", envir = .GlobalEnv)) {
-    rm("f2", envir = .GlobalEnv)
-    if (verbose) message("  Cleaned up global: f2")
-  }
-  if (exists("intercept", envir = .GlobalEnv)) {
-    rm("intercept", envir = .GlobalEnv)
-    if (verbose) message("  Cleaned up global: intercept")
+  globals_to_clean <- c("f1", "f2", "intercept", "nontraded_names", "bond_names", "stock_names")
+  for (g in globals_to_clean) {
+    if (exists(g, envir = .GlobalEnv)) {
+      rm(list = g, envir = .GlobalEnv)
+      if (verbose) message("  Cleaned up global: ", g)
+    }
   }
 }
 
@@ -1189,6 +1187,24 @@ if (!file.exists(treasury_rdata_path)) {
       intercept_treasury <- get("intercept", envir = treasury_env)
       results_treasury <- get("results", envir = treasury_env)
 
+      # Extract factor name vectors (used by pp_bar_plots)
+      # Use what's in the .Rdata file, or derive from f1/f2 columns as fallback
+      nontraded_names_treasury <- if (exists("nontraded_names", envir = treasury_env)) {
+        get("nontraded_names", envir = treasury_env)
+      } else {
+        colnames(f1_treasury)  # fallback: all f1 columns are non-traded
+      }
+      bond_names_treasury <- if (exists("bond_names", envir = treasury_env)) {
+        get("bond_names", envir = treasury_env)
+      } else {
+        character(0)  # fallback: no bond factors
+      }
+      stock_names_treasury <- if (exists("stock_names", envir = treasury_env)) {
+        get("stock_names", envir = treasury_env)
+      } else {
+        character(0)  # fallback: no stock factors
+      }
+
       # Log dimensions
       if (verbose) {
         message("  f1 dimensions: ", nrow(f1_treasury), " x ", ncol(f1_treasury))
@@ -1196,13 +1212,19 @@ if (!file.exists(treasury_rdata_path)) {
         message("  intercept: ", intercept_treasury)
         message("  results: ", length(results_treasury), " prior levels")
         message("  gamma_path dimensions: ", nrow(results_treasury[[1]]$gamma_path), " x ", ncol(results_treasury[[1]]$gamma_path))
+        message("  nontraded_names: ", length(nontraded_names_treasury), " factors")
+        message("  bond_names: ", length(bond_names_treasury), " factors")
+        message("  stock_names: ", length(stock_names_treasury), " factors")
       }
 
-      # Temporarily assign to global for pp_figure_table (it uses get with inherits=TRUE)
+      # Temporarily assign to global for pp_figure_table and pp_bar_plots (they use get with inherits=TRUE)
       # Use on.exit to ensure cleanup even if errors occur
       assign("f1", f1_treasury, envir = .GlobalEnv)
       assign("f2", f2_treasury, envir = .GlobalEnv)
       assign("intercept", intercept_treasury, envir = .GlobalEnv)
+      assign("nontraded_names", nontraded_names_treasury, envir = .GlobalEnv)
+      assign("bond_names", bond_names_treasury, envir = .GlobalEnv)
+      assign("stock_names", stock_names_treasury, envir = .GlobalEnv)
       treasury_globals_assigned <- TRUE
 
       # Ensure cleanup happens on exit from this block
@@ -1286,6 +1308,49 @@ if (!file.exists(treasury_rdata_path)) {
           if (verbose) message("  Stack trace: ", paste(capture.output(traceback()), collapse = "\n"))
         })
       }
+
+      # ---- Figure: Posterior Probabilities Bar Plots (Treasury) ----
+      # Equivalent to Figure 4 in the main paper
+      if (verbose) message("\n--- Treasury: Posterior Probabilities Bar Plots (Figure 4 equivalent) ---")
+
+      tryCatch({
+        if (verbose) {
+          message("  Calling pp_bar_plots()...")
+          message("  Using global vars: f1, f2, nontraded_names, bond_names, stock_names")
+        }
+
+        treasury_bar_result <- pp_bar_plots(
+          results       = results_treasury,
+          return_type   = "excess",
+          model_type    = "treasury",
+          tag           = "bond_treasury",
+          prior_labels  = c("20%", "40%", "60%", "80%"),
+          prior_choice  = "80%",
+          # Custom panel titles for Treasury
+          panelA_title  = "(A)  Posterior probabilities",
+          panelB_title  = "(B)  Posterior market prices of risk",
+          main_path     = paper_output,
+          output_folder = "figures",
+          verbose       = verbose
+        )
+
+        if (!is.null(treasury_bar_result)) {
+          if (verbose) {
+            message("  SUCCESS: Bar plots figure generated")
+            message("  Figure saved: ", treasury_bar_result$fig_file)
+            message("  Prior used: ", treasury_bar_result$prior_used)
+            message("  N factors: ", treasury_bar_result$n_factors)
+            message("  Factor types: ", paste(names(treasury_bar_result$factor_types),
+                                               treasury_bar_result$factor_types,
+                                               sep = "=", collapse = ", "))
+          }
+        } else {
+          warning("  pp_bar_plots returned NULL")
+        }
+      }, error = function(e) {
+        warning("  ERROR in Treasury bar plots figure: ", e$message)
+        if (verbose) message("  Stack trace: ", paste(capture.output(traceback()), collapse = "\n"))
+      })
 
       # Note: cleanup_treasury_globals() will be called automatically via on.exit()
     }
