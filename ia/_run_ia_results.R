@@ -1125,7 +1125,7 @@ gc(verbose = FALSE)
 # - Number of factors & SR distribution figure (like Figure 3)
 # - Bar plots of posterior probabilities & risk prices (like Figure 4)
 # - SR decomposition table (like Table 4, nontradable vs tradable)
-# Uses MAIN paper's treasury model from output/unconditional/treasury/
+# Uses treasury model from ia/output/unconditional/treasury/
 
 if (verbose) {
   message("\n")
@@ -1136,7 +1136,7 @@ if (verbose) {
 
 # Treasury model path
 treasury_rdata_path <- file.path(
-  "output/unconditional/treasury",
+  "ia/output/unconditional/treasury",
   "excess_treasury_alpha.w=1_beta.w=1_kappa=0_bond_treasury.Rdata"
 )
 
@@ -1441,7 +1441,7 @@ if (verbose) {
 
 # Path to weighted treasury model
 treasury_weighted_rdata_path <- file.path(
-  "output/unconditional/treasury",
+  "ia/output/unconditional/treasury",
   "excess_treasury_alpha.w=1_beta.w=1_kappa=weighted_bond_treasury.Rdata"
 )
 
@@ -1463,7 +1463,7 @@ if (!file.exists(treasury_weighted_rdata_path)) {
   warning("Treasury weighted model not found: ", treasury_weighted_rdata_path)
   if (verbose) {
     message("  Skipping Treasury DR-Tilt figure.")
-    message("  To generate, run: Rscript ia/_run_treasury_weighted.R")
+    message("  To generate, run: Rscript ia/_run_ia_estimation.R --models=7")
   }
 } else {
   if (verbose) message("  Loading: ", treasury_weighted_rdata_path)
