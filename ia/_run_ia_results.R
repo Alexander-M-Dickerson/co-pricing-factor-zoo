@@ -389,20 +389,20 @@ if (verbose) {
   message(strrep("=", 60))
 }
 
-# This figure uses the MAIN paper's duration_bond_stock_with_sp model
+# This figure uses the MAIN paper's excess_bond_stock_with_sp model
 # (not IA-specific), but outputs to the IA figures directory
 main_results_path <- "output/unconditional"
-duration_rdata_file <- file.path(
+excess_rdata_file <- file.path(
   main_results_path, "bond_stock_with_sp",
-  "duration_bond_stock_with_sp_alpha.w=1_beta.w=1_kappa=0_baseline.Rdata"
+  "excess_bond_stock_with_sp_alpha.w=1_beta.w=1_kappa=0_baseline.Rdata"
 )
 
 fig13_output_path <- file.path(figures_dir, "fig13_cum_sr_80pct.pdf")
 
 if (file.exists(fig13_output_path)) {
   if (verbose) message("  Skipping Figure 13: file already exists")
-} else if (!file.exists(duration_rdata_file)) {
-  warning("Duration .Rdata not found. Skipping Figure 13.\n  ", duration_rdata_file)
+} else if (!file.exists(excess_rdata_file)) {
+  warning("Excess .Rdata not found. Skipping Figure 13.\n  ", excess_rdata_file)
 } else {
   if (verbose) message("  Computing cumulative Sharpe ratios...")
 
@@ -411,7 +411,7 @@ if (file.exists(fig13_output_path)) {
     main_path     = main_path,
     output_folder = "output",
     model_type    = "bond_stock_with_sp",
-    return_type   = "duration",
+    return_type   = "excess",
     kappa         = 0,
     alpha.w       = 1,
     beta.w        = 1,

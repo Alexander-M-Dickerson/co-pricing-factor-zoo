@@ -766,13 +766,13 @@ if (!exists("results")) {
 #### Figure 13: Cumulative Co-Pricing SDF-Implied Sharpe Ratio -----------------
 # Generates: Figure 13 (cumulative SR as factors are added by posterior probability)
 # Source: code_base/plot_cumulative_sr.R
-# NOTE: Requires bond_stock_with_sp model with intercept=TRUE (duration returns)
-# The .Rdata file is: duration_bond_stock_with_sp_alpha.w=1_beta.w=1_kappa=0_baseline.Rdata
+# NOTE: Requires bond_stock_with_sp model with intercept=TRUE (excess returns)
+# The .Rdata file is: excess_bond_stock_with_sp_alpha.w=1_beta.w=1_kappa=0_baseline.Rdata
 
 if (verbose) {
   message("\nFigure 13: Cumulative Co-Pricing SDF-Implied Sharpe Ratio")
   message("  model_type  = 'bond_stock_with_sp'")
-  message("  return_type = 'duration' (required for this figure)")
+  message("  return_type = 'excess'")
 }
 
 fig13_output_path <- file.path(figures_dir, "fig13_cum_sr_80pct.pdf")
@@ -780,14 +780,14 @@ fig13_output_path <- file.path(figures_dir, "fig13_cum_sr_80pct.pdf")
 if (file.exists(fig13_output_path)) {
   if (verbose) message("  Skipping Figure 13: file already exists")
 } else {
-  # Check if required duration .Rdata file exists
-  duration_rdata_file <- file.path(
+  # Check if required excess .Rdata file exists
+  excess_rdata_file <- file.path(
     results_path, "bond_stock_with_sp",
-    "duration_bond_stock_with_sp_alpha.w=1_beta.w=1_kappa=0_baseline.Rdata"
+    "excess_bond_stock_with_sp_alpha.w=1_beta.w=1_kappa=0_baseline.Rdata"
   )
 
-  if (!file.exists(duration_rdata_file)) {
-    warning("Duration .Rdata not found. Skipping Figure 7.\n  ", duration_rdata_file)
+  if (!file.exists(excess_rdata_file)) {
+    warning("Excess .Rdata not found. Skipping Figure 13.\n  ", excess_rdata_file)
   } else {
     # Compute cumulative Sharpe ratios
     if (verbose) message("  Computing cumulative Sharpe ratios...")
@@ -795,7 +795,7 @@ if (file.exists(fig13_output_path)) {
       main_path     = project_root,
       output_folder = "output",
       model_type    = "bond_stock_with_sp",
-      return_type   = "duration",
+      return_type   = "excess",
       kappa         = 0,
       alpha.w       = 1,
       beta.w        = 1,
