@@ -17,6 +17,10 @@
 ##     6. treasury_base       - Treasury bond component (kappa=0)
 ##     7. treasury_weighted   - Treasury with DR-tilt kappa weights
 ##
+##   SPARSE MODEL:
+##     8. sparse_joint        - Joint bond+stock with sparsity-inducing prior
+##                              (uses beta_params_auto_sd(5,54) for ~5 active factors)
+##
 ## All models use return_type = "excess"
 ##
 ## USAGE:
@@ -74,14 +78,14 @@ DEFAULT_CORES_PER_MODEL <- 4
 DEFAULT_TOTAL_CORES     <- parallel::detectCores() - 1
 DEFAULT_NDRAWS          <- 50000
 RUN_PARALLEL            <- TRUE   # Parallel by default
-MODELS_TO_RUN           <- 1:7
+MODELS_TO_RUN           <- 1:8
 DRY_RUN                 <- FALSE
 
 ###############################################################################
 ## SECTION 2: MODEL DEFINITIONS
 ###############################################################################
 
-# Define all 5 IA models
+# Define all 8 IA models
 MODEL_CONFIGS <- list(
 
   # Model 1: Bond with intercept
@@ -189,6 +193,24 @@ MODEL_CONFIGS <- list(
       HKM   = c("MKTB", "DEF", "TERM"),
       FF5   = c("MKTB", "SZE", "HMLB", "CRF", "DRF")
     )
+  ),
+
+  # Model 8: Sparse joint model (bond+stock) with sparsity-inducing prior
+  # Uses beta_params_auto_sd(5, 54) to set alpha.w and beta.w for sparse factor selection
+  # Expected ~5 active factors out of 54 total
+  list(
+    id          = 8,
+    name        = "sparse_joint",
+    description = "Joint bond+stock with sparsity prior (excess returns)",
+    model_type  = "bond_stock_with_sp",
+    return_type = "excess",
+    intercept   = TRUE,
+    tag         = "baseline",
+    f2          = 'c("traded_bond_excess.csv", "traded_equity.csv")',
+    R           = 'c("bond_insample_test_assets_50_excess.csv", "equity_anomalies_composite_33.csv")',
+    # Sparse prior: beta_params_auto_sd(5, 54) -> alpha ≈ 3.537, beta ≈ 34.663
+    alpha_w     = 3.537037,
+    beta_w      = 34.662963
   )
 )
 
@@ -299,6 +321,10 @@ generate_model_script <- function(cfg, main_path, cores_per_model, ndraws) {
   # Determine f1 file (custom for treasury, default for others)
   f1_file <- if (!is.null(cfg$f1)) cfg$f1 else "nontraded.csv"
 
+  # Determine alpha.w and beta.w (custom for sparse models, default 1)
+  alpha_w_val <- if (!is.null(cfg$alpha_w)) cfg$alpha_w else 1
+  beta_w_val <- if (!is.null(cfg$beta_w)) cfg$beta_w else 1
+
   # Build frequentist models string
   if (!is.null(cfg$frequentist)) {
     freq_lines <- sapply(names(cfg$frequentist), function(nm) {
@@ -391,8 +417,8 @@ frequentist_models <- %s
 #### MCMC Parameters
 ndraws         <- %d
 SRscale        <- c(0.20, 0.40, 0.60, 0.80)
-alpha.w        <- 1
-beta.w         <- 1
+alpha.w        <- %.6f
+beta.w         <- %.6f
 drop_draws_pct <- 0
 %s
 #### Other Settings
@@ -516,6 +542,8 @@ tryCatch({
     cfg$R,
     freq_str,
     ndraws,
+    alpha_w_val,
+    beta_w_val,
     kappa_code,
     cfg$tag,
     cores_per_model,
