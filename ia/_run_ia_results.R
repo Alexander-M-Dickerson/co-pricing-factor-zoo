@@ -467,6 +467,7 @@ for (model_key in names(model_type_map)) {
   if (verbose) message("  Processing ", model_key, " model for OOS pricing...")
 
   rdata_path <- get_rdata_path(model, results_path)
+  if (verbose) message("    Looking for: ", rdata_path)
 
   if (!file.exists(rdata_path)) {
     warning("    .Rdata not found: ", rdata_path)
@@ -476,7 +477,19 @@ for (model_key in names(model_type_map)) {
 
   # Load into a fresh environment to avoid conflicts
   load_env <- new.env()
-  load(rdata_path, envir = load_env)
+  load_success <- tryCatch({
+    load(rdata_path, envir = load_env)
+    if (verbose) message("    Loaded successfully")
+    TRUE
+  }, error = function(e) {
+    warning("    Failed to load .Rdata: ", e$message)
+    FALSE
+  })
+
+  if (!load_success) {
+    os_pricing_collected[[panel_name]] <- NULL
+    next
+  }
 
   # Check required objects
   required_objs <- c("IS_AP", "results", "f1", "kns_out", "rp_out", "frequentist_models")
@@ -507,22 +520,38 @@ for (model_key in names(model_type_map)) {
     rp_out_local <- get("rp_out", envir = load_env)
     pca_out_local <- if (exists("pca_out", envir = load_env)) get("pca_out", envir = load_env) else NULL
 
-    # Get f1, f2, fac_freq - prefer data_list if available
+    # Get f1, f2, fac_freq - prefer data_list if available and complete
     if (exists("data_list", envir = load_env)) {
       data_list_local <- get("data_list", envir = load_env)
-      f1_local <- data_list_local$f1
-      f2_local <- data_list_local$f2
-      fac_freq_local <- data_list_local$fac_freq
-      if (verbose) message("    Using data from data_list")
+      # Check that data_list has the required fields
+      if (!is.null(data_list_local$f1) && !is.null(data_list_local$fac_freq)) {
+        f1_local <- data_list_local$f1
+        f2_local <- data_list_local$f2  # Can be NULL for bond-only models
+        fac_freq_local <- data_list_local$fac_freq
+        if (verbose) message("    Using data from data_list (f1, f2, fac_freq)")
+      } else {
+        # data_list exists but incomplete - fallback to direct objects
+        if (verbose) message("    data_list incomplete, using direct objects")
+        f1_local <- get("f1", envir = load_env)
+        f2_local <- if (exists("f2", envir = load_env)) get("f2", envir = load_env) else NULL
+        fac_freq_local <- read.csv(file.path(data_folder, "frequentist_factors.csv"), check.names = FALSE)
+      }
     } else {
       f1_local <- get("f1", envir = load_env)
       f2_local <- if (exists("f2", envir = load_env)) get("f2", envir = load_env) else NULL
       # Fallback: load fac_freq from CSV
       fac_freq_local <- read.csv(file.path(data_folder, "frequentist_factors.csv"), check.names = FALSE)
-      if (verbose) message("    Using f1/f2 from globals, fac_freq from CSV")
+      if (verbose) message("    Using f1/f2 from load_env, fac_freq from CSV")
+    }
+
+    if (verbose) {
+      message("    f1: ", nrow(f1_local), " x ", ncol(f1_local))
+      message("    f2: ", if(is.null(f2_local)) "NULL" else paste(nrow(f2_local), "x", ncol(f2_local)))
+      message("    fac_freq: ", nrow(fac_freq_local), " x ", ncol(fac_freq_local))
     }
 
     # Run OOS pricing
+    if (verbose) message("    Running os_asset_pricing()...")
     os_result <- os_asset_pricing(
       R_oss              = R_oos_data,
       IS_AP              = IS_AP_local,
@@ -534,7 +563,7 @@ for (model_key in names(model_type_map)) {
       rp_out             = rp_out_local,
       pca_out            = pca_out_local,
       intercept          = FALSE,  # No intercept for IA
-      verbose            = FALSE   # Reduce noise
+      verbose            = verbose  # Pass through verbose flag
     )
 
     # os_asset_pricing returns a data frame directly
