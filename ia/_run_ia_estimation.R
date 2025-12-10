@@ -320,17 +320,28 @@ generate_model_script <- function(cfg, main_path, cores_per_model, ndraws) {
     kappa_code <- sprintf('
 #### Load kappa weights from file
 kappa_file <- "%s"
+cat("\\n--- Kappa Weights Loading ---\\n")
+cat("  Looking for: ", kappa_file, "\\n")
 if (!file.exists(kappa_file)) {
-  stop("Kappa weights file not found: ", kappa_file)
+  stop("Kappa weights file not found: ", kappa_file,
+       "\\n  Working directory: ", getwd(),
+       "\\n  Expected location: ", normalizePath(kappa_file, mustWork = FALSE))
 }
-cat("Loading kappa weights from: ", kappa_file, "\\n")
-w_all <- readRDS(kappa_file)
+w_all <- tryCatch({
+  readRDS(kappa_file)
+}, error = function(e) {
+  stop("Failed to read kappa file: ", e$message)
+})
 if (!is.numeric(w_all) || is.null(names(w_all))) {
-  stop("kappa_file must contain a named numeric vector")
+  stop("kappa_file must contain a named numeric vector. Got: ",
+       "numeric=", is.numeric(w_all), ", has_names=", !is.null(names(w_all)))
 }
-cat("  Loaded ", length(w_all), " weights\\n")
+cat("  Loaded ", length(w_all), " kappa weights\\n")
+cat("  Weight range: [", round(min(w_all), 4), ", ", round(max(w_all), 4), "]\\n")
+cat("  First 5 factors: ", paste(head(names(w_all), 5), collapse = ", "), "\\n")
 kappa     <- w_all
 kappa_fac <- names(w_all)
+cat("--- Kappa Weights Loaded Successfully ---\\n\\n")
 ', cfg$kappa_file)
   } else {
     kappa_code <- '
@@ -402,6 +413,38 @@ source(file.path(code_folder, "validate_and_align_dates.R"))
 source(file.path(code_folder, "data_loading_helpers.R"))
 source(file.path(code_folder, "run_bayesian_mcmc.R"))
 
+#### Validate data files exist
+cat("\\n--- Data File Validation ---\\n")
+cat("  Working directory: ", getwd(), "\\n")
+cat("  Data folder: ", data_folder, "\\n")
+
+# Check f1 file
+f1_path <- file.path(data_folder, f1)
+if (!file.exists(f1_path)) {
+  stop("f1 data file not found: ", f1_path)
+}
+cat("  f1 file OK: ", f1, "\\n")
+
+# Check f2 files (may be a vector)
+for (f2_file in f2) {
+  f2_path <- file.path(data_folder, f2_file)
+  if (!file.exists(f2_path)) {
+    stop("f2 data file not found: ", f2_path)
+  }
+  cat("  f2 file OK: ", f2_file, "\\n")
+}
+
+# Check R files (test assets, may be a vector)
+for (R_file in R) {
+  R_path <- file.path(data_folder, R_file)
+  if (!file.exists(R_path)) {
+    stop("R (test assets) data file not found: ", R_path)
+  }
+  cat("  R file OK: ", R_file, "\\n")
+}
+
+cat("--- All Data Files Validated ---\\n\\n")
+
 #### Run the estimation
 tryCatch({
   res <- run_bayesian_mcmc(
@@ -445,7 +488,17 @@ tryCatch({
 }, error = function(e) {
   cat("\\n========================================\\n")
   cat("ERROR in model %s:\\n")
-  cat(e$message, "\\n")
+  cat("Message: ", e$message, "\\n")
+  cat("\\nStack trace:\\n")
+  traceback_output <- capture.output(traceback())
+  cat(paste(traceback_output, collapse = "\\n"), "\\n")
+  cat("\\nModel configuration:\\n")
+  cat("  model_type: ", model_type, "\\n")
+  cat("  return_type: ", return_type, "\\n")
+  cat("  tag: ", tag, "\\n")
+  cat("  intercept: ", intercept, "\\n")
+  cat("  ndraws: ", ndraws, "\\n")
+  cat("  kappa type: ", if(is.numeric(kappa) && length(kappa) > 1) "weighted vector" else as.character(kappa), "\\n")
   cat("========================================\\n")
   stop(e)
 })
