@@ -409,123 +409,216 @@ if (length(is_pricing_results) > 0) {
 }
 
 # ---- Generate Table IA.7: Out-of-Sample Pricing ----
-# This requires running os_asset_pricing for each model
-# For now, we check if the results already exist in the .Rdata files
+# Runs os_asset_pricing for each no-intercept model (joint, bond, stock)
+# and generates a 3-panel table like Table 3 in the main paper
 
 if (verbose) message("\nGenerating Table IA.7: Out-of-Sample Pricing (No Intercept)...")
 
-# We need to properly run OOS pricing by loading each model and running os_asset_pricing
-# This is more complex - let's load the joint model into global and run pricing
+# Collect OOS results for all 3 models
+os_pricing_collected <- list()
 
-joint_model <- pricing_models$joint
-joint_rdata_path <- get_rdata_path(joint_model, results_path)
+# Load OOS test asset files once
+bond_oos_file <- file.path(data_folder, "bond_oosample_all_excess.csv")
+stock_oos_file <- file.path(data_folder, "equity_os_77.csv")
 
-if (file.exists(joint_rdata_path)) {
+if (!file.exists(bond_oos_file)) {
+  warning("  Bond OOS file not found: ", bond_oos_file)
+}
+if (!file.exists(stock_oos_file)) {
+  warning("  Stock OOS file not found: ", stock_oos_file)
+}
 
-  # Clear and load into global environment
-  load(joint_rdata_path, envir = .GlobalEnv)
+# Read OOS assets if available
+Rb_oos <- if (file.exists(bond_oos_file)) read.csv(bond_oos_file, check.names = FALSE) else NULL
+Rs_oos <- if (file.exists(stock_oos_file)) {
+  tmp <- read.csv(stock_oos_file, check.names = FALSE)
+  # Remove date column for combining (but keep for stock-only)
+  tmp
+} else NULL
 
-  # Source the OOS pricing function if not already available
-  if (!exists("os_asset_pricing")) {
-    source(file.path(code_folder, "outsample_asset_pricing.R"))
+# Process each model type
+model_type_map <- list(
+  joint = list(
+    model = pricing_models$joint,
+    panel = "bond_stock_with_sp",
+    get_R_oos = function() {
+      if (!is.null(Rb_oos) && !is.null(Rs_oos)) {
+        cbind(Rb_oos, Rs_oos[, -1, drop = FALSE])  # Combine, removing Rs date
+      } else NULL
+    }
+  ),
+  bond = list(
+    model = pricing_models$bond,
+    panel = "bond",
+    get_R_oos = function() Rb_oos
+  ),
+  stock = list(
+    model = pricing_models$stock,
+    panel = "stock",
+    get_R_oos = function() Rs_oos
+  )
+)
+
+for (model_key in names(model_type_map)) {
+  model_info <- model_type_map[[model_key]]
+  model <- model_info$model
+  panel_name <- model_info$panel
+
+  if (verbose) message("  Processing ", model_key, " model for OOS pricing...")
+
+  rdata_path <- get_rdata_path(model, results_path)
+
+  if (!file.exists(rdata_path)) {
+    warning("    .Rdata not found: ", rdata_path)
+    os_pricing_collected[[panel_name]] <- NULL
+    next
   }
 
-  # Check if we can run OOS pricing - need all required objects
-  if (exists("IS_AP") && exists("results") && exists("f1") &&
-      exists("kns_out") && exists("rp_out") && exists("frequentist_models")) {
+  # Load into a fresh environment to avoid conflicts
+  load_env <- new.env()
+  load(rdata_path, envir = load_env)
 
-    tryCatch({
-      # Load OOS test assets
-      bond_oos_file <- file.path(data_folder, "bond_oosample_all_excess.csv")
-      stock_oos_file <- file.path(data_folder, "equity_os_77.csv")
+  # Check required objects
+  required_objs <- c("IS_AP", "results", "f1", "kns_out", "rp_out", "frequentist_models")
+  missing_objs <- required_objs[!sapply(required_objs, exists, envir = load_env)]
 
-      if (file.exists(bond_oos_file) && file.exists(stock_oos_file)) {
-        Rb_oos <- read.csv(bond_oos_file, check.names = FALSE)
-        Rs_oos <- read.csv(stock_oos_file, check.names = FALSE)[, -1, drop = FALSE]
-        R_oos <- cbind(Rb_oos, Rs_oos)
-
-        # Get fac_freq from data_list (loaded from .Rdata) - same approach as run_pricing_multi()
-        if (exists("data_list") && !is.null(data_list$fac_freq)) {
-          fac_freq_data <- data_list$fac_freq
-          if (verbose) message("  Using fac_freq from data_list")
-        } else {
-          # Fallback to CSV if data_list not available
-          fac_freq_data <- read.csv(file.path(data_folder, "frequentist_factors.csv"), check.names = FALSE)
-          if (verbose) message("  Loaded fac_freq from CSV (data_list not available)")
-        }
-
-        # Get f1 and f2 from data_list if available, otherwise use global
-        f1_data <- if (exists("data_list") && !is.null(data_list$f1)) data_list$f1 else f1
-        f2_data <- if (exists("data_list") && !is.null(data_list$f2)) data_list$f2 else if (exists("f2")) f2 else NULL
-
-        # Run OOS pricing with correct parameters
-        os_result <- os_asset_pricing(
-          R_oss              = R_oos,
-          IS_AP              = IS_AP,
-          f1                 = f1_data,
-          f2                 = f2_data,
-          fac_freq           = fac_freq_data,
-          frequentist_models = frequentist_models,
-          kns_out            = kns_out,
-          rp_out             = rp_out,
-          pca_out            = if (exists("pca_out")) pca_out else NULL,
-          intercept          = FALSE,  # No intercept for IA
-          verbose            = verbose
-        )
-
-        # os_asset_pricing() returns a data frame directly, not a list
-        if (!is.null(os_result) && is.data.frame(os_result) && nrow(os_result) > 0) {
-          if (verbose) message("  Building OOS LaTeX table with ", ncol(os_result) - 1, " models...")
-          os_pricing <- os_result
-
-          os_latex_lines <- c(
-            "\\begin{table}[tbh!]",
-            "\\begin{center}",
-            "\\caption{Out-of-sample cross-sectional asset pricing performance (no intercept)}\\label{tab:ia-os-pricing}\\vspace{-2mm}",
-            "\\scalebox{.8}{",
-            "\\begin{tabular}{lcccc|ccccccc}\\toprule",
-            " & \\multicolumn{4}{c}{BMA-SDF prior Sharpe ratio} & CAPM & CAPMB & FF5 & HKM & TOP & KNS & RPPCA \\\\ \\cmidrule(lr){2-5}",
-            " & 20\\% & 40\\% & 60\\% & \\multicolumn{1}{c}{80\\%} &  &  &  &  &  &  &  \\\\ \\midrule",
-            "\\multicolumn{12}{c}{\\textbf{Panel A:} Co-pricing bonds and stocks out-of-sample} \\\\ \\midrule"
-          )
-
-          os_latex_lines <- c(os_latex_lines, build_pricing_panel_rows(os_pricing, model_cols))
-
-          os_latex_lines <- c(os_latex_lines,
-                              " \\bottomrule",
-                              "\\end{tabular}",
-                              "}",
-                              "\\end{center}",
-                              "\\begin{spacing}{1}",
-                              "\t{\\footnotesize",
-                              "The table presents the cross-sectional out-of-sample asset pricing performance of models estimated \\textbf{without an intercept}.",
-                              "Models are first estimated using the in-sample test assets and then used to price (with no additional parameter estimation) the out-of-sample test assets.",
-                              "For the BMA-SDF, we provide results for prior Sharpe ratio values set to 20\\%, 40\\%, 60\\% and 80\\% of the ex post maximum Sharpe ratio of the in-sample test assets.",
-                              "All data are standardized, that is, pricing errors are in Sharpe ratio units. The sample period is 1986:01 to 2022:12 ($T=444$).",
-                              "}",
-                              "\\end{spacing}",
-                              "\\vspace{-4mm}",
-                              "\\end{table}")
-
-          os_tex_path <- file.path(tables_dir, "table_ia_7_os_pricing.tex")
-          writeLines(os_latex_lines, os_tex_path)
-          if (verbose) message("  Saved: ", os_tex_path)
-        } else {
-          warning("  os_asset_pricing() returned invalid result. is.null=", is.null(os_result),
-                  ", is.data.frame=", is.data.frame(os_result),
-                  ", nrow=", if(is.data.frame(os_result)) nrow(os_result) else "NA")
-        }
-      } else {
-        warning("  OOS test asset files not found. Skipping Table IA.7.")
-      }
-    }, error = function(e) {
-      warning("  Error generating OOS pricing table: ", e$message)
-    })
-  } else {
-    warning("  Required objects not found for OOS pricing (need IS_AP, results, f1, kns_out, rp_out, frequentist_models). Skipping Table IA.7.")
+  if (length(missing_objs) > 0) {
+    warning("    Missing objects in ", model_key, ": ", paste(missing_objs, collapse = ", "))
+    os_pricing_collected[[panel_name]] <- NULL
+    next
   }
+
+  # Get OOS test assets for this model type
+  R_oos_data <- model_info$get_R_oos()
+
+  if (is.null(R_oos_data)) {
+    warning("    OOS test assets not available for ", model_key)
+    os_pricing_collected[[panel_name]] <- NULL
+    next
+  }
+
+  if (verbose) message("    OOS assets: ", ncol(R_oos_data) - 1, " portfolios")
+
+  tryCatch({
+    # Extract objects from load environment
+    IS_AP_local <- get("IS_AP", envir = load_env)
+    frequentist_models_local <- get("frequentist_models", envir = load_env)
+    kns_out_local <- get("kns_out", envir = load_env)
+    rp_out_local <- get("rp_out", envir = load_env)
+    pca_out_local <- if (exists("pca_out", envir = load_env)) get("pca_out", envir = load_env) else NULL
+
+    # Get f1, f2, fac_freq - prefer data_list if available
+    if (exists("data_list", envir = load_env)) {
+      data_list_local <- get("data_list", envir = load_env)
+      f1_local <- data_list_local$f1
+      f2_local <- data_list_local$f2
+      fac_freq_local <- data_list_local$fac_freq
+      if (verbose) message("    Using data from data_list")
+    } else {
+      f1_local <- get("f1", envir = load_env)
+      f2_local <- if (exists("f2", envir = load_env)) get("f2", envir = load_env) else NULL
+      # Fallback: load fac_freq from CSV
+      fac_freq_local <- read.csv(file.path(data_folder, "frequentist_factors.csv"), check.names = FALSE)
+      if (verbose) message("    Using f1/f2 from globals, fac_freq from CSV")
+    }
+
+    # Run OOS pricing
+    os_result <- os_asset_pricing(
+      R_oss              = R_oos_data,
+      IS_AP              = IS_AP_local,
+      f1                 = f1_local,
+      f2                 = f2_local,
+      fac_freq           = fac_freq_local,
+      frequentist_models = frequentist_models_local,
+      kns_out            = kns_out_local,
+      rp_out             = rp_out_local,
+      pca_out            = pca_out_local,
+      intercept          = FALSE,  # No intercept for IA
+      verbose            = FALSE   # Reduce noise
+    )
+
+    # os_asset_pricing returns a data frame directly
+    if (!is.null(os_result) && is.data.frame(os_result) && nrow(os_result) > 0) {
+      os_pricing_collected[[panel_name]] <- os_result
+      if (verbose) message("    SUCCESS: ", ncol(os_result) - 1, " models evaluated")
+    } else {
+      warning("    os_asset_pricing returned invalid result for ", model_key)
+      os_pricing_collected[[panel_name]] <- NULL
+    }
+
+  }, error = function(e) {
+    warning("    ERROR in ", model_key, " OOS pricing: ", e$message)
+    os_pricing_collected[[panel_name]] <<- NULL
+  })
+
+  # Clean up
+  rm(load_env)
+  gc(verbose = FALSE)
+}
+
+# ---- Build the 3-panel OOS pricing table ----
+if (verbose) message("\n  Building Table IA.7 with ", sum(!sapply(os_pricing_collected, is.null)), " panels...")
+
+# Check if we have any results
+if (all(sapply(os_pricing_collected, is.null))) {
+  warning("  No OOS pricing results available! Skipping Table IA.7.")
 } else {
-  warning("  Joint model .Rdata not found. Skipping Table IA.7.")
+
+  os_latex_lines <- c(
+    "\\begin{table}[tbh!]",
+    "\\begin{center}",
+    "\\caption{Out-of-sample cross-sectional asset pricing performance (no intercept)}\\label{tab:ia-os-pricing}\\vspace{-2mm}",
+    "\\scalebox{.8}{",
+    "\\begin{tabular}{lcccc|ccccccc}\\toprule",
+    " & \\multicolumn{4}{c}{BMA-SDF prior Sharpe ratio} & CAPM & CAPMB & FF5 & HKM & TOP & KNS & RPPCA \\\\ \\cmidrule(lr){2-5}",
+    " & 20\\% & 40\\% & 60\\% & \\multicolumn{1}{c}{80\\%} &  &  &  &  &  &  &  \\\\ \\midrule"
+  )
+
+  # Panel A: Co-pricing (bond_stock_with_sp)
+  if (!is.null(os_pricing_collected$bond_stock_with_sp)) {
+    os_latex_lines <- c(os_latex_lines,
+                        "\\multicolumn{12}{c}{\\textbf{Panel A}: Co-pricing bonds and stocks} \\\\ \\midrule",
+                        build_pricing_panel_rows(os_pricing_collected$bond_stock_with_sp, model_cols),
+                        " \\midrule")
+    if (verbose) message("    Added Panel A: Co-pricing")
+  }
+
+  # Panel B: Bond
+  if (!is.null(os_pricing_collected$bond)) {
+    os_latex_lines <- c(os_latex_lines,
+                        "\\multicolumn{12}{c}{\\textbf{Panel B}: Pricing bonds} \\\\ \\midrule",
+                        build_pricing_panel_rows(os_pricing_collected$bond, model_cols),
+                        " \\midrule")
+    if (verbose) message("    Added Panel B: Bonds")
+  }
+
+  # Panel C: Stock
+  if (!is.null(os_pricing_collected$stock)) {
+    os_latex_lines <- c(os_latex_lines,
+                        "\\multicolumn{12}{c}{\\textbf{Panel C}: Pricing stocks} \\\\ \\midrule",
+                        build_pricing_panel_rows(os_pricing_collected$stock, model_cols))
+    if (verbose) message("    Added Panel C: Stocks")
+  }
+
+  os_latex_lines <- c(os_latex_lines,
+                      " \\bottomrule",
+                      "\\end{tabular}",
+                      "}",
+                      "\\end{center}",
+                      "\\begin{spacing}{1}",
+                      "    {\\footnotesize",
+                      "The table presents the cross-sectional out-of-sample asset pricing performance of models estimated \\textbf{without an intercept}, pricing bonds and stocks jointly (Panel A), bonds only (Panel B) and stocks only (Panel C).",
+                      "For the BMA-SDF, we provide results for prior Sharpe ratio values set to 20\\%, 40\\%, 60\\% and 80\\% of the ex post maximum Sharpe ratio of the in-sample test assets.",
+                      "Models are first estimated using the in-sample test assets and then used to price (with no additional parameter estimation) the out-of-sample test assets.",
+                      "All data are standardized, that is, pricing errors are in Sharpe ratio units. The sample period is 1986:01 to 2022:12 ($T=444$).",
+                      "}",
+                      "\\end{spacing}",
+                      "\\vspace{-4mm}",
+                      "\\end{table}")
+
+  os_tex_path <- file.path(tables_dir, "table_ia_7_os_pricing.tex")
+  writeLines(os_latex_lines, os_tex_path)
+  if (verbose) message("  Saved: ", os_tex_path)
 }
 
 ###############################################################################
