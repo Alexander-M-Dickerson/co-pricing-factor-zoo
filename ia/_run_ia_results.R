@@ -14,6 +14,7 @@
 ##     - Table IA.7: Out-of-sample pricing (no intercept models)
 ##     - Duration pricing table (4 panels: IS/OS for bond_stock_with_sp and bond)
 ##     - Treasury posterior probabilities table
+##     - Treasury SR decomposition table (nontradable vs tradable factors)
 ##
 ##   Figures:
 ##     - Figure 2 equivalent for joint_no_intercept
@@ -152,6 +153,8 @@ source(file.path(code_folder, "outsample_asset_pricing.R"))  # provides os_asset
 source(file.path(code_folder, "plot_cumulative_sr.R"))
 source(file.path(code_folder, "plot_nfac_sr.R"))  # provides plot_nfac_sr() for Figure 3 equivalent
 source(file.path(code_folder, "pp_bar_plots.R"))  # provides pp_bar_plots() for Figure 4 equivalent
+source(file.path(code_folder, "sr_decomposition.R"))  # provides sr_decomposition() for SR tables
+source(file.path(code_folder, "sr_tables.R"))  # provides generate_table_treasury_sr()
 
 # Load additional helpers as needed
 if (file.exists(file.path(code_folder, "oos_pricing_helpers.R"))) {
@@ -1115,11 +1118,12 @@ gc(verbose = FALSE)
 ###############################################################################
 ## SECTION 5.6: TREASURY MODEL FIGURES AND TABLE
 ###############################################################################
-# Generate Figures and Table for Treasury component:
+# Generate Figures and Tables for Treasury component:
 # - Posterior probability figure (like Figure 2)
 # - Posterior probability table (like Table A.2)
 # - Number of factors & SR distribution figure (like Figure 3)
 # - Bar plots of posterior probabilities & risk prices (like Figure 4)
+# - SR decomposition table (like Table 4, nontradable vs tradable)
 # Uses MAIN paper's treasury model from output/unconditional/treasury/
 
 if (verbose) {
@@ -1349,6 +1353,56 @@ if (!file.exists(treasury_rdata_path)) {
         }
       }, error = function(e) {
         warning("  ERROR in Treasury bar plots figure: ", e$message)
+        if (verbose) message("  Stack trace: ", paste(capture.output(traceback()), collapse = "\n"))
+      })
+
+      # ---- Table: SR Decomposition (Treasury) ----
+      # Equivalent to Table 4 in the main paper but for treasury component only
+      if (verbose) message("\n--- Treasury: SR Decomposition Table ---")
+
+      tryCatch({
+        if (verbose) {
+          message("  Calling sr_decomposition()...")
+          message("  Using global vars: f1, f2, intercept, nontraded_names, bond_names, stock_names")
+        }
+
+        # Run SR decomposition for treasury model
+        # Note: requires f1, f2, intercept, nontraded_names, bond_names, stock_names in global env
+        treasury_sr_decomp <- sr_decomposition(
+          results      = results_treasury,
+          prior_labels = c("20%", "40%", "60%", "80%"),
+          dr_cf_decomp = NULL,  # No DR/CF decomposition for treasury
+          top_factors  = 5
+        )
+
+        if (verbose) {
+          message("  SR decomposition complete: ", nrow(treasury_sr_decomp), " rows")
+          message("  Factor types found: ",
+                  paste(unique(treasury_sr_decomp$factor_type), collapse = ", "))
+        }
+
+        # Generate the LaTeX table
+        if (verbose) message("  Calling generate_table_treasury_sr()...")
+
+        treasury_sr_table_result <- generate_table_treasury_sr(
+          sr_decomp_data = treasury_sr_decomp,
+          output_path    = tables_dir,
+          table_name     = "table_treasury_sr_decomp.tex",
+          n_nontraded    = length(nontraded_names_treasury),
+          n_traded       = length(bond_names_treasury) + length(stock_names_treasury),
+          verbose        = verbose
+        )
+
+        if (!is.null(treasury_sr_table_result)) {
+          if (verbose) {
+            message("  SUCCESS: SR decomposition table generated")
+            message("  Table saved to: ", tables_dir, "/table_treasury_sr_decomp.tex")
+          }
+        } else {
+          warning("  generate_table_treasury_sr returned NULL")
+        }
+      }, error = function(e) {
+        warning("  ERROR in Treasury SR decomposition table: ", e$message)
         if (verbose) message("  Stack trace: ", paste(capture.output(traceback()), collapse = "\n"))
       })
 
