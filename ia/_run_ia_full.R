@@ -4,7 +4,7 @@
 ## ---------------------------------------------------------------------------
 ##
 ## This script runs the complete IA pipeline:
-##   1. Estimate all 5 models (parallel by default)
+##   1. Estimate all 5 models (sequential by default for reliability)
 ##   2. Generate tables and figures
 ##   3. Compile LaTeX document
 ##
@@ -13,7 +13,7 @@
 ##
 ## OPTIONS:
 ##   --ndraws=N     Number of MCMC draws (default: 50000, use 5000 for quick test)
-##   --sequential   Run models sequentially instead of parallel
+##   --parallel     Run models in parallel (advanced, may have issues on some systems)
 ##   --skip-estim   Skip estimation (use existing .Rdata files)
 ##   --help         Show this help message
 ##
@@ -29,14 +29,14 @@ main_path <- getwd()
 args <- commandArgs(trailingOnly = TRUE)
 skip_estimation <- "--skip-estim" %in% args
 ndraws_arg <- args[grepl("^--ndraws=", args)]
-sequential <- "--sequential" %in% args
+use_parallel <- "--parallel" %in% args  # Default is sequential now
 
 if ("--help" %in% args || "-h" %in% args) {
   cat("\n")
   cat("Usage: Rscript ia/_run_ia_full.R [options]\n\n")
   cat("Options:\n")
   cat("  --ndraws=N     MCMC draws (default: 50000, use 5000 for testing)\n")
-  cat("  --sequential   Run models sequentially\n")
+  cat("  --parallel     Run models in parallel (advanced)\n")
   cat("  --skip-estim   Skip estimation, use existing results\n")
   cat("  --help         Show this message\n\n")
   quit(save = "no", status = 0)
@@ -61,7 +61,8 @@ if (!skip_estimation) {
   if (length(ndraws_arg) > 0) {
     estim_args <- c(estim_args, ndraws_arg)
   }
-  if (sequential) {
+  # Default to sequential (more reliable); only use parallel if explicitly requested
+  if (!use_parallel) {
     estim_args <- c(estim_args, "--sequential")
   }
 
@@ -74,7 +75,7 @@ if (!skip_estimation) {
   # Run estimation
   system(estim_cmd)
 
-  if (!sequential) {
+  if (use_parallel) {
     # If parallel, wait for all models to complete
     cat("\nWaiting for parallel models to complete...\n")
     cat("(Check ia/output/logs/ for progress)\n\n")

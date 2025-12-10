@@ -69,7 +69,7 @@ is_windows <- .Platform$OS.type == "windows"
 DEFAULT_CORES_PER_MODEL <- 4
 DEFAULT_TOTAL_CORES     <- parallel::detectCores() - 1
 DEFAULT_NDRAWS          <- 50000
-RUN_PARALLEL            <- TRUE
+RUN_PARALLEL            <- FALSE  # Sequential by default (more reliable)
 MODELS_TO_RUN           <- 1:5
 DRY_RUN                 <- FALSE
 
