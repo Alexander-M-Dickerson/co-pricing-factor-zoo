@@ -76,7 +76,7 @@ return_type    <- "excess"
 tag            <- "bond_treasury"
 
 # Data files (same as base treasury model)
-f1             <- "nontraded_complete.csv"
+f1             <- "nontraded.csv"
 f2             <- 'c("traded_bond_excess.csv")'
 R              <- 'c("bond_insample_test_assets_50_duration_tmt_tbond.csv")'
 fac_freq       <- "frequentist_factors.csv"
