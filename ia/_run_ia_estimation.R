@@ -158,7 +158,7 @@ MODEL_CONFIGS <- list(
     return_type = "excess",
     intercept   = TRUE,
     tag         = "bond_treasury",
-    f1          = "nontraded_complete.csv",
+    f1          = "nontraded.csv",
     f2          = 'c("traded_bond_excess.csv")',
     R           = 'c("bond_insample_test_assets_50_duration_tmt_tbond.csv")',
     kappa_file  = NULL,  # No kappa weighting
@@ -179,7 +179,7 @@ MODEL_CONFIGS <- list(
     return_type = "excess",
     intercept   = TRUE,
     tag         = "bond_treasury",
-    f1          = "nontraded_complete.csv",
+    f1          = "nontraded.csv",
     f2          = 'c("traded_bond_excess.csv")',
     R           = 'c("bond_insample_test_assets_50_duration_tmt_tbond.csv")',
     kappa_file  = "ia/data/w_all.rds",  # DR-tilt kappa weights
