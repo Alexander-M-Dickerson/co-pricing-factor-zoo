@@ -53,6 +53,16 @@ main_table_order <- c(
 # Pattern for probability tables (generated per model)
 prob_table_pattern <- "^table_a1_posterior_probs_"
 
+# Treasury tables (appear after probability tables)
+treasury_table_order <- c(
+  "table_treasury_posterior_probs.tex"
+)
+
+# Tables that should appear LAST (in order)
+last_table_order <- c(
+  "table_duration_pricing.tex"
+)
+
 ###############################################################################
 ## SECTION 3: SCAN FOR FILES
 ###############################################################################
@@ -88,10 +98,12 @@ cat("\n")
 
 cat("Creating ia_tables.tex...\n")
 
-# Separate main tables from probability tables
+# Separate main tables from probability tables, treasury, and last tables
 main_tables <- intersect(main_table_order, all_tables)
 prob_tables <- all_tables[grepl(prob_table_pattern, all_tables)]
-other_tables <- setdiff(all_tables, c(main_tables, prob_tables))
+treasury_tables <- intersect(treasury_table_order, all_tables)
+last_tables <- intersect(last_table_order, all_tables)
+other_tables <- setdiff(all_tables, c(main_tables, prob_tables, treasury_tables, last_tables))
 
 # Build tables.tex content
 tables_tex <- character()
@@ -121,11 +133,33 @@ if (length(prob_tables) > 0) {
   }
 }
 
+# Treasury tables (treasury component analysis)
+if (length(treasury_tables) > 0) {
+  tables_tex <- c(tables_tex, "% Treasury Component Tables")
+  tables_tex <- c(tables_tex, "% =========================")
+  for (tbl in treasury_tables) {
+    tables_tex <- c(tables_tex, paste0("\\input{../tables/", tbl, "}"))
+    tables_tex <- c(tables_tex, "\\clearpage")
+    tables_tex <- c(tables_tex, "")
+  }
+}
+
 # Other tables
 if (length(other_tables) > 0) {
   tables_tex <- c(tables_tex, "% Additional Tables")
   tables_tex <- c(tables_tex, "% =================")
   for (tbl in other_tables) {
+    tables_tex <- c(tables_tex, paste0("\\input{../tables/", tbl, "}"))
+    tables_tex <- c(tables_tex, "\\clearpage")
+    tables_tex <- c(tables_tex, "")
+  }
+}
+
+# Last tables (e.g., duration pricing - should appear at the very end)
+if (length(last_tables) > 0) {
+  tables_tex <- c(tables_tex, "% Final Tables (Duration Pricing)")
+  tables_tex <- c(tables_tex, "% ================================")
+  for (tbl in last_tables) {
     tables_tex <- c(tables_tex, paste0("\\input{../tables/", tbl, "}"))
     tables_tex <- c(tables_tex, "\\clearpage")
     tables_tex <- c(tables_tex, "")
