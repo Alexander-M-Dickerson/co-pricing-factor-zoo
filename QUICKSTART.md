@@ -57,26 +57,26 @@ del djm_data.zip
 Rscript _run_full_replication.R
 ```
 
-This runs all 5 steps automatically. Runtime varies by hardware: ~1-2 hours (server with 24+ cores), ~3-4 hours (desktop), ~6 hours (laptop).
+This runs all 5 steps automatically. Runtime varies by hardware: ~1-2.5 hours (server with 24 cores), ~4-6 hours (laptop, with less optimized cores).
 
 ### Option B: Step-by-Step
 
 From the project root folder (`co-pricing-factor-zoo-jfe/`):
 
 ```bash
-# 1. Unconditional models (~1-2 hours, parallel by default)
+# 1. Unconditional models (~15 minutes hours, parallel by default)
 Rscript _run_all_unconditional.R
 
-# 2. Conditional models (~30-40 min, parallel by default)
+# 2. Conditional models (~1-2 hours, parallel by default)
 Rscript _run_all_conditional.R
 
-# 3. Tables & figures (unconditional)
+# 3. Tables & figures (unconditional,~15 minutes)
 Rscript _run_paper_results.R
 
-# 4. Tables & figures (conditional)
+# 4. Tables & figures (conditional, instant)
 Rscript _run_paper_conditional_results.R
 
-# 5. Compile LaTeX
+# 5. Compile LaTeX (instant)
 Rscript _create_djm_tabs_figs.R
 ```
 
@@ -97,7 +97,7 @@ output/
 
 ## Quick Test Mode
 
-Run with fewer MCMC draws for testing (runtime varies, up to ~2 hours max):
+Run with fewer MCMC draws for testing (runtime varies, up to ~45 minutes max on server with many cores):
 
 ```bash
 Rscript _run_full_replication.R --quick
