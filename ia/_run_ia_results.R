@@ -15,6 +15,8 @@
 ##     - Duration pricing table (4 panels: IS/OS for bond_stock_with_sp and bond)
 ##     - Treasury posterior probabilities table
 ##     - Treasury SR decomposition table (nontradable vs tradable factors)
+##     - Sparse model posterior probabilities table (imposing sparsity)
+##     - Sparse model asset pricing table (IS/OS, 2 panels)
 ##
 ##   Figures:
 ##     - Figure 2 equivalent for joint_no_intercept
@@ -23,6 +25,7 @@
 ##     - Treasury nfac/SR distribution figure (like Figure 3)
 ##     - Treasury bar plots figure (like Figure 4)
 ##     - Treasury DR-tilt bar plots figure (weighted kappa model)
+##     - Sparse model posterior probabilities figure
 ##
 ## USAGE:
 ##   From R:
@@ -1591,6 +1594,316 @@ if (!file.exists(treasury_weighted_rdata_path)) {
 # Final cleanup for weighted treasury globals
 if (treasury_wt_globals_assigned) {
   cleanup_treasury_wt_globals()
+}
+
+
+###############################################################################
+## SECTION 5.8: SPARSE JOINT MODEL (SPARSITY-INDUCING PRIOR)
+###############################################################################
+# Generate tables for the sparse joint model (bond_stock_with_sp with sparsity prior):
+# - Table: Posterior factor probabilities and risk prices -- imposing sparsity
+# - Table: Asset pricing performance with two panels:
+#   - Panel A: In-sample co-pricing bonds and stocks
+#   - Panel B: Out-of-sample co-pricing bonds and stocks (Rs and Rb)
+#
+# Uses estimation with beta_params_auto_sd(5, 54) -> alpha.w ≈ 3.54, beta.w ≈ 34.66
+# Expected output file: excess_bond_stock_with_sp_alpha.w=3_beta.w=34_kappa=0_baseline.Rdata
+
+if (verbose) {
+  message("\n")
+  message(strrep("=", 60))
+  message("SECTION 8: Sparse Joint Model (Sparsity-Inducing Prior)")
+  message(strrep("=", 60))
+}
+
+# Sparse model parameters (from beta_params_auto_sd(5, 54))
+sparse_alpha_w <- 3  # trunc(3.537037)
+sparse_beta_w <- 34  # trunc(34.662963)
+
+# Construct path to sparse model .Rdata
+sparse_rdata_path <- file.path(
+  results_path, "bond_stock_with_sp",
+  sprintf("excess_bond_stock_with_sp_alpha.w=%d_beta.w=%d_kappa=0_baseline.Rdata",
+          sparse_alpha_w, sparse_beta_w)
+)
+
+# Track globals for cleanup
+sparse_globals_assigned <- FALSE
+
+# Helper function to clean up sparse model global variables
+cleanup_sparse_globals <- function() {
+  globals_to_clean <- c("f1", "f2", "intercept", "nontraded_names", "bond_names", "stock_names")
+  for (g in globals_to_clean) {
+    if (exists(g, envir = .GlobalEnv)) {
+      rm(list = g, envir = .GlobalEnv)
+      if (verbose) message("  Cleaned up global: ", g)
+    }
+  }
+}
+
+if (!file.exists(sparse_rdata_path)) {
+  warning("Sparse joint model not found: ", sparse_rdata_path)
+  if (verbose) {
+    message("  Skipping Sparse model tables.")
+    message("  To generate, run: Rscript ia/_run_ia_estimation.R --models=8")
+  }
+} else {
+  if (verbose) message("  Loading: ", sparse_rdata_path)
+
+  # Load sparse model into environment
+  sparse_env <- new.env()
+  load_success <- tryCatch({
+    load(sparse_rdata_path, envir = sparse_env)
+    TRUE
+  }, error = function(e) {
+    warning("  Failed to load sparse .Rdata: ", e$message)
+    FALSE
+  })
+
+  if (!load_success) {
+    if (verbose) message("  Skipping Sparse model due to load failure")
+  } else {
+    # List what was loaded
+    loaded_objects <- ls(envir = sparse_env)
+    if (verbose) message("  Loaded objects: ", paste(head(loaded_objects, 20), collapse = ", "), if(length(loaded_objects) > 20) "..." else "")
+
+    # Check required objects
+    sparse_required <- c("results", "f1", "f2", "intercept", "IS_AP", "kns_out", "rp_out", "frequentist_models")
+    sparse_missing <- sparse_required[!sapply(sparse_required, exists, envir = sparse_env)]
+
+    if (length(sparse_missing) > 0) {
+      warning("  Missing objects in sparse model: ", paste(sparse_missing, collapse = ", "))
+      if (verbose) message("  Skipping Sparse model due to missing objects")
+    } else {
+
+      # Extract objects from environment
+      f1_sparse <- get("f1", envir = sparse_env)
+      f2_sparse <- get("f2", envir = sparse_env)
+      intercept_sparse <- get("intercept", envir = sparse_env)
+      results_sparse <- get("results", envir = sparse_env)
+      IS_AP_sparse <- get("IS_AP", envir = sparse_env)
+      kns_out_sparse <- get("kns_out", envir = sparse_env)
+      rp_out_sparse <- get("rp_out", envir = sparse_env)
+      pca_out_sparse <- if (exists("pca_out", envir = sparse_env)) get("pca_out", envir = sparse_env) else NULL
+      frequentist_models_sparse <- get("frequentist_models", envir = sparse_env)
+
+      # Extract factor name vectors
+      nontraded_names_sparse <- if (exists("nontraded_names", envir = sparse_env)) {
+        get("nontraded_names", envir = sparse_env)
+      } else {
+        colnames(f1_sparse)
+      }
+      bond_names_sparse <- if (exists("bond_names", envir = sparse_env)) {
+        get("bond_names", envir = sparse_env)
+      } else {
+        character(0)
+      }
+      stock_names_sparse <- if (exists("stock_names", envir = sparse_env)) {
+        get("stock_names", envir = sparse_env)
+      } else {
+        character(0)
+      }
+
+      # Log dimensions
+      if (verbose) {
+        message("  f1 dimensions: ", nrow(f1_sparse), " x ", ncol(f1_sparse))
+        message("  f2 dimensions: ", nrow(f2_sparse), " x ", ncol(f2_sparse))
+        message("  intercept: ", intercept_sparse)
+        message("  results: ", length(results_sparse), " prior levels")
+        message("  nontraded_names: ", length(nontraded_names_sparse), " factors")
+        message("  bond_names: ", length(bond_names_sparse), " factors")
+        message("  stock_names: ", length(stock_names_sparse), " factors")
+      }
+
+      # Assign to global environment for pp_figure_table
+      assign("f1", f1_sparse, envir = .GlobalEnv)
+      assign("f2", f2_sparse, envir = .GlobalEnv)
+      assign("intercept", intercept_sparse, envir = .GlobalEnv)
+      assign("nontraded_names", nontraded_names_sparse, envir = .GlobalEnv)
+      assign("bond_names", bond_names_sparse, envir = .GlobalEnv)
+      assign("stock_names", stock_names_sparse, envir = .GlobalEnv)
+      sparse_globals_assigned <- TRUE
+
+      # Ensure cleanup on exit
+      on.exit(cleanup_sparse_globals(), add = TRUE)
+
+      # ---- Table: Posterior Probabilities (Sparse) ----
+      if (verbose) message("\n--- Sparse Model: Posterior Probabilities Table ---")
+
+      tryCatch({
+        if (verbose) message("  Calling pp_figure_table()...")
+        sparse_pp_result <- pp_figure_table(
+          results       = results_sparse,
+          return_type   = "excess",
+          model_type    = "bond_stock_with_sp",
+          tag           = "baseline",
+          alpha.w       = sparse_alpha_w,
+          beta.w        = sparse_beta_w,
+          main_path     = paper_output,
+          output_folder = "figures",
+          table_folder  = "tables",
+          # Custom caption for Sparse model
+          table_caption = "Posterior factor probabilities and risk prices -- imposing sparsity",
+          table_label   = "tab:sparse-posterior-probs",
+          table_name    = "table_sparse_posterior_probs",
+          verbose       = verbose
+        )
+
+        if (!is.null(sparse_pp_result)) {
+          if (verbose) {
+            message("  SUCCESS: Posterior probability figure + table generated")
+            message("  Figure saved: ", sparse_pp_result$fig_file)
+            message("  Table saved:  ", sparse_pp_result$tex_file)
+          }
+        } else {
+          warning("  pp_figure_table returned NULL")
+        }
+      }, error = function(e) {
+        warning("  ERROR in Sparse posterior probability table: ", e$message)
+        if (verbose) message("  Stack trace: ", paste(capture.output(traceback()), collapse = "\n"))
+      })
+
+      # ---- Table: Asset Pricing (Sparse) ----
+      # Panel A: In-sample, Panel B: Out-of-sample
+      if (verbose) message("\n--- Sparse Model: Asset Pricing Table ---")
+
+      # Collect IS results
+      sparse_is_result <- NULL
+      sparse_os_result <- NULL
+
+      # In-sample from IS_AP
+      if (!is.null(IS_AP_sparse$is_pricing_result)) {
+        sparse_is_result <- IS_AP_sparse$is_pricing_result
+        if (verbose) message("  IS pricing: ", ncol(sparse_is_result) - 1, " models")
+      }
+
+      # Out-of-sample: combine Rb and Rs OOS assets
+      if (verbose) message("\n  Computing out-of-sample pricing...")
+
+      # Read OOS test assets
+      bond_oos_file_sparse <- file.path(data_folder, "bond_oosample_all_excess.csv")
+      stock_oos_file_sparse <- file.path(data_folder, "equity_os_77.csv")
+
+      Rb_oos_sparse <- if (file.exists(bond_oos_file_sparse)) {
+        read.csv(bond_oos_file_sparse, check.names = FALSE)
+      } else NULL
+
+      Rs_oos_sparse <- if (file.exists(stock_oos_file_sparse)) {
+        read.csv(stock_oos_file_sparse, check.names = FALSE)
+      } else NULL
+
+      if (!is.null(Rb_oos_sparse) && !is.null(Rs_oos_sparse)) {
+        # Combine bond and stock OOS assets
+        R_oos_combined_sparse <- cbind(Rb_oos_sparse, Rs_oos_sparse[, -1, drop = FALSE])
+        if (verbose) message("  Combined OOS assets: ", ncol(R_oos_combined_sparse) - 1, " portfolios")
+
+        # Get fac_freq
+        if (exists("data_list", envir = sparse_env)) {
+          data_list_sparse <- get("data_list", envir = sparse_env)
+          fac_freq_sparse <- data_list_sparse$fac_freq
+        } else {
+          fac_freq_sparse <- read.csv(file.path(data_folder, "frequentist_factors.csv"), check.names = FALSE)
+        }
+
+        # Run OOS pricing
+        tryCatch({
+          if (verbose) message("  Running os_asset_pricing()...")
+          sparse_os_result <- os_asset_pricing(
+            R_oss              = R_oos_combined_sparse,
+            IS_AP              = IS_AP_sparse,
+            f1                 = f1_sparse,
+            f2                 = f2_sparse,
+            fac_freq           = fac_freq_sparse,
+            frequentist_models = frequentist_models_sparse,
+            kns_out            = kns_out_sparse,
+            rp_out             = rp_out_sparse,
+            pca_out            = pca_out_sparse,
+            intercept          = intercept_sparse,
+            verbose            = verbose
+          )
+
+          if (!is.null(sparse_os_result) && is.data.frame(sparse_os_result)) {
+            if (verbose) message("  SUCCESS: OOS pricing computed - ", ncol(sparse_os_result) - 1, " models")
+          } else {
+            warning("  os_asset_pricing returned NULL or invalid result")
+            sparse_os_result <- NULL
+          }
+        }, error = function(e) {
+          warning("  ERROR in Sparse OOS pricing: ", e$message)
+          sparse_os_result <<- NULL
+        })
+      } else {
+        warning("  OOS test assets not available for Sparse model")
+      }
+
+      # ---- Build the 2-panel pricing table ----
+      if (!is.null(sparse_is_result) || !is.null(sparse_os_result)) {
+        if (verbose) message("\n  Building Sparse Asset Pricing Table...")
+
+        sparse_latex_lines <- c(
+          "\\begin{table}[tbh!]",
+          "\\begin{center}",
+          "\\caption{Cross-sectional asset pricing performance -- imposing sparsity}\\label{tab:sparse-pricing}\\vspace{-2mm}",
+          "\\scalebox{.8}{",
+          "\\begin{tabular}{lcccc|ccccccc}\\toprule",
+          " & \\multicolumn{4}{c}{BMA-SDF prior Sharpe ratio} & CAPM & CAPMB & FF5 & HKM & TOP & KNS & RPPCA \\\\ \\cmidrule(lr){2-5}",
+          " & 20\\% & 40\\% & 60\\% & \\multicolumn{1}{c}{80\\%} &  &  &  &  &  &  &  \\\\ \\midrule"
+        )
+
+        # Panel A: In-sample co-pricing
+        if (!is.null(sparse_is_result)) {
+          sparse_latex_lines <- c(sparse_latex_lines,
+                                  "\\multicolumn{12}{c}{\\textbf{Panel A}: In-sample co-pricing bonds and stocks} \\\\ \\midrule",
+                                  build_pricing_panel_rows(sparse_is_result, model_cols),
+                                  "\\midrule")
+          if (verbose) message("  Added Panel A: In-sample co-pricing")
+        }
+
+        # Panel B: Out-of-sample co-pricing
+        if (!is.null(sparse_os_result)) {
+          sparse_latex_lines <- c(sparse_latex_lines,
+                                  "\\multicolumn{12}{c}{\\textbf{Panel B}: Out-of-sample co-pricing bonds and stocks} \\\\ \\midrule",
+                                  build_pricing_panel_rows(sparse_os_result, model_cols))
+          if (verbose) message("  Added Panel B: Out-of-sample co-pricing")
+        }
+
+        sparse_latex_lines <- c(sparse_latex_lines,
+                                "\\bottomrule",
+                                "\\end{tabular}",
+                                "}",
+                                "\\end{center}",
+                                "\\begin{spacing}{1}",
+                                "{\\footnotesize",
+                                "The table presents the cross-sectional in-sample (Panel A) and out-of-sample (Panel B) asset pricing performance of the co-pricing model estimated with a sparsity-inducing prior.",
+                                sprintf("The prior uses $\\\\alpha_w = %d$ and $\\\\beta_w = %d$, corresponding to an expected %d active factors out of %d total factors.",
+                                        sparse_alpha_w, sparse_beta_w, 5, 54),
+                                "For the BMA-SDF, we provide results for prior Sharpe ratio values set to 20\\%, 40\\%, 60\\% and 80\\% of the ex post maximum Sharpe ratio of the test assets.",
+                                "TOP includes the top five factors with an average posterior probability greater than 50\\%.",
+                                "Out-of-sample test assets are the combined 154 bond and stock portfolios.",
+                                "All data are standardized, that is, pricing errors are in Sharpe ratio units. The sample period is 1986:01 to 2022:12 ($T=444$).",
+                                "}",
+                                "\\end{spacing}",
+                                "\\vspace{-4mm}",
+                                "\\end{table}")
+
+        sparse_tex_path <- file.path(tables_dir, "table_sparse_pricing.tex")
+        writeLines(sparse_latex_lines, sparse_tex_path)
+        if (verbose) message("  Saved: ", sparse_tex_path)
+      } else {
+        warning("  No pricing results available for Sparse model. Skipping pricing table.")
+      }
+    }
+
+    # Clean up environment
+    rm(sparse_env)
+  }
+
+  gc(verbose = FALSE)
+}
+
+# Final cleanup for sparse model globals
+if (sparse_globals_assigned) {
+  cleanup_sparse_globals()
 }
 
 
