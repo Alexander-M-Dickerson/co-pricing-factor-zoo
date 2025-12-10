@@ -303,6 +303,11 @@ pricing_models <- list(
   stock = IA_MODELS[[5]]   # stock_no_intercept
 )
 
+# Model columns in order (matching table header) - defined here so available for both IS and OS
+model_cols <- c("BMA-20%", "BMA-40%", "BMA-60%", "BMA-80%",
+                "CAPM", "CAPMB", "FF5", "HKM",
+                "Top-80%-All", "KNS", "RP-PCA")
+
 # Collect IS pricing results from each model
 is_pricing_results <- list()
 os_pricing_results <- list()
@@ -347,11 +352,6 @@ for (model_key in names(pricing_models)) {
 # ---- Generate Table IA.6: In-Sample Pricing ----
 if (length(is_pricing_results) > 0) {
   if (verbose) message("\nGenerating Table IA.6: In-Sample Pricing (No Intercept)...")
-
-  # Model columns in order (matching table header)
-  model_cols <- c("BMA-20%", "BMA-40%", "BMA-60%", "BMA-80%",
-                  "CAPM", "CAPMB", "FF5", "HKM",
-                  "Top-80%-All", "KNS", "RP-PCA")
 
   latex_lines <- c(
     "\\begin{table}[tbh!]",
@@ -444,15 +444,26 @@ if (file.exists(joint_rdata_path)) {
         Rs_oos <- read.csv(stock_oos_file, check.names = FALSE)[, -1, drop = FALSE]
         R_oos <- cbind(Rb_oos, Rs_oos)
 
-        # Load frequentist factors
-        fac_freq_data <- read.csv(file.path(data_folder, "frequentist_factors.csv"), check.names = FALSE)
+        # Get fac_freq from data_list (loaded from .Rdata) - same approach as run_pricing_multi()
+        if (exists("data_list") && !is.null(data_list$fac_freq)) {
+          fac_freq_data <- data_list$fac_freq
+          if (verbose) message("  Using fac_freq from data_list")
+        } else {
+          # Fallback to CSV if data_list not available
+          fac_freq_data <- read.csv(file.path(data_folder, "frequentist_factors.csv"), check.names = FALSE)
+          if (verbose) message("  Loaded fac_freq from CSV (data_list not available)")
+        }
+
+        # Get f1 and f2 from data_list if available, otherwise use global
+        f1_data <- if (exists("data_list") && !is.null(data_list$f1)) data_list$f1 else f1
+        f2_data <- if (exists("data_list") && !is.null(data_list$f2)) data_list$f2 else if (exists("f2")) f2 else NULL
 
         # Run OOS pricing with correct parameters
         os_result <- os_asset_pricing(
           R_oss              = R_oos,
           IS_AP              = IS_AP,
-          f1                 = f1,
-          f2                 = if (exists("f2")) f2 else NULL,
+          f1                 = f1_data,
+          f2                 = f2_data,
           fac_freq           = fac_freq_data,
           frequentist_models = frequentist_models,
           kns_out            = kns_out,
