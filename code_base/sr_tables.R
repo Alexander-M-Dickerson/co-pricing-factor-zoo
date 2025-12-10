@@ -475,3 +475,120 @@ generate_sr_tables <- function(res_tbl_top,
 
   invisible(results)
 }
+
+
+# =========================================================================
+#  Treasury Table: SR Decomposition for Treasury Component
+# =========================================================================
+#' Generate SR Decomposition Table for Treasury Component
+#'
+#' Creates a LaTeX table showing BMA-SDF dimensionality and Sharpe ratio
+#' decomposition for the treasury model, with Nontradable and Tradable
+#' factor panels side by side.
+#'
+#' @param sr_decomp_data Tibble from sr_decomposition() for treasury model
+#' @param output_path Path to save .tex file (NULL = don't save)
+#' @param table_name Filename for .tex file (default: "table_treasury_sr_decomp.tex")
+#' @param n_nontraded Number of non-traded factors (for footnote)
+#' @param n_traded Number of traded factors (for footnote)
+#' @param verbose Print progress
+#' @return List with latex_lines and data
+generate_table_treasury_sr <- function(sr_decomp_data,
+                                       output_path = NULL,
+                                       table_name = "table_treasury_sr_decomp.tex",
+                                       n_nontraded = 14,
+                                       n_traded = 16,
+                                       verbose = TRUE) {
+
+  if (verbose) message("Generating Treasury SR Decomposition Table...")
+
+  if (is.null(sr_decomp_data)) {
+    warning("sr_decomp_data is NULL. Cannot generate treasury SR table.")
+    return(NULL)
+  }
+
+  metrics <- c("Mean", "5%", "95%", "E[SR_f|data]", "E[SR^2_f/SR^2_m|data]")
+  metric_labels <- c("Mean", "5\\%", "95\\%",
+                     "$\\mathbb{E}[SR_f|\\text{data}]$",
+                     "$\\mathbb{E}\\big[\\frac{SR^2_f}{SR^2_m}|\\text{data}\\big]$")
+  metric_digits <- c(2, 0, 0, 2, 2)
+  metric_is_int <- c(FALSE, TRUE, TRUE, FALSE, FALSE)
+
+  # Extract nontraded and tradable factor blocks
+  nt_block <- extract_block(sr_decomp_data, "Nontraded factors", metrics)
+  tr_block <- extract_block(sr_decomp_data, "Tradable factors", metrics)
+
+  if (verbose) {
+    message("  Nontraded block rows: ", if(!is.null(nt_block)) nrow(nt_block) else 0)
+    message("  Tradable block rows: ", if(!is.null(tr_block)) nrow(tr_block) else 0)
+  }
+
+  # Build LaTeX table
+  latex_lines <- c(
+    "\\begin{table}[tbh!]",
+    "\\begin{center}",
+    "\\caption{BMA-SDF dimensionality and Sharpe ratio decomposition for Treasury component}\\label{tab:table-model-dim-t-bond}",
+    "\\scalebox{.8}{",
+    "\\begin{tabular}{lcccccccccc} \\toprule",
+    "& \\multicolumn{4}{c}{Total prior SR} &  & \\multicolumn{4}{c}{Total prior SR} \\\\",
+    "& 20\\% & 40\\% & 60\\% & 80\\% &  & 20\\% & 40\\% & 60\\% & 80\\% \\\\  \\cmidrule(lr){2-5} \\cmidrule(lr){7-10}",
+    " & \\multicolumn{4}{c}{Nontradable factors} &  & \\multicolumn{4}{c}{Tradable factors} \\\\ \\cmidrule(lr){2-5} \\cmidrule(lr){7-10}"
+  )
+
+  # Add data rows
+  for (i in seq_along(metrics)) {
+    nt_vals <- if (!is.null(nt_block) && nrow(nt_block) >= i) {
+      as.numeric(nt_block[i, 2:5])
+    } else {
+      rep(NA, 4)
+    }
+    tr_vals <- if (!is.null(tr_block) && nrow(tr_block) >= i) {
+      as.numeric(tr_block[i, 2:5])
+    } else {
+      rep(NA, 4)
+    }
+
+    fmt_nt <- sapply(nt_vals, format_latex_value,
+                     digits = metric_digits[i], is_integer = metric_is_int[i])
+    fmt_tr <- sapply(tr_vals, format_latex_value,
+                     digits = metric_digits[i], is_integer = metric_is_int[i])
+
+    latex_lines <- c(latex_lines,
+                     paste0(metric_labels[i], " & ",
+                            paste(fmt_nt, collapse = " & "), " &  & ",
+                            paste(fmt_tr, collapse = " & "), " \\\\"))
+  }
+
+  # Footnote text
+  footnote <- sprintf(
+    "The table reports posterior means of number of factors (along with the $90\\%%%% confidence intervals), implied Sharpe ratios $\\mathbb{E}[SR_f|\\text{data}]$, and the ratio of $SR_f^2$ to the total SDF-implied squared Sharpe ratio $\\mathbb{E}\\big[SR^2_f/SR^2_m|\\text{data}\\big]$,
+of the %d nontradable and %d tradable bond factors described in Appendix \\ref{sec:factor_zoo}.
+Test assets are the Treasury components of the 50 corporate bond portfolios described in Section \\ref{sec:data}. The sample period is 1986:01 to 2022:12 ($T = 444$).",
+    n_nontraded, n_traded
+  )
+
+  latex_lines <- c(latex_lines,
+                   "\\bottomrule",
+                   "\\end{tabular}",
+                   "}",
+                   "\\end{center}",
+                   "\\begin{spacing}{1}",
+                   paste0("\t{\\footnotesize ", footnote),
+                   "    }",
+                   "\\end{spacing}",
+                   "\\vspace{-0.5cm}",
+                   "\\end{table}")
+
+  # Save if path provided
+  if (!is.null(output_path)) {
+    tex_file <- file.path(output_path, table_name)
+    dir.create(dirname(tex_file), recursive = TRUE, showWarnings = FALSE)
+    writeLines(latex_lines, tex_file)
+    if (verbose) message("  Saved: ", tex_file)
+  }
+
+  invisible(list(
+    latex_lines = latex_lines,
+    data = list(nontraded = nt_block, tradable = tr_block)
+  ))
+}

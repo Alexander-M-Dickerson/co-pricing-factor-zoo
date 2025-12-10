@@ -55,7 +55,8 @@ prob_table_pattern <- "^table_a1_posterior_probs_"
 
 # Treasury tables (appear after probability tables)
 treasury_table_order <- c(
-  "table_treasury_posterior_probs.tex"
+  "table_treasury_posterior_probs.tex",
+  "table_treasury_sr_decomp.tex"
 )
 
 # Tables that should appear LAST (in order)
