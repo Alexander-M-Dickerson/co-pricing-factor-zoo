@@ -71,7 +71,14 @@ beta.w         <- 1
 ## SECTION 2: MODEL CONFIGURATIONS
 ###############################################################################
 
-# Define model configurations matching _run_ia_estimation.R
+# Define model configurations in the correct order for the IA document
+# Order:
+#   1. Bond with intercept
+#   2. Stock with intercept
+#   3. Joint (bond_stock_with_sp) no intercept
+#   4. Bond no intercept
+#   5. Stock no intercept
+
 IA_MODELS <- list(
 
   list(
@@ -80,7 +87,8 @@ IA_MODELS <- list(
     model_type  = "bond",
     intercept   = TRUE,
     tag         = "ia_intercept",
-    description = "Bond factors WITH intercept"
+    table_num   = "IA.1",
+    caption     = "Posterior factor probabilities and risk prices for the corporate bond factor zoo -- with intercept"
   ),
 
   list(
@@ -89,34 +97,38 @@ IA_MODELS <- list(
     model_type  = "stock",
     intercept   = TRUE,
     tag         = "ia_intercept",
-    description = "Stock factors WITH intercept"
+    table_num   = "IA.2",
+    caption     = "Posterior factor probabilities and risk prices for the stock factor zoo -- with intercept"
   ),
 
   list(
     id          = 3,
-    name        = "bond_no_intercept",
-    model_type  = "bond",
-    intercept   = FALSE,
-    tag         = "ia_no_intercept",
-    description = "Bond factors WITHOUT intercept"
-  ),
-
-  list(
-    id          = 4,
-    name        = "stock_no_intercept",
-    model_type  = "stock",
-    intercept   = FALSE,
-    tag         = "ia_no_intercept",
-    description = "Stock factors WITHOUT intercept"
-  ),
-
-  list(
-    id          = 5,
     name        = "joint_no_intercept",
     model_type  = "bond_stock_with_sp",
     intercept   = FALSE,
     tag         = "ia_no_intercept",
-    description = "Joint bond+stock WITHOUT intercept"
+    table_num   = "IA.3",
+    caption     = "Posterior factor probabilities and risk prices for the co-pricing factor zoo -- no intercept"
+  ),
+
+  list(
+    id          = 4,
+    name        = "bond_no_intercept",
+    model_type  = "bond",
+    intercept   = FALSE,
+    tag         = "ia_no_intercept",
+    table_num   = "IA.4",
+    caption     = "Posterior factor probabilities and risk prices for the corporate bond factor zoo -- no intercept"
+  ),
+
+  list(
+    id          = 5,
+    name        = "stock_no_intercept",
+    model_type  = "stock",
+    intercept   = FALSE,
+    tag         = "ia_no_intercept",
+    table_num   = "IA.5",
+    caption     = "Posterior factor probabilities and risk prices for the stock factor zoo -- no intercept"
   )
 )
 
@@ -141,9 +153,16 @@ if (file.exists(file.path(code_folder, "oos_pricing_helpers.R"))) {
 ###############################################################################
 
 #' Construct .Rdata filename for a model
+#' Note: run_bayesian_mcmc adds "no_intercept_" prefix to tag when intercept=FALSE
 get_rdata_path <- function(model, results_path, return_type = "excess") {
-  filename <- sprintf("%s_%s_alpha.w=1_beta.w=1_kappa=0_%s.Rdata",
-                      return_type, model$model_type, model$tag)
+  # When intercept=FALSE, the actual filename has "no_intercept_" prefix before the tag
+  if (model$intercept) {
+    filename <- sprintf("%s_%s_alpha.w=1_beta.w=1_kappa=0_%s.Rdata",
+                        return_type, model$model_type, model$tag)
+  } else {
+    filename <- sprintf("%s_%s_alpha.w=1_beta.w=1_kappa=0_no_intercept_%s.Rdata",
+                        return_type, model$model_type, model$tag)
+  }
   file.path(results_path, model$model_type, filename)
 }
 
@@ -169,6 +188,7 @@ generate_ia_prob_table <- function(model, results_path, output_path, verbose = T
     message("Generating probability table for: ", model$name)
     message("  model_type = '", model$model_type, "'")
     message("  intercept  = ", model$intercept)
+    message("  caption    = '", model$caption, "'")
     message(strrep("-", 60))
   }
 
@@ -190,6 +210,10 @@ generate_ia_prob_table <- function(model, results_path, output_path, verbose = T
   assign("f2", f2, envir = .GlobalEnv)
   assign("intercept", intercept, envir = .GlobalEnv)
 
+  # Generate table name from model table_num (e.g., "IA.1" -> "table_ia_1")
+  table_name <- tolower(gsub("\\.", "_", paste0("table_", model$table_num)))
+  table_label <- paste0("tab:", tolower(gsub("\\.", "-", model$table_num)))
+
   # Generate the table (uses pp_figure_table.R logic)
   tryCatch({
     result <- pp_figure_table(
@@ -202,6 +226,10 @@ generate_ia_prob_table <- function(model, results_path, output_path, verbose = T
       main_path     = paper_output,
       output_folder = "figures",
       table_folder  = "tables",
+      # Custom caption and label for IA
+      table_caption = model$caption,
+      table_label   = table_label,
+      table_name    = table_name,
       verbose       = verbose
     )
 

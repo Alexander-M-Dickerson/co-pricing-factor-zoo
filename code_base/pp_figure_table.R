@@ -56,6 +56,10 @@ pp_figure_table <- function(results,
                             width         = 12,
                             height        = 7,
                             legend_font   = 12,
+                            # Custom table caption/label (optional - for IA)
+                            table_caption = NULL,
+                            table_label   = NULL,
+                            table_name    = NULL,
                             verbose       = TRUE) {
 
   ## ---- 0a. Compute prob_thresh from alpha.w/beta.w if not provided --------
@@ -67,8 +71,13 @@ pp_figure_table <- function(results,
   ## ---- 0b. Construct filename with metadata --------------------------------
   fig_basename <- sprintf("figure_2_posterior_probs_%s_%s_%s",
                           return_type, model_type, tag)
-  tex_basename <- sprintf("table_a1_posterior_probs_%s_%s_%s",
-                          return_type, model_type, tag)
+  # Use custom table_name if provided, otherwise use default
+  if (!is.null(table_name)) {
+    tex_basename <- table_name
+  } else {
+    tex_basename <- sprintf("table_a1_posterior_probs_%s_%s_%s",
+                            return_type, model_type, tag)
+  }
   fig_name <- paste0(fig_basename, ".pdf")
   tex_name <- paste0(tex_basename, ".tex")
 
@@ -227,9 +236,21 @@ pp_figure_table <- function(results,
   }
   
   
+  # Use custom caption/label if provided, otherwise use defaults
+  if (!is.null(table_caption)) {
+    caption_line <- sprintf("\\caption{%s}", table_caption)
+  } else {
+    caption_line <- "\\caption{Posterior factor probabilities and risk prices -- bond and stock factor zoo}"
+  }
+  if (!is.null(table_label)) {
+    caption_line <- paste0(caption_line, sprintf("\\label{%s}", table_label))
+  } else {
+    caption_line <- paste0(caption_line, "\\label{tab:table-app-probs}")
+  }
+
   latex_lines <- c(
     "\\begin{table}[tbp!]",
-    "\\caption{Posterior factor probabilities and risk prices -- bond and stock factor zoo}\\label{tab:table-app-probs}",
+    caption_line,
     "\\vspace{-.6cm}",
     "\\begin{center}",
     "\\scalebox{0.65}{",
