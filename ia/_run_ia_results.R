@@ -139,8 +139,9 @@ IA_MODELS <- list(
 if (verbose) message("\nLoading helper functions...")
 
 source(file.path(code_folder, "pp_figure_table.R"))
-source(file.path(code_folder, "pricing_tables.R"))
+source(file.path(code_folder, "pricing_tables.R"))  # provides build_pricing_panel_rows()
 source(file.path(code_folder, "insample_asset_pricing.R"))
+source(file.path(code_folder, "outsample_asset_pricing.R"))  # provides os_asset_pricing()
 source(file.path(code_folder, "plot_cumulative_sr.R"))
 
 # Load additional helpers as needed
@@ -281,106 +282,225 @@ for (model in IA_MODELS) {
 }
 
 ###############################################################################
-## SECTION 5.2: PRICING TABLES (joint_no_intercept only)
+## SECTION 5.2: PRICING TABLES (No Intercept Models)
 ###############################################################################
+# Generate IS and OS pricing tables for models estimated WITHOUT intercept
+# Uses: joint_no_intercept, bond_no_intercept, stock_no_intercept
+# Output: table_ia_6_is_pricing.tex, table_ia_7_os_pricing.tex
 
 if (verbose) {
   message("\n")
   message(strrep("=", 60))
-  message("SECTION 2: Pricing Tables (Joint Model, No Intercept)")
+  message("SECTION 2: Pricing Tables (No Intercept Models)")
   message(strrep("=", 60))
 }
 
-# Find the joint_no_intercept model
-joint_model <- IA_MODELS[[5]]  # joint_no_intercept
+# Models to use for pricing tables (no_intercept only)
+pricing_models <- list(
+  joint = IA_MODELS[[3]],  # joint_no_intercept (bond_stock_with_sp)
+  bond  = IA_MODELS[[4]],  # bond_no_intercept
+  stock = IA_MODELS[[5]]   # stock_no_intercept
+)
 
-# Load joint model results
-joint_env <- load_model_results(joint_model, results_path)
+# Collect IS pricing results from each model
+is_pricing_results <- list()
+os_pricing_results <- list()
 
-if (is.null(joint_env)) {
-  warning("Joint model results not found. Skipping pricing tables.")
-} else {
+for (model_key in names(pricing_models)) {
+  model <- pricing_models[[model_key]]
 
   if (verbose) {
-    message("\nLoading joint_no_intercept results...")
-    message("  model_type = '", joint_model$model_type, "'")
-    message("  tag        = '", joint_model$tag, "'")
+    message("\n  Loading ", model$name, " for pricing...")
   }
 
-  # Load into global environment for pricing functions
-  load(get_rdata_path(joint_model, results_path), envir = .GlobalEnv)
+  # Load model into a local environment first
+  model_env <- load_model_results(model, results_path)
+
+  if (is.null(model_env)) {
+    warning("  Model not found: ", model$name, ". Skipping.")
+    next
+  }
 
   # Check if IS_AP exists
-  if (!exists("IS_AP")) {
-    warning("IS_AP not found in results. Run insample_asset_pricing first.")
-  } else {
-
-    if (verbose) message("\nGenerating Table IA.2: In-Sample Pricing...")
-
-    # Table 2 equivalent: IS Pricing
-    tryCatch({
-      is_pricing <- IS_AP$is_pricing_result
-
-      if (!is.null(is_pricing)) {
-        # Format and save IS pricing table
-        tex_lines <- c(
-          "\\begin{table}[tb!]",
-          "\\caption{In-sample cross-sectional asset pricing (no intercept)}\\label{tab:ia-is-pricing}",
-          "\\begin{center}",
-          "\\scalebox{0.85}{",
-          "\\begin{tabular}{lcccccccc}",
-          "\\toprule",
-          "& BMA-20\\% & BMA-40\\% & BMA-60\\% & BMA-80\\% & CAPM & FF5 & HKM & KNS \\\\",
-          "\\midrule"
-        )
-
-        # Add metric rows
-        metrics <- c("RMSEdm", "MAPEdm", "R2OLS", "R2GLS")
-        for (m in metrics) {
-          if (m %in% rownames(is_pricing) || m %in% is_pricing$metric) {
-            row_data <- if ("metric" %in% names(is_pricing)) {
-              as.numeric(is_pricing[is_pricing$metric == m, -1])
-            } else {
-              as.numeric(is_pricing[m, ])
-            }
-            row_str <- paste0(m, " & ", paste(sprintf("%.3f", row_data[1:8]), collapse = " & "), " \\\\")
-            tex_lines <- c(tex_lines, row_str)
-          }
-        }
-
-        tex_lines <- c(tex_lines,
-          "\\bottomrule",
-          "\\end{tabular}",
-          "}",
-          "\\end{center}",
-          "\\end{table}"
-        )
-
-        is_tex_path <- file.path(tables_dir, "table_ia_is_pricing.tex")
-        writeLines(tex_lines, is_tex_path)
-        if (verbose) message("  Saved: ", is_tex_path)
-      }
-    }, error = function(e) {
-      warning("Error generating IS pricing table: ", e$message)
-    })
-
-    # Table 3 equivalent: OS Pricing
-    if (verbose) message("\nGenerating Table IA.3: Out-of-Sample Pricing...")
-
-    tryCatch({
-      if (exists("kns_out") && !is.null(kns_out)) {
-        # Use KNS out-of-sample results if available
-        if (verbose) message("  Using KNS out-of-sample results")
-
-        # Generate OS pricing table similar to Table 3
-        # This would use the pricing_tables.R functions
-      } else {
-        if (verbose) message("  KNS out-of-sample results not available")
-      }
-    }, error = function(e) {
-      warning("Error generating OS pricing table: ", e$message)
-    })
+  if (!exists("IS_AP", envir = model_env)) {
+    warning("  IS_AP not found in ", model$name, ". Skipping.")
+    next
   }
+
+  IS_AP_local <- get("IS_AP", envir = model_env)
+
+  # Extract IS pricing
+  if (!is.null(IS_AP_local$is_pricing_result)) {
+    is_pricing_results[[model_key]] <- IS_AP_local$is_pricing_result
+    if (verbose) message("    IS pricing: ", ncol(is_pricing_results[[model_key]]) - 1, " models")
+  }
+
+  # For OS pricing, we need to load into global and run os_asset_pricing
+  # For now, check if kns_out exists (pre-computed OOS)
+  if (exists("kns_out", envir = model_env)) {
+    os_pricing_results[[model_key]] <- get("kns_out", envir = model_env)
+    if (verbose) message("    OS pricing available")
+  }
+}
+
+# ---- Generate Table IA.6: In-Sample Pricing ----
+if (length(is_pricing_results) > 0) {
+  if (verbose) message("\nGenerating Table IA.6: In-Sample Pricing (No Intercept)...")
+
+  # Model columns in order (matching table header)
+  model_cols <- c("BMA-20%", "BMA-40%", "BMA-60%", "BMA-80%",
+                  "CAPM", "CAPMB", "FF5", "HKM",
+                  "Top-80%-All", "KNS", "RP-PCA")
+
+  latex_lines <- c(
+    "\\begin{table}[tbh!]",
+    "\\begin{center}",
+    "\\caption{In-sample cross-sectional asset pricing performance (no intercept)}\\label{tab:ia-is-pricing}\\vspace{-2mm}",
+    "\\scalebox{.8}{",
+    "\\begin{tabular}{lcccc|ccccccc}\\toprule",
+    " & \\multicolumn{4}{c}{BMA-SDF prior Sharpe ratio} & CAPM & CAPMB & FF5 & HKM & TOP & KNS & RPPCA \\\\ \\cmidrule(lr){2-5}",
+    " & 20\\% & 40\\% & 60\\% & \\multicolumn{1}{c}{80\\%} &  &  &  &  &  &  &  \\\\ \\midrule"
+  )
+
+  # Panel A: Co-pricing (joint)
+  if (!is.null(is_pricing_results$joint)) {
+    latex_lines <- c(latex_lines,
+                     "\\multicolumn{12}{c}{\\textbf{Panel A:} Co-pricing bonds and stocks} \\\\ \\midrule")
+    latex_lines <- c(latex_lines, build_pricing_panel_rows(is_pricing_results$joint, model_cols))
+    latex_lines <- c(latex_lines, " \\midrule")
+  }
+
+  # Panel B: Bond
+  if (!is.null(is_pricing_results$bond)) {
+    latex_lines <- c(latex_lines,
+                     "\\multicolumn{12}{c}{\\textbf{Panel B}: Pricing bonds} \\\\ \\midrule")
+    latex_lines <- c(latex_lines, build_pricing_panel_rows(is_pricing_results$bond, model_cols))
+    latex_lines <- c(latex_lines, " \\midrule")
+  }
+
+  # Panel C: Stock
+  if (!is.null(is_pricing_results$stock)) {
+    latex_lines <- c(latex_lines,
+                     "\\multicolumn{12}{c}{\\textbf{Panel C}: Pricing stocks} \\\\ \\midrule")
+    latex_lines <- c(latex_lines, build_pricing_panel_rows(is_pricing_results$stock, model_cols))
+  }
+
+  latex_lines <- c(latex_lines,
+                   " \\bottomrule",
+                   "\\end{tabular}",
+                   "}",
+                   "\\end{center}",
+                   "\\begin{spacing}{1}",
+                   "\t{\\footnotesize",
+                   "The table presents the cross-sectional in-sample asset pricing performance of different models estimated \\textbf{without an intercept}, pricing bonds and stocks jointly (Panel A), bonds only (Panel B) and stocks only (Panel C), respectively.",
+                   "For the BMA-SDF, we provide results for prior Sharpe ratio values set to 20\\%, 40\\%, 60\\% and 80\\% of the ex post maximum Sharpe ratio of the test assets. TOP includes the top five factors with an average posterior probability greater than 50\\%.",
+                   "CAPM is the standard single-factor model using MKTS, and CAPMB is the bond version using MKTB. FF5 is the five-factor model of \\cite{FamaFrench_1993}, HKM is the two-factor model of \\citet{HeKellyManela_2017}. KNS stands for the SDF estimation of \\citet{KozakNagelSantosh_2020} and RPPCA is the risk premia PCA of \\cite{LettauPelger_2020}.",
+                   "Bond returns are computed in excess of the one-month risk-free rate of return.",
+                   "All data are standardized, that is, pricing errors are in Sharpe ratio units. The sample period is 1986:01 to 2022:12 ($T=444$).",
+                   "}",
+                   "\\end{spacing}",
+                   "\\vspace{-4mm}",
+                   "\\end{table}")
+
+  is_tex_path <- file.path(tables_dir, "table_ia_6_is_pricing.tex")
+  writeLines(latex_lines, is_tex_path)
+  if (verbose) message("  Saved: ", is_tex_path)
+}
+
+# ---- Generate Table IA.7: Out-of-Sample Pricing ----
+# This requires running os_asset_pricing for each model
+# For now, we check if the results already exist in the .Rdata files
+
+if (verbose) message("\nGenerating Table IA.7: Out-of-Sample Pricing (No Intercept)...")
+
+# We need to properly run OOS pricing by loading each model and running os_asset_pricing
+# This is more complex - let's load the joint model into global and run pricing
+
+joint_model <- pricing_models$joint
+joint_rdata_path <- get_rdata_path(joint_model, results_path)
+
+if (file.exists(joint_rdata_path)) {
+
+  # Clear and load into global environment
+  load(joint_rdata_path, envir = .GlobalEnv)
+
+  # Source the OOS pricing function if not already available
+  if (!exists("os_asset_pricing")) {
+    source(file.path(code_folder, "outsample_asset_pricing.R"))
+  }
+
+  # Check if we can run OOS pricing
+  if (exists("IS_AP") && exists("results") && exists("f1")) {
+
+    tryCatch({
+      # Load OOS test assets
+      bond_oos_file <- file.path(data_folder, "bond_oosample_all_excess.csv")
+      stock_oos_file <- file.path(data_folder, "equity_os_77.csv")
+
+      if (file.exists(bond_oos_file) && file.exists(stock_oos_file)) {
+        Rb_oos <- read.csv(bond_oos_file, check.names = FALSE)
+        Rs_oos <- read.csv(stock_oos_file, check.names = FALSE)[, -1, drop = FALSE]
+        R_oos <- cbind(Rb_oos, Rs_oos)
+
+        # Run OOS pricing
+        os_result <- os_asset_pricing(
+          IS_AP      = IS_AP,
+          R_oos_data = R_oos,
+          f1         = f1,
+          f2         = if (exists("f2")) f2 else NULL,
+          intercept  = FALSE,  # No intercept for IA
+          weighting  = "GLS",
+          verbose    = verbose
+        )
+
+        if (!is.null(os_result) && !is.null(os_result$os_pricing_result)) {
+          # Build OOS pricing table
+          os_pricing <- os_result$os_pricing_result
+
+          os_latex_lines <- c(
+            "\\begin{table}[tbh!]",
+            "\\begin{center}",
+            "\\caption{Out-of-sample cross-sectional asset pricing performance (no intercept)}\\label{tab:ia-os-pricing}\\vspace{-2mm}",
+            "\\scalebox{.8}{",
+            "\\begin{tabular}{lcccc|ccccccc}\\toprule",
+            " & \\multicolumn{4}{c}{BMA-SDF prior Sharpe ratio} & CAPM & CAPMB & FF5 & HKM & TOP & KNS & RPPCA \\\\ \\cmidrule(lr){2-5}",
+            " & 20\\% & 40\\% & 60\\% & \\multicolumn{1}{c}{80\\%} &  &  &  &  &  &  &  \\\\ \\midrule",
+            "\\multicolumn{12}{c}{\\textbf{Panel A:} Co-pricing bonds and stocks out-of-sample} \\\\ \\midrule"
+          )
+
+          os_latex_lines <- c(os_latex_lines, build_pricing_panel_rows(os_pricing, model_cols))
+
+          os_latex_lines <- c(os_latex_lines,
+                              " \\bottomrule",
+                              "\\end{tabular}",
+                              "}",
+                              "\\end{center}",
+                              "\\begin{spacing}{1}",
+                              "\t{\\footnotesize",
+                              "The table presents the cross-sectional out-of-sample asset pricing performance of models estimated \\textbf{without an intercept}.",
+                              "Models are first estimated using the in-sample test assets and then used to price (with no additional parameter estimation) the out-of-sample test assets.",
+                              "For the BMA-SDF, we provide results for prior Sharpe ratio values set to 20\\%, 40\\%, 60\\% and 80\\% of the ex post maximum Sharpe ratio of the in-sample test assets.",
+                              "All data are standardized, that is, pricing errors are in Sharpe ratio units. The sample period is 1986:01 to 2022:12 ($T=444$).",
+                              "}",
+                              "\\end{spacing}",
+                              "\\vspace{-4mm}",
+                              "\\end{table}")
+
+          os_tex_path <- file.path(tables_dir, "table_ia_7_os_pricing.tex")
+          writeLines(os_latex_lines, os_tex_path)
+          if (verbose) message("  Saved: ", os_tex_path)
+        }
+      } else {
+        warning("  OOS test asset files not found. Skipping Table IA.7.")
+      }
+    }, error = function(e) {
+      warning("  Error generating OOS pricing table: ", e$message)
+    })
+  } else {
+    warning("  Required objects not found for OOS pricing. Skipping Table IA.7.")
+  }
+} else {
+  warning("  Joint model .Rdata not found. Skipping Table IA.7.")
 }
 
 ###############################################################################
