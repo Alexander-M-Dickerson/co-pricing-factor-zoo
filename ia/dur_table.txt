@@ -1,0 +1,67 @@
+\begin{table}[tbp] 
+\begin{center}
+\caption{Cross-sectional asset pricing performance:  Duration-adjusted bond returns}\label{tab:is_pricing_duration_baseline}
+\resizebox{16.5cm}{!}{%
+\begin{tabular}{lcccc|ccccccc}\toprule
+ & \multicolumn{4}{c}{BMA-SDF prior Sharpe ratio} & CAPM & CAPMB & FF5 & HKM & TOP & KNS & RPPCA \\ \cmidrule(lr){2-5}
+ & 20\% & 40\% & 60\% & \multicolumn{1}{c}{80\%} &  &  &  &  &  &  &  \\ \midrule
+\multicolumn{12}{c}{\textbf{Panel A}: In-sample co-pricing stocks and bonds} \\ \midrule
+RMSE & 0.203 & 0.197 & 0.186 & 0.174 & 0.326 & 0.297 & 0.278 & 0.324 & 0.294 & 0.157 & 0.219
+ \\
+MAPE & 0.147 & 0.141 & 0.135 & 0.128 & 0.274 & 0.245 & 0.216 & 0.272 & 0.245 & 0.117 & 0.137
+ \\
+$R^2_{\text{OLS}}$ & 0.106 & 0.157 & 0.246 & 0.339 & $-$1.310 & $-$0.913 & $-$0.675 & $-$1.282 & $-$0.885 & 0.465 & $-$0.047
+ \\
+$R^2_{\text{GLS}}$ & 0.052 & 0.120 & 0.191 & 0.252 & 0.024 & 0.028 & 0.033 & 0.024 & 0.209 & 0.177 & 0.184
+ \\
+\midrule
+\multicolumn{12}{c}{\textbf{Panel B}: In-sample pricing bonds} \\ \midrule
+RMSE & 0.169 & 0.138 & 0.112 & 0.101 & 0.201 & 0.217 & 0.179 & 0.183 & 0.198 & 0.117 & 0.162
+ \\
+MAPE & 0.103 & 0.088 & 0.080 & 0.076 & 0.120 & 0.119 & 0.088 & 0.111 & 0.143 & 0.069 & 0.110
+ \\
+$R^2_{\text{OLS}}$ & 0.093 & 0.396 & 0.601 & 0.676 & $-$0.270 & $-$0.484 & $-$0.018 & $-$0.059 & $-$0.237 & 0.569 & 0.171
+ \\
+$R^2_{\text{GLS}}$ & 0.057 & 0.187 & 0.324 & 0.430 & 0.003 & 0.036 & 0.068 & 0.019 & 0.412 & 0.262 & 0.243\\ \midrule
+\multicolumn{12}{c}{\textbf{Panel C}: Out-of-sample co-pricing stocks and bonds} \\ \midrule
+RMSE & 0.178 & 0.158 & 0.138 & 0.125 & 0.121 & 0.168 & 0.106 & 0.120 & 0.342 & 0.159 & 0.112
+ \\
+MAPE & 0.158 & 0.139 & 0.119 & 0.106 & 0.093 & 0.146 & 0.078 & 0.091 & 0.315 & 0.144 & 0.086
+ \\
+$R^2_{\text{OLS}}$ & 0.045 & 0.246 & 0.423 & 0.528 & 0.558 & 0.143 & 0.658 & 0.568 & $-$2.525 & 0.235 & 0.624
+ \\
+$R^2_{\text{GLS}}$ & 0.030 & 0.058 & 0.078 & 0.097 & 0.024 & 0.002 & 0.023 & 0.025 & $-$0.003 & 0.049 & 0.028
+ \\
+\midrule
+\multicolumn{12}{c}{\textbf{Panel D}: Out-of-sample pricing bonds} \\ \midrule
+RMSE & 0.086 & 0.080 & 0.080 & 0.081 & 0.095 & 0.091 & 0.086 & 0.086 & 0.103 & 0.082 & 0.128
+ \\
+MAPE & 0.066 & 0.059 & 0.057 & 0.057 & 0.074 & 0.070 & 0.067 & 0.067 & 0.075 & 0.057 & 0.096
+ \\
+$R^2_{\text{OLS}}$ & 0.125 & 0.243 & 0.247 & 0.228 & $-$0.070 & 0.014 & 0.120 & 0.119 & $-$0.247 & 0.211 & $-$0.936
+ \\
+$R^2_{\text{GLS}}$ & 0.018 & 0.042 & 0.055 & 0.065 & 0.009 & 0.009 & $-$0.028 & 0.015 & $-$0.029 & 0.040 & $-$0.080
+ \\
+\bottomrule
+\end{tabular}}
+\end{center}
+\begin{spacing}{0.80}
+{\footnotesize 
+The table presents the cross-sectional in and out-of-sample asset pricing performance of different models pricing (duration-adjusted) bonds and stocks jointly (Panels A and C), and (duration-adjusted) bonds only (Panels B and D), respectively. 
+For the BMA-SDF, we provide results for prior Sharpe ratio  values set to 20\%, 40\%, 60\% and 80\% of the ex post maximum Sharpe ratio of the test assets. 
+TOP includes the top five factors with an average posterior probability greater than 50\%. 
+CAPM is the standard single-factor model using MKTS, and CAPMB is the bond version using MKTB. 
+FF5 is the five-factor model of \cite{FamaFrench_1993}, HKM is the two-factor model of \citet{HeKellyManela_2017}. 
+KNS stands for the SDF estimation of \citet{KozakNagelSantosh_2020} and RPPCA is the  risk premia PCA of \cite{LettauPelger_2020}. 
+Estimation details for the benchmark models are given in Appendix \ref{sec:benchmark_models}.
+Bond returns are computed in excess of a duration matched portfolio of U.S. Treasury bonds.
+In Panels A and B the models are estimated with the respective factor zoos and test assets.  The resulting SDF is then used to price (with no additional parameter estimation) the two sets of the OS assets in Panels C and D.    
+IS test assets are the 83 bond and stock portfolios and the 40 tradable bond and stock factors (Panel A), and the 50 bond portfolios and  16 tradable bond factors (Panel B), respectively. 
+OS test assets are the combined 154 bond and stock portfolios (Panel C), as well as the 77 bond portfolios only (Panel D). 
+All are described in Section \ref{sec:data}. 
+All data is standardized, that is, pricing errors are in Sharpe ratio units. The sample period is 1986:01 to 2022:12 ($T=444$).
+}
+
+
+\end{spacing}
+\end{table} 
