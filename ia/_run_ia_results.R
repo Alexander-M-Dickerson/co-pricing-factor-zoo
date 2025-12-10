@@ -17,6 +17,8 @@
 ##     - Treasury SR decomposition table (nontradable vs tradable factors)
 ##     - Sparse model posterior probabilities table (imposing sparsity)
 ##     - Sparse model asset pricing table (IS/OS, 2 panels)
+##     - IS/OS switch posterior probabilities table
+##     - IS/OS switch asset pricing table (2 panels)
 ##
 ##   Figures:
 ##     - Figure 2 equivalent for joint_no_intercept
@@ -26,6 +28,7 @@
 ##     - Treasury bar plots figure (like Figure 4)
 ##     - Treasury DR-tilt bar plots figure (weighted kappa model)
 ##     - Sparse model posterior probabilities figure
+##     - IS/OS switch posterior probabilities figure
 ##
 ## USAGE:
 ##   From R:
@@ -1904,6 +1907,311 @@ if (!file.exists(sparse_rdata_path)) {
 # Final cleanup for sparse model globals
 if (sparse_globals_assigned) {
   cleanup_sparse_globals()
+}
+
+
+###############################################################################
+## SECTION 5.9: IS/OS SWITCH MODEL
+###############################################################################
+# Generate tables and figure for the IS/OS switch model:
+# - Estimated on OOS test assets (equity_os_77, bond_oosample_all_excess)
+# - Table: Asset pricing with:
+#   - Panel A: In-sample pricing (on OOS assets used for estimation)
+#   - Panel B: Out-of-sample pricing on original IS assets
+# - Figure: Posterior factor probabilities (with -- IS/OS switch caption)
+#
+# Output file: excess_bond_stock_with_sp_alpha.w=1_beta.w=1_kappa=0_isos_switch.Rdata
+
+if (verbose) {
+  message("\n")
+  message(strrep("=", 60))
+  message("SECTION 9: IS/OS Switch Model")
+  message(strrep("=", 60))
+}
+
+# Construct path to IS/OS switch model .Rdata
+isos_rdata_path <- file.path(
+  results_path, "bond_stock_with_sp",
+  "excess_bond_stock_with_sp_alpha.w=1_beta.w=1_kappa=0_isos_switch.Rdata"
+)
+
+# Track globals for cleanup
+isos_globals_assigned <- FALSE
+
+# Helper function to clean up IS/OS switch model global variables
+cleanup_isos_globals <- function() {
+  globals_to_clean <- c("f1", "f2", "intercept", "nontraded_names", "bond_names", "stock_names")
+  for (g in globals_to_clean) {
+    if (exists(g, envir = .GlobalEnv)) {
+      rm(list = g, envir = .GlobalEnv)
+      if (verbose) message("  Cleaned up global: ", g)
+    }
+  }
+}
+
+if (!file.exists(isos_rdata_path)) {
+  warning("IS/OS switch model not found: ", isos_rdata_path)
+  if (verbose) {
+    message("  Skipping IS/OS switch model tables and figure.")
+    message("  To generate, run: Rscript ia/_run_ia_estimation.R --models=9")
+  }
+} else {
+  if (verbose) message("  Loading: ", isos_rdata_path)
+
+  # Load IS/OS switch model into environment
+  isos_env <- new.env()
+  load_success <- tryCatch({
+    load(isos_rdata_path, envir = isos_env)
+    TRUE
+  }, error = function(e) {
+    warning("  Failed to load IS/OS switch .Rdata: ", e$message)
+    FALSE
+  })
+
+  if (!load_success) {
+    if (verbose) message("  Skipping IS/OS switch model due to load failure")
+  } else {
+    # List what was loaded
+    loaded_objects <- ls(envir = isos_env)
+    if (verbose) message("  Loaded objects: ", paste(head(loaded_objects, 20), collapse = ", "), if(length(loaded_objects) > 20) "..." else "")
+
+    # Check required objects
+    isos_required <- c("results", "f1", "f2", "intercept", "IS_AP", "kns_out", "rp_out", "frequentist_models")
+    isos_missing <- isos_required[!sapply(isos_required, exists, envir = isos_env)]
+
+    if (length(isos_missing) > 0) {
+      warning("  Missing objects in IS/OS switch model: ", paste(isos_missing, collapse = ", "))
+      if (verbose) message("  Skipping IS/OS switch model due to missing objects")
+    } else {
+
+      # Extract objects from environment
+      f1_isos <- get("f1", envir = isos_env)
+      f2_isos <- get("f2", envir = isos_env)
+      intercept_isos <- get("intercept", envir = isos_env)
+      results_isos <- get("results", envir = isos_env)
+      IS_AP_isos <- get("IS_AP", envir = isos_env)
+      kns_out_isos <- get("kns_out", envir = isos_env)
+      rp_out_isos <- get("rp_out", envir = isos_env)
+      pca_out_isos <- if (exists("pca_out", envir = isos_env)) get("pca_out", envir = isos_env) else NULL
+      frequentist_models_isos <- get("frequentist_models", envir = isos_env)
+
+      # Extract factor name vectors
+      nontraded_names_isos <- if (exists("nontraded_names", envir = isos_env)) {
+        get("nontraded_names", envir = isos_env)
+      } else {
+        colnames(f1_isos)
+      }
+      bond_names_isos <- if (exists("bond_names", envir = isos_env)) {
+        get("bond_names", envir = isos_env)
+      } else {
+        character(0)
+      }
+      stock_names_isos <- if (exists("stock_names", envir = isos_env)) {
+        get("stock_names", envir = isos_env)
+      } else {
+        character(0)
+      }
+
+      # Log dimensions
+      if (verbose) {
+        message("  f1 dimensions: ", nrow(f1_isos), " x ", ncol(f1_isos))
+        message("  f2 dimensions: ", nrow(f2_isos), " x ", ncol(f2_isos))
+        message("  intercept: ", intercept_isos)
+        message("  results: ", length(results_isos), " prior levels")
+        message("  nontraded_names: ", length(nontraded_names_isos), " factors")
+        message("  bond_names: ", length(bond_names_isos), " factors")
+        message("  stock_names: ", length(stock_names_isos), " factors")
+      }
+
+      # Assign to global environment for pp_figure_table
+      assign("f1", f1_isos, envir = .GlobalEnv)
+      assign("f2", f2_isos, envir = .GlobalEnv)
+      assign("intercept", intercept_isos, envir = .GlobalEnv)
+      assign("nontraded_names", nontraded_names_isos, envir = .GlobalEnv)
+      assign("bond_names", bond_names_isos, envir = .GlobalEnv)
+      assign("stock_names", stock_names_isos, envir = .GlobalEnv)
+      isos_globals_assigned <- TRUE
+
+      # Ensure cleanup on exit
+      on.exit(cleanup_isos_globals(), add = TRUE)
+
+      # ---- Figure + Table: Posterior Probabilities (IS/OS Switch) ----
+      if (verbose) message("\n--- IS/OS Switch: Posterior Probabilities Figure + Table ---")
+
+      tryCatch({
+        if (verbose) message("  Calling pp_figure_table()...")
+        isos_pp_result <- pp_figure_table(
+          results       = results_isos,
+          return_type   = "excess",
+          model_type    = "bond_stock_with_sp",
+          tag           = "isos_switch",
+          alpha.w       = alpha.w,
+          beta.w        = beta.w,
+          main_path     = paper_output,
+          output_folder = "figures",
+          table_folder  = "tables",
+          # Custom caption for IS/OS Switch model
+          table_caption = "Posterior factor probabilities and risk prices -- IS/OS switch",
+          table_label   = "tab:isos-switch-posterior-probs",
+          table_name    = "table_isos_switch_posterior_probs",
+          verbose       = verbose
+        )
+
+        if (!is.null(isos_pp_result)) {
+          if (verbose) {
+            message("  SUCCESS: Posterior probability figure + table generated")
+            message("  Figure saved: ", isos_pp_result$fig_file)
+            message("  Table saved:  ", isos_pp_result$tex_file)
+          }
+        } else {
+          warning("  pp_figure_table returned NULL")
+        }
+      }, error = function(e) {
+        warning("  ERROR in IS/OS switch posterior probability figure/table: ", e$message)
+        if (verbose) message("  Stack trace: ", paste(capture.output(traceback()), collapse = "\n"))
+      })
+
+      # ---- Table: Asset Pricing (IS/OS Switch) ----
+      # Panel A: In-sample (on OOS assets used for estimation)
+      # Panel B: Out-of-sample (on original IS assets)
+      if (verbose) message("\n--- IS/OS Switch: Asset Pricing Table ---")
+
+      # Collect IS results
+      isos_is_result <- NULL
+      isos_os_result <- NULL
+
+      # In-sample from IS_AP
+      if (!is.null(IS_AP_isos$is_pricing_result)) {
+        isos_is_result <- IS_AP_isos$is_pricing_result
+        if (verbose) message("  IS pricing: ", ncol(isos_is_result) - 1, " models")
+      }
+
+      # Out-of-sample: use ORIGINAL IS test assets (swapped back)
+      if (verbose) message("\n  Computing out-of-sample pricing on original IS test assets...")
+
+      # For OOS, use the ORIGINAL in-sample test assets
+      bond_original_is_file <- file.path(data_folder, "bond_insample_test_assets_50_excess.csv")
+      stock_original_is_file <- file.path(data_folder, "equity_anomalies_composite_33.csv")
+
+      Rb_original_is <- if (file.exists(bond_original_is_file)) {
+        read.csv(bond_original_is_file, check.names = FALSE)
+      } else NULL
+
+      Rs_original_is <- if (file.exists(stock_original_is_file)) {
+        read.csv(stock_original_is_file, check.names = FALSE)
+      } else NULL
+
+      if (!is.null(Rb_original_is) && !is.null(Rs_original_is)) {
+        # Combine bond and stock original IS assets (for OOS testing)
+        R_oos_original_is <- cbind(Rb_original_is, Rs_original_is[, -1, drop = FALSE])
+        if (verbose) message("  Original IS assets for OOS: ", ncol(R_oos_original_is) - 1, " portfolios")
+
+        # Get fac_freq
+        if (exists("data_list", envir = isos_env)) {
+          data_list_isos <- get("data_list", envir = isos_env)
+          fac_freq_isos <- data_list_isos$fac_freq
+        } else {
+          fac_freq_isos <- read.csv(file.path(data_folder, "frequentist_factors.csv"), check.names = FALSE)
+        }
+
+        # Run OOS pricing
+        tryCatch({
+          if (verbose) message("  Running os_asset_pricing()...")
+          isos_os_result <- os_asset_pricing(
+            R_oss              = R_oos_original_is,
+            IS_AP              = IS_AP_isos,
+            f1                 = f1_isos,
+            f2                 = f2_isos,
+            fac_freq           = fac_freq_isos,
+            frequentist_models = frequentist_models_isos,
+            kns_out            = kns_out_isos,
+            rp_out             = rp_out_isos,
+            pca_out            = pca_out_isos,
+            intercept          = intercept_isos,
+            verbose            = verbose
+          )
+
+          if (!is.null(isos_os_result) && is.data.frame(isos_os_result)) {
+            if (verbose) message("  SUCCESS: OOS pricing computed - ", ncol(isos_os_result) - 1, " models")
+          } else {
+            warning("  os_asset_pricing returned NULL or invalid result")
+            isos_os_result <- NULL
+          }
+        }, error = function(e) {
+          warning("  ERROR in IS/OS switch OOS pricing: ", e$message)
+          isos_os_result <<- NULL
+        })
+      } else {
+        warning("  Original IS test assets not available for IS/OS switch model")
+      }
+
+      # ---- Build the 2-panel pricing table ----
+      if (!is.null(isos_is_result) || !is.null(isos_os_result)) {
+        if (verbose) message("\n  Building IS/OS Switch Asset Pricing Table...")
+
+        isos_latex_lines <- c(
+          "\\begin{table}[tbh!]",
+          "\\begin{center}",
+          "\\caption{Cross-sectional asset pricing performance -- IS/OS switch}\\label{tab:isos-switch-pricing}\\vspace{-2mm}",
+          "\\scalebox{.8}{",
+          "\\begin{tabular}{lcccc|ccccccc}\\toprule",
+          " & \\multicolumn{4}{c}{BMA-SDF prior Sharpe ratio} & CAPM & CAPMB & FF5 & HKM & TOP & KNS & RPPCA \\\\ \\cmidrule(lr){2-5}",
+          " & 20\\% & 40\\% & 60\\% & \\multicolumn{1}{c}{80\\%} &  &  &  &  &  &  &  \\\\ \\midrule"
+        )
+
+        # Panel A: In-sample (on OOS assets)
+        if (!is.null(isos_is_result)) {
+          isos_latex_lines <- c(isos_latex_lines,
+                                "\\multicolumn{12}{c}{\\textbf{Panel A}: In-sample co-pricing bonds and stocks} \\\\ \\midrule",
+                                build_pricing_panel_rows(isos_is_result, model_cols),
+                                "\\midrule")
+          if (verbose) message("  Added Panel A: In-sample co-pricing")
+        }
+
+        # Panel B: Out-of-sample (on original IS assets)
+        if (!is.null(isos_os_result)) {
+          isos_latex_lines <- c(isos_latex_lines,
+                                "\\multicolumn{12}{c}{\\textbf{Panel B}: Out-of-sample co-pricing bonds and stocks} \\\\ \\midrule",
+                                build_pricing_panel_rows(isos_os_result, model_cols))
+          if (verbose) message("  Added Panel B: Out-of-sample co-pricing")
+        }
+
+        isos_latex_lines <- c(isos_latex_lines,
+                              "\\bottomrule",
+                              "\\end{tabular}",
+                              "}",
+                              "\\end{center}",
+                              "\\begin{spacing}{1}",
+                              "{\\footnotesize",
+                              "The table presents the cross-sectional in-sample (Panel A) and out-of-sample (Panel B) asset pricing performance of the co-pricing model with swapped IS/OS test assets.",
+                              "The model is estimated using the out-of-sample test assets (77 equity portfolios and 77 bond portfolios) as in-sample data.",
+                              "Panel A reports in-sample performance on these assets. Panel B reports out-of-sample performance on the original in-sample test assets (33 equity portfolios and 50 bond portfolios).",
+                              "For the BMA-SDF, we provide results for prior Sharpe ratio values set to 20\\%, 40\\%, 60\\% and 80\\% of the ex post maximum Sharpe ratio of the test assets.",
+                              "TOP includes the top five factors with an average posterior probability greater than 50\\%.",
+                              "All data are standardized, that is, pricing errors are in Sharpe ratio units. The sample period is 1986:01 to 2022:12 ($T=444$).",
+                              "}",
+                              "\\end{spacing}",
+                              "\\vspace{-4mm}",
+                              "\\end{table}")
+
+        isos_tex_path <- file.path(tables_dir, "table_isos_switch_pricing.tex")
+        writeLines(isos_latex_lines, isos_tex_path)
+        if (verbose) message("  Saved: ", isos_tex_path)
+      } else {
+        warning("  No pricing results available for IS/OS switch model. Skipping pricing table.")
+      }
+    }
+
+    # Clean up environment
+    rm(isos_env)
+  }
+
+  gc(verbose = FALSE)
+}
+
+# Final cleanup for IS/OS switch model globals
+if (isos_globals_assigned) {
+  cleanup_isos_globals()
 }
 
 
