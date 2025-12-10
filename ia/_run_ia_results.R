@@ -1132,106 +1132,174 @@ treasury_rdata_path <- file.path(
   "excess_treasury_alpha.w=1_beta.w=1_kappa=0_bond_treasury.Rdata"
 )
 
+# Track if we assigned global variables (for cleanup)
+treasury_globals_assigned <- FALSE
+
+# Helper function to clean up treasury global variables
+cleanup_treasury_globals <- function() {
+  if (exists("f1", envir = .GlobalEnv)) {
+    rm("f1", envir = .GlobalEnv)
+    if (verbose) message("  Cleaned up global: f1")
+  }
+  if (exists("f2", envir = .GlobalEnv)) {
+    rm("f2", envir = .GlobalEnv)
+    if (verbose) message("  Cleaned up global: f2")
+  }
+  if (exists("intercept", envir = .GlobalEnv)) {
+    rm("intercept", envir = .GlobalEnv)
+    if (verbose) message("  Cleaned up global: intercept")
+  }
+}
+
 if (!file.exists(treasury_rdata_path)) {
   warning("Treasury model not found: ", treasury_rdata_path)
-  warning("Skipping Treasury figures and table.")
+  if (verbose) message("  Skipping Treasury figures and table.")
 } else {
   if (verbose) message("  Loading: ", treasury_rdata_path)
 
   # Load treasury model into environment
   treasury_env <- new.env()
-  load(treasury_rdata_path, envir = treasury_env)
+  load_success <- tryCatch({
+    load(treasury_rdata_path, envir = treasury_env)
+    TRUE
+  }, error = function(e) {
+    warning("  Failed to load treasury .Rdata: ", e$message)
+    FALSE
+  })
 
-  # Check required objects
-  treasury_required <- c("results", "f1", "intercept")
-  treasury_missing <- treasury_required[!sapply(treasury_required, exists, envir = treasury_env)]
-
-  if (length(treasury_missing) > 0) {
-    warning("  Missing objects in treasury model: ", paste(treasury_missing, collapse = ", "))
+  if (!load_success) {
+    if (verbose) message("  Skipping Treasury due to load failure")
   } else {
+    # List what was loaded
+    loaded_objects <- ls(envir = treasury_env)
+    if (verbose) message("  Loaded objects: ", paste(loaded_objects, collapse = ", "))
 
-    # Make f1, f2, intercept available in global env for pp_figure_table
-    f1_treasury <- get("f1", envir = treasury_env)
-    f2_treasury <- if (exists("f2", envir = treasury_env)) get("f2", envir = treasury_env) else NULL
-    intercept_treasury <- get("intercept", envir = treasury_env)
-    results_treasury <- get("results", envir = treasury_env)
+    # Check required objects
+    treasury_required <- c("results", "f1", "intercept")
+    treasury_missing <- treasury_required[!sapply(treasury_required, exists, envir = treasury_env)]
 
-    # Temporarily assign to global for pp_figure_table (it uses get with inherits=TRUE)
-    assign("f1", f1_treasury, envir = .GlobalEnv)
-    assign("f2", f2_treasury, envir = .GlobalEnv)
-    assign("intercept", intercept_treasury, envir = .GlobalEnv)
-
-    # ---- Figure + Table: Posterior Probabilities (Treasury) ----
-    if (verbose) message("\n--- Treasury: Posterior Probabilities Figure + Table ---")
-
-    tryCatch({
-      treasury_pp_result <- pp_figure_table(
-        results       = results_treasury,
-        return_type   = "excess",
-        model_type    = "treasury",
-        tag           = "bond_treasury",
-        alpha.w       = alpha.w,
-        beta.w        = beta.w,
-        main_path     = paper_output,
-        output_folder = "figures",
-        table_folder  = "tables",
-        # Custom caption for Treasury
-        table_caption = "Posterior factor probabilities and risk prices: Treasury component",
-        table_label   = "tab:treasury-posterior-probs",
-        table_name    = "table_treasury_posterior_probs",
-        verbose       = verbose
-      )
-
-      if (verbose) {
-        message("  Figure saved: ", treasury_pp_result$fig_file)
-        message("  Table saved:  ", treasury_pp_result$tex_file)
-      }
-    }, error = function(e) {
-      warning("  ERROR in Treasury posterior probability figure/table: ", e$message)
-    })
-
-    # ---- Figure: Number of Factors & Sharpe Ratio (Treasury) ----
-    if (verbose) message("\n--- Treasury: Number of Factors & Sharpe Ratio Figure ---")
-
-    # Check if sdf_path exists
-    if (is.null(results_treasury[[1]]$sdf_path)) {
-      warning("  results$sdf_path not found. Skipping Treasury nfac/SR figure.")
+    if (length(treasury_missing) > 0) {
+      warning("  Missing objects in treasury model: ", paste(treasury_missing, collapse = ", "))
+      if (verbose) message("  Skipping Treasury due to missing objects")
     } else {
+
+      # Extract objects from environment
+      f1_treasury <- get("f1", envir = treasury_env)
+      f2_treasury <- if (exists("f2", envir = treasury_env)) get("f2", envir = treasury_env) else NULL
+      intercept_treasury <- get("intercept", envir = treasury_env)
+      results_treasury <- get("results", envir = treasury_env)
+
+      # Log dimensions
+      if (verbose) {
+        message("  f1 dimensions: ", nrow(f1_treasury), " x ", ncol(f1_treasury))
+        message("  f2 dimensions: ", if(is.null(f2_treasury)) "NULL" else paste(nrow(f2_treasury), "x", ncol(f2_treasury)))
+        message("  intercept: ", intercept_treasury)
+        message("  results: ", length(results_treasury), " prior levels")
+        message("  gamma_path dimensions: ", nrow(results_treasury[[1]]$gamma_path), " x ", ncol(results_treasury[[1]]$gamma_path))
+      }
+
+      # Temporarily assign to global for pp_figure_table (it uses get with inherits=TRUE)
+      # Use on.exit to ensure cleanup even if errors occur
+      assign("f1", f1_treasury, envir = .GlobalEnv)
+      assign("f2", f2_treasury, envir = .GlobalEnv)
+      assign("intercept", intercept_treasury, envir = .GlobalEnv)
+      treasury_globals_assigned <- TRUE
+
+      # Ensure cleanup happens on exit from this block
+      on.exit(cleanup_treasury_globals(), add = TRUE)
+
+      # ---- Figure + Table: Posterior Probabilities (Treasury) ----
+      if (verbose) message("\n--- Treasury: Posterior Probabilities Figure + Table ---")
+
       tryCatch({
-        treasury_nfac_result <- plot_nfac_sr(
+        if (verbose) message("  Calling pp_figure_table()...")
+        treasury_pp_result <- pp_figure_table(
           results       = results_treasury,
           return_type   = "excess",
           model_type    = "treasury",
           tag           = "bond_treasury",
-          prior_labels  = c("20%", "40%", "60%", "80%"),
-          prior_choice  = "80%",
+          alpha.w       = alpha.w,
+          beta.w        = beta.w,
           main_path     = paper_output,
           output_folder = "figures",
+          table_folder  = "tables",
+          # Custom caption for Treasury
+          table_caption = "Posterior factor probabilities and risk prices: Treasury component",
+          table_label   = "tab:treasury-posterior-probs",
+          table_name    = "table_treasury_posterior_probs",
           verbose       = verbose
         )
 
-        if (verbose) {
-          message("  Figure saved: ", treasury_nfac_result$fig_file)
-          message("  Prior used: ", treasury_nfac_result$prior_used)
-          message("  N factors [2.5%, 50%, 97.5%]: ",
-                  paste(round(treasury_nfac_result$n_factors_summary, 1), collapse = ", "))
-          message("  SR [5%, 95%]: ",
-                  paste(round(treasury_nfac_result$sr_summary, 3), collapse = ", "))
+        if (!is.null(treasury_pp_result)) {
+          if (verbose) {
+            message("  SUCCESS: Posterior probability figure + table generated")
+            message("  Figure saved: ", treasury_pp_result$fig_file)
+            message("  Table saved:  ", treasury_pp_result$tex_file)
+          }
+        } else {
+          warning("  pp_figure_table returned NULL")
         }
       }, error = function(e) {
-        warning("  ERROR in Treasury nfac/SR figure: ", e$message)
+        warning("  ERROR in Treasury posterior probability figure/table: ", e$message)
+        if (verbose) message("  Stack trace: ", paste(capture.output(traceback()), collapse = "\n"))
       })
+
+      # ---- Figure: Number of Factors & Sharpe Ratio (Treasury) ----
+      if (verbose) message("\n--- Treasury: Number of Factors & Sharpe Ratio Figure ---")
+
+      # Check if sdf_path exists
+      if (is.null(results_treasury[[1]]$sdf_path)) {
+        warning("  results$sdf_path not found. Skipping Treasury nfac/SR figure.")
+        if (verbose) message("  (SDF tracking may not have been enabled during MCMC)")
+      } else {
+        if (verbose) message("  sdf_path found, proceeding with nfac/SR figure...")
+
+        tryCatch({
+          if (verbose) message("  Calling plot_nfac_sr()...")
+          treasury_nfac_result <- plot_nfac_sr(
+            results       = results_treasury,
+            return_type   = "excess",
+            model_type    = "treasury",
+            tag           = "bond_treasury",
+            prior_labels  = c("20%", "40%", "60%", "80%"),
+            prior_choice  = "80%",
+            main_path     = paper_output,
+            output_folder = "figures",
+            verbose       = verbose
+          )
+
+          if (!is.null(treasury_nfac_result)) {
+            if (verbose) {
+              message("  SUCCESS: nfac/SR figure generated")
+              message("  Figure saved: ", treasury_nfac_result$fig_file)
+              message("  Prior used: ", treasury_nfac_result$prior_used)
+              message("  N factors [2.5%, 50%, 97.5%]: ",
+                      paste(round(treasury_nfac_result$n_factors_summary, 1), collapse = ", "))
+              message("  SR [5%, 95%]: ",
+                      paste(round(treasury_nfac_result$sr_summary, 3), collapse = ", "))
+            }
+          } else {
+            warning("  plot_nfac_sr returned NULL")
+          }
+        }, error = function(e) {
+          warning("  ERROR in Treasury nfac/SR figure: ", e$message)
+          if (verbose) message("  Stack trace: ", paste(capture.output(traceback()), collapse = "\n"))
+        })
+      }
+
+      # Note: cleanup_treasury_globals() will be called automatically via on.exit()
     }
 
-    # Clean up global env
-    if (exists("f1", envir = .GlobalEnv)) rm("f1", envir = .GlobalEnv)
-    if (exists("f2", envir = .GlobalEnv)) rm("f2", envir = .GlobalEnv)
-    if (exists("intercept", envir = .GlobalEnv)) rm("intercept", envir = .GlobalEnv)
+    # Clean up treasury environment
+    rm(treasury_env)
   }
 
-  # Clean up treasury environment
-  rm(treasury_env)
   gc(verbose = FALSE)
+}
+
+# Final check: ensure globals are cleaned up (belt and suspenders)
+if (treasury_globals_assigned) {
+  cleanup_treasury_globals()
 }
 
 
