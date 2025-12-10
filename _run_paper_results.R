@@ -237,7 +237,7 @@ if (verbose) {
 
 # Check if cached results exist
 sr_decomp_file <- file.path(data_folder, "sr_decomposition_results.rds")
-regenerate_sr_decomp <- FALSE  # Set to TRUE to force re-estimation
+regenerate_sr_decomp <- TRUE  # Always regenerate to ensure fresh results
 
 if (file.exists(sr_decomp_file) && !regenerate_sr_decomp) {
   if (verbose) message("SR Decomposition: Loading cached results from ", sr_decomp_file)
@@ -277,7 +277,7 @@ if (verbose) message("Pricing Results: Collecting for all model types...")
 
 # Check if we should regenerate or use cached results
 pricing_file <- file.path(data_folder, "pricing_results.rds")
-regenerate_pricing <- FALSE  # Set to TRUE to force re-computation (required after OOS fix)
+regenerate_pricing <- TRUE  # Always regenerate to ensure fresh results
 
 if (file.exists(pricing_file) && !regenerate_pricing) {
   if (verbose) message("  Loading cached pricing results from ", pricing_file)
