@@ -10,11 +10,13 @@
 ## OUTPUTS:
 ##   Tables:
 ##     - Posterior probabilities & risk prices for ALL 5 models
-##     - Table 2 equivalent (IS pricing) for joint_no_intercept
-##     - Table 3 equivalent (OS pricing) for joint_no_intercept
+##     - Table IA.6: In-sample pricing (no intercept models)
+##     - Table IA.7: Out-of-sample pricing (no intercept models)
+##     - Duration pricing table (4 panels: IS/OS for bond_stock_with_sp and bond)
 ##
 ##   Figures:
 ##     - Figure 2 equivalent for joint_no_intercept
+##     - Cumulative SR figure (from main paper's excess model)
 ##
 ## USAGE:
 ##   From R:
@@ -737,6 +739,371 @@ if (file.exists(fig13_output_path)) {
     message("  Generated: fig13_cum_sr_80pct.pdf")
   }
 }
+
+
+###############################################################################
+## SECTION 5.5: DURATION-ADJUSTED BOND RETURNS PRICING TABLE
+###############################################################################
+# Generate 4-panel pricing table for duration-adjusted bond returns
+# Uses MAIN paper's duration models (intercept=TRUE) from output/unconditional/
+# Panel A: In-sample co-pricing stocks and bonds (bond_stock_with_sp, duration)
+# Panel B: In-sample pricing bonds (bond, duration)
+# Panel C: Out-of-sample co-pricing stocks and bonds
+# Panel D: Out-of-sample pricing bonds
+
+if (verbose) {
+  message("\n")
+  message(strrep("=", 60))
+  message("SECTION 5: Duration-Adjusted Bond Returns Pricing Table")
+  message(strrep("=", 60))
+}
+
+# Duration models use MAIN output folder, not IA output folder
+main_results_path <- "output/unconditional"
+
+# Helper to construct duration .Rdata path
+get_duration_rdata_path <- function(model_type) {
+  filename <- sprintf("duration_%s_alpha.w=1_beta.w=1_kappa=0_baseline.Rdata", model_type)
+  file.path(main_results_path, model_type, filename)
+}
+
+# Helper to load duration model
+load_duration_model <- function(model_type, verbose = TRUE) {
+  rdata_path <- get_duration_rdata_path(model_type)
+  if (!file.exists(rdata_path)) {
+    if (verbose) warning("Duration model not found: ", rdata_path)
+    return(NULL)
+  }
+  if (verbose) message("  Loading: ", rdata_path)
+  env <- new.env()
+  load(rdata_path, envir = env)
+  return(env)
+}
+
+# Collect IS and OS results for duration models
+dur_is_results <- list()
+dur_os_results <- list()
+
+# ---- Panel A: bond_stock_with_sp IS (duration) ----
+if (verbose) message("\n--- Processing: bond_stock_with_sp (duration) ---")
+
+bswsp_dur_env <- load_duration_model("bond_stock_with_sp", verbose)
+
+if (!is.null(bswsp_dur_env)) {
+  if (exists("IS_AP", envir = bswsp_dur_env)) {
+    IS_AP_bswsp_dur <- get("IS_AP", envir = bswsp_dur_env)
+    if (!is.null(IS_AP_bswsp_dur$is_pricing_result)) {
+      dur_is_results$bond_stock_with_sp <- IS_AP_bswsp_dur$is_pricing_result
+      if (verbose) message("  IS pricing: ", ncol(dur_is_results$bond_stock_with_sp) - 1, " models")
+    }
+  } else {
+    warning("  IS_AP not found in bond_stock_with_sp duration model")
+  }
+} else {
+  warning("  bond_stock_with_sp duration model not found")
+}
+
+# ---- Panel B: bond IS (duration) ----
+if (verbose) message("\n--- Processing: bond (duration) ---")
+
+bond_dur_env <- load_duration_model("bond", verbose)
+
+if (!is.null(bond_dur_env)) {
+  if (exists("IS_AP", envir = bond_dur_env)) {
+    IS_AP_bond_dur <- get("IS_AP", envir = bond_dur_env)
+    if (!is.null(IS_AP_bond_dur$is_pricing_result)) {
+      dur_is_results$bond <- IS_AP_bond_dur$is_pricing_result
+      if (verbose) message("  IS pricing: ", ncol(dur_is_results$bond) - 1, " models")
+    }
+  } else {
+    warning("  IS_AP not found in bond duration model")
+  }
+} else {
+  warning("  bond duration model not found")
+}
+
+# ---- OOS Pricing for Duration Models ----
+if (verbose) message("\n--- Generating OOS pricing for duration models ---")
+
+# OOS test asset files for duration-adjusted returns
+bond_dur_oos_file <- file.path(data_folder, "bond_insample_test_assets_50_duration_tmt.csv")
+stock_oos_file_dur <- file.path(data_folder, "equity_os_77.csv")
+
+# Check file existence
+if (!file.exists(bond_dur_oos_file)) {
+  warning("Bond duration OOS file not found: ", bond_dur_oos_file)
+}
+if (!file.exists(stock_oos_file_dur)) {
+  warning("Stock OOS file not found: ", stock_oos_file_dur)
+}
+
+# Read OOS test assets
+Rb_dur_oos <- if (file.exists(bond_dur_oos_file)) {
+  read.csv(bond_dur_oos_file, check.names = FALSE)
+} else NULL
+
+Rs_dur_oos <- if (file.exists(stock_oos_file_dur)) {
+  read.csv(stock_oos_file_dur, check.names = FALSE)
+} else NULL
+
+# ---- Panel C: bond_stock_with_sp OS (duration) ----
+if (verbose) message("\n--- Panel C: bond_stock_with_sp OOS (duration) ---")
+
+if (!is.null(bswsp_dur_env) && !is.null(Rb_dur_oos) && !is.null(Rs_dur_oos)) {
+
+  # Check required objects exist before proceeding
+  required_objs_dur <- c("IS_AP", "f1", "kns_out", "rp_out", "frequentist_models", "intercept")
+  missing_objs_dur <- required_objs_dur[!sapply(required_objs_dur, exists, envir = bswsp_dur_env)]
+
+  if (length(missing_objs_dur) > 0) {
+    warning("  Missing objects in bond_stock_with_sp duration: ", paste(missing_objs_dur, collapse = ", "))
+    if (verbose) message("  Skipping Panel C due to missing objects")
+  } else {
+
+    tryCatch({
+      # Combine bond and stock OOS assets (remove date from Rs to avoid duplicate)
+      R_oos_combined_dur <- cbind(Rb_dur_oos, Rs_dur_oos[, -1, drop = FALSE])
+      if (verbose) message("  Combined OOS assets: ", ncol(R_oos_combined_dur) - 1, " portfolios")
+
+      # Extract required objects from environment
+      IS_AP_local <- get("IS_AP", envir = bswsp_dur_env)
+      frequentist_models_local <- get("frequentist_models", envir = bswsp_dur_env)
+      kns_out_local <- get("kns_out", envir = bswsp_dur_env)
+      rp_out_local <- get("rp_out", envir = bswsp_dur_env)
+      pca_out_local <- if (exists("pca_out", envir = bswsp_dur_env)) get("pca_out", envir = bswsp_dur_env) else NULL
+      intercept_local <- get("intercept", envir = bswsp_dur_env)
+
+      # Get f1, f2, fac_freq from data_list if available
+      if (exists("data_list", envir = bswsp_dur_env)) {
+        data_list_local <- get("data_list", envir = bswsp_dur_env)
+        f1_local <- data_list_local$f1
+        f2_local <- data_list_local$f2
+        fac_freq_local <- data_list_local$fac_freq
+        if (verbose) message("  Using data from data_list (f1, f2, fac_freq)")
+      } else {
+        f1_local <- get("f1", envir = bswsp_dur_env)
+        f2_local <- if (exists("f2", envir = bswsp_dur_env)) get("f2", envir = bswsp_dur_env) else NULL
+        fac_freq_local <- read.csv(file.path(data_folder, "frequentist_factors.csv"), check.names = FALSE)
+        if (verbose) message("  Using f1/f2 from env, fac_freq from CSV")
+      }
+
+      if (verbose) {
+        message("  f1: ", nrow(f1_local), " x ", ncol(f1_local))
+        message("  f2: ", if(is.null(f2_local)) "NULL" else paste(nrow(f2_local), "x", ncol(f2_local)))
+        message("  fac_freq: ", nrow(fac_freq_local), " x ", ncol(fac_freq_local))
+      }
+
+      # Run OOS pricing
+      if (verbose) message("  Running os_asset_pricing()...")
+      os_result_bswsp_dur <- os_asset_pricing(
+        R_oss              = R_oos_combined_dur,
+        IS_AP              = IS_AP_local,
+        f1                 = f1_local,
+        f2                 = f2_local,
+        fac_freq           = fac_freq_local,
+        frequentist_models = frequentist_models_local,
+        kns_out            = kns_out_local,
+        rp_out             = rp_out_local,
+        pca_out            = pca_out_local,
+        intercept          = intercept_local,
+        verbose            = verbose
+      )
+
+      if (!is.null(os_result_bswsp_dur) && is.data.frame(os_result_bswsp_dur)) {
+        dur_os_results$bond_stock_with_sp <- os_result_bswsp_dur
+        if (verbose) message("  SUCCESS: ", ncol(os_result_bswsp_dur) - 1, " models evaluated")
+      } else {
+        warning("  os_asset_pricing returned NULL or invalid result")
+      }
+
+    }, error = function(e) {
+      warning("  ERROR in bond_stock_with_sp duration OOS pricing: ", e$message)
+      if (verbose) message("  Stack trace: ", paste(capture.output(traceback()), collapse = "\n"))
+    })
+  }
+} else {
+  if (verbose) {
+    message("  Skipping Panel C: missing requirements")
+    message("    bswsp_dur_env: ", if(is.null(bswsp_dur_env)) "NULL" else "OK")
+    message("    Rb_dur_oos: ", if(is.null(Rb_dur_oos)) "NULL" else "OK")
+    message("    Rs_dur_oos: ", if(is.null(Rs_dur_oos)) "NULL" else "OK")
+  }
+}
+
+# ---- Panel D: bond OS (duration) ----
+if (verbose) message("\n--- Panel D: bond OOS (duration) ---")
+
+if (!is.null(bond_dur_env) && !is.null(Rb_dur_oos)) {
+
+  # Check required objects exist before proceeding
+  required_objs_bond <- c("IS_AP", "f1", "kns_out", "rp_out", "frequentist_models", "intercept")
+  missing_objs_bond <- required_objs_bond[!sapply(required_objs_bond, exists, envir = bond_dur_env)]
+
+  if (length(missing_objs_bond) > 0) {
+    warning("  Missing objects in bond duration: ", paste(missing_objs_bond, collapse = ", "))
+    if (verbose) message("  Skipping Panel D due to missing objects")
+  } else {
+
+    tryCatch({
+      if (verbose) message("  Bond OOS assets: ", ncol(Rb_dur_oos) - 1, " portfolios")
+
+      # Extract required objects from environment
+      IS_AP_local <- get("IS_AP", envir = bond_dur_env)
+      frequentist_models_local <- get("frequentist_models", envir = bond_dur_env)
+      kns_out_local <- get("kns_out", envir = bond_dur_env)
+      rp_out_local <- get("rp_out", envir = bond_dur_env)
+      pca_out_local <- if (exists("pca_out", envir = bond_dur_env)) get("pca_out", envir = bond_dur_env) else NULL
+      intercept_local <- get("intercept", envir = bond_dur_env)
+
+      # Get f1, f2, fac_freq from data_list if available
+      if (exists("data_list", envir = bond_dur_env)) {
+        data_list_local <- get("data_list", envir = bond_dur_env)
+        f1_local <- data_list_local$f1
+        f2_local <- data_list_local$f2
+        fac_freq_local <- data_list_local$fac_freq
+        if (verbose) message("  Using data from data_list (f1, f2, fac_freq)")
+      } else {
+        f1_local <- get("f1", envir = bond_dur_env)
+        f2_local <- if (exists("f2", envir = bond_dur_env)) get("f2", envir = bond_dur_env) else NULL
+        fac_freq_local <- read.csv(file.path(data_folder, "frequentist_factors.csv"), check.names = FALSE)
+        if (verbose) message("  Using f1/f2 from env, fac_freq from CSV")
+      }
+
+      if (verbose) {
+        message("  f1: ", nrow(f1_local), " x ", ncol(f1_local))
+        message("  f2: ", if(is.null(f2_local)) "NULL" else paste(nrow(f2_local), "x", ncol(f2_local)))
+        message("  fac_freq: ", nrow(fac_freq_local), " x ", ncol(fac_freq_local))
+      }
+
+      # Run OOS pricing
+      if (verbose) message("  Running os_asset_pricing()...")
+      os_result_bond_dur <- os_asset_pricing(
+        R_oss              = Rb_dur_oos,
+        IS_AP              = IS_AP_local,
+        f1                 = f1_local,
+        f2                 = f2_local,
+        fac_freq           = fac_freq_local,
+        frequentist_models = frequentist_models_local,
+        kns_out            = kns_out_local,
+        rp_out             = rp_out_local,
+        pca_out            = pca_out_local,
+        intercept          = intercept_local,
+        verbose            = verbose
+      )
+
+      if (!is.null(os_result_bond_dur) && is.data.frame(os_result_bond_dur)) {
+        dur_os_results$bond <- os_result_bond_dur
+        if (verbose) message("  SUCCESS: ", ncol(os_result_bond_dur) - 1, " models evaluated")
+      } else {
+        warning("  os_asset_pricing returned NULL or invalid result")
+      }
+
+    }, error = function(e) {
+      warning("  ERROR in bond duration OOS pricing: ", e$message)
+      if (verbose) message("  Stack trace: ", paste(capture.output(traceback()), collapse = "\n"))
+    })
+  }
+} else {
+  if (verbose) {
+    message("  Skipping Panel D: missing requirements")
+    message("    bond_dur_env: ", if(is.null(bond_dur_env)) "NULL" else "OK")
+    message("    Rb_dur_oos: ", if(is.null(Rb_dur_oos)) "NULL" else "OK")
+  }
+}
+
+# ---- Build Duration Pricing Table ----
+if (verbose) message("\n--- Building Duration Pricing Table ---")
+
+# Check if we have any results
+has_dur_results <- !is.null(dur_is_results$bond_stock_with_sp) ||
+                   !is.null(dur_is_results$bond) ||
+                   !is.null(dur_os_results$bond_stock_with_sp) ||
+                   !is.null(dur_os_results$bond)
+
+if (!has_dur_results) {
+  warning("  No duration pricing results available! Skipping duration table.")
+} else {
+  dur_latex_lines <- c(
+    "\\begin{table}[tbp] ",
+    "\\begin{center}",
+    "\\caption{Cross-sectional asset pricing performance:  Duration-adjusted bond returns}\\label{tab:is_pricing_duration_baseline}",
+    "\\resizebox{16.5cm}{!}{%",
+    "\\begin{tabular}{lcccc|ccccccc}\\toprule",
+    " & \\multicolumn{4}{c}{BMA-SDF prior Sharpe ratio} & CAPM & CAPMB & FF5 & HKM & TOP & KNS & RPPCA \\\\ \\cmidrule(lr){2-5}",
+    " & 20\\% & 40\\% & 60\\% & \\multicolumn{1}{c}{80\\%} &  &  &  &  &  &  &  \\\\ \\midrule"
+  )
+
+  # Panel A: In-sample co-pricing
+  if (!is.null(dur_is_results$bond_stock_with_sp)) {
+    dur_latex_lines <- c(dur_latex_lines,
+                         "\\multicolumn{12}{c}{\\textbf{Panel A}: In-sample co-pricing stocks and bonds} \\\\ \\midrule",
+                         build_pricing_panel_rows(dur_is_results$bond_stock_with_sp, model_cols),
+                         "\\midrule")
+    if (verbose) message("  Added Panel A: In-sample co-pricing")
+  }
+
+  # Panel B: In-sample pricing bonds
+  if (!is.null(dur_is_results$bond)) {
+    dur_latex_lines <- c(dur_latex_lines,
+                         "\\multicolumn{12}{c}{\\textbf{Panel B}: In-sample pricing bonds} \\\\ \\midrule",
+                         build_pricing_panel_rows(dur_is_results$bond, model_cols),
+                         "\\midrule")
+    if (verbose) message("  Added Panel B: In-sample pricing bonds")
+  }
+
+  # Panel C: Out-of-sample co-pricing
+  if (!is.null(dur_os_results$bond_stock_with_sp)) {
+    dur_latex_lines <- c(dur_latex_lines,
+                         "\\multicolumn{12}{c}{\\textbf{Panel C}: Out-of-sample co-pricing stocks and bonds} \\\\ \\midrule",
+                         build_pricing_panel_rows(dur_os_results$bond_stock_with_sp, model_cols),
+                         "\\midrule")
+    if (verbose) message("  Added Panel C: Out-of-sample co-pricing")
+  }
+
+  # Panel D: Out-of-sample pricing bonds
+  if (!is.null(dur_os_results$bond)) {
+    dur_latex_lines <- c(dur_latex_lines,
+                         "\\multicolumn{12}{c}{\\textbf{Panel D}: Out-of-sample pricing bonds} \\\\ \\midrule",
+                         build_pricing_panel_rows(dur_os_results$bond, model_cols))
+    if (verbose) message("  Added Panel D: Out-of-sample pricing bonds")
+  }
+
+  # Close table
+  dur_latex_lines <- c(dur_latex_lines,
+                       "\\bottomrule",
+                       "\\end{tabular}}",
+                       "\\end{center}",
+                       "\\begin{spacing}{0.80}",
+                       "{\\footnotesize ",
+                       "The table presents the cross-sectional in and out-of-sample asset pricing performance of different models pricing (duration-adjusted) bonds and stocks jointly (Panels A and C), and (duration-adjusted) bonds only (Panels B and D), respectively. ",
+                       "For the BMA-SDF, we provide results for prior Sharpe ratio  values set to 20\\%, 40\\%, 60\\% and 80\\% of the ex post maximum Sharpe ratio of the test assets. ",
+                       "TOP includes the top five factors with an average posterior probability greater than 50\\%. ",
+                       "CAPM is the standard single-factor model using MKTS, and CAPMB is the bond version using MKTB. ",
+                       "FF5 is the five-factor model of \\cite{FamaFrench_1993}, HKM is the two-factor model of \\citet{HeKellyManela_2017}. ",
+                       "KNS stands for the SDF estimation of \\citet{KozakNagelSantosh_2020} and RPPCA is the  risk premia PCA of \\cite{LettauPelger_2020}. ",
+                       "Estimation details for the benchmark models are given in Appendix \\ref{sec:benchmark_models}.",
+                       "Bond returns are computed in excess of a duration matched portfolio of U.S. Treasury bonds.",
+                       "In Panels A and B the models are estimated with the respective factor zoos and test assets.  The resulting SDF is then used to price (with no additional parameter estimation) the two sets of the OS assets in Panels C and D.    ",
+                       "IS test assets are the 83 bond and stock portfolios and the 40 tradable bond and stock factors (Panel A), and the 50 bond portfolios and  16 tradable bond factors (Panel B), respectively. ",
+                       "OS test assets are the combined 154 bond and stock portfolios (Panel C), as well as the 77 bond portfolios only (Panel D). ",
+                       "All are described in Section \\ref{sec:data}. ",
+                       "All data is standardized, that is, pricing errors are in Sharpe ratio units. The sample period is 1986:01 to 2022:12 ($T=444$).",
+                       "}",
+                       "",
+                       "",
+                       "\\end{spacing}",
+                       "\\end{table} ")
+
+  # Write output
+  dur_tex_path <- file.path(tables_dir, "table_duration_pricing.tex")
+  writeLines(dur_latex_lines, dur_tex_path)
+  if (verbose) message("  Saved: ", dur_tex_path)
+}
+
+# Clean up duration environments
+if (exists("bswsp_dur_env") && !is.null(bswsp_dur_env)) rm(bswsp_dur_env)
+if (exists("bond_dur_env") && !is.null(bond_dur_env)) rm(bond_dur_env)
+gc(verbose = FALSE)
 
 
 ###############################################################################
