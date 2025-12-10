@@ -93,7 +93,7 @@ This will populate the `data/` folder with all required CSV files.
 Rscript _run_full_replication.R
 ```
 
-This automatically runs all 5 steps below. Runtime varies by hardware: ~1-2 hours (server with 24+ cores), ~3-4 hours (desktop), ~6 hours (laptop). For a quick test:
+This automatically runs all 5 steps below. Runtime varies by hardware: ~1-2.5 hours (server with 24 cores), ~4-6 hours (laptop, with less optimized cores). For a quick test:
 
 ```bash
 Rscript _run_full_replication.R --quick
@@ -144,7 +144,7 @@ Rscript _run_all_conditional.R --ndraws=5000
 - Uses 8 cores total (4 per model)
 - Creates `.rds` files in `output/time_varying/`
 
-**Expected runtime:** ~20-40 minutes total (per estimation window: ~20 min laptop, ~6 min server)
+**Expected runtime:** (~1-2 hours, parallel by default)
 
 ### Step 5: Generate Paper Tables and Figures (Unconditional)
 
