@@ -337,17 +337,50 @@ run_bayesian_mcmc_time_varying <- function(
   } else if (model_type == "treasury") {
     # Treasury: all factors treated as non-traded FOR BMA estimation
     # But we preserve f2_matrix for benchmark models (KNS, RP-PCA, PCA)
+    #
+    # IMPORTANT: For downstream analysis (pp_bar_plots, generate_sr_tables),
+    # we preserve the TRUE factor types based on the tag:
+    #   - tag contains "bond" → f2 factors are bond factors
+    #   - tag contains "stock" → f2 factors are stock factors
+
+    # Determine factor type from tag
+    f2_names <- colnames(f2_matrix)
+    if (grepl("bond", tag, ignore.case = TRUE)) {
+      treasury_bond_names <- f2_names
+      treasury_stock_names <- NULL
+      treasury_n_bondfac <- length(f2_names)
+      treasury_n_stockfac <- NULL
+      if (verbose) message("  Treasury: f2 factors classified as BOND (inferred from tag '", tag, "')")
+    } else if (grepl("stock", tag, ignore.case = TRUE)) {
+      treasury_bond_names <- NULL
+      treasury_stock_names <- f2_names
+      treasury_n_bondfac <- NULL
+      treasury_n_stockfac <- length(f2_names)
+      if (verbose) message("  Treasury: f2 factors classified as STOCK (inferred from tag '", tag, "')")
+    } else {
+      # Fallback: cannot determine, set both to NULL with warning
+      warning("Treasury model tag '", tag, "' does not contain 'bond' or 'stock'. ",
+              "Cannot determine f2 factor type. Setting bond_names and stock_names to NULL.")
+      treasury_bond_names <- NULL
+      treasury_stock_names <- NULL
+      treasury_n_bondfac <- NULL
+      treasury_n_stockfac <- NULL
+    }
+
+    # Handle case where f1_matrix might be NULL
+    f1_cols <- if (is.null(f1_matrix)) character(0) else colnames(f1_matrix)
+
     fac <- list(
       f1 = if (is.null(f1_matrix)) f2_matrix else cbind(f1_matrix, f2_matrix),
       f2 = NULL,                          # NULL for BMA estimation
       f2_benchmarks = f2_matrix,          # Preserved for KNS/RP-PCA/PCA "f2 only" versions
       f_all_raw = if (is.null(f1_matrix)) f2_matrix else cbind(f1_matrix, f2_matrix),
-      n_nontraded = if (is.null(f1_matrix)) ncol(f2_matrix) else (ncol(f1_matrix) + ncol(f2_matrix)),
-      n_bondfac = NULL,
-      n_stockfac = NULL,
-      nontraded_names = if (is.null(f1_matrix)) colnames(f2_matrix) else c(colnames(f1_matrix), colnames(f2_matrix)),
-      bond_names = NULL,
-      stock_names = NULL,
+      n_nontraded = if (is.null(f1_matrix)) 0 else ncol(f1_matrix),  # Only truly non-traded
+      n_bondfac = treasury_n_bondfac,
+      n_stockfac = treasury_n_stockfac,
+      nontraded_names = f1_cols,  # Only truly non-traded factors
+      bond_names = treasury_bond_names,
+      stock_names = treasury_stock_names,
       all_factor_names = if (is.null(f1_matrix)) colnames(f2_matrix) else c(colnames(f1_matrix), colnames(f2_matrix))
     )
   } else {
