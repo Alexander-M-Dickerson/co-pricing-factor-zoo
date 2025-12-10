@@ -330,3 +330,29 @@ To account for the overlapping nature of the observations in Panel B, we constru
 \label{fig:predict_with_SDF}
 \end{figure}
 
+% Figure 13
+\begin{figure}[tb!]
+\begin{center}
+\includegraphics[scale=.45, trim = 0cm 0cm 0cm 0cm,clip]{Figures/fig13_cum_sr_80pct.pdf}
+\end{center}
+\vspace{-4mm}
+\caption{Cumulative co-pricing SDF-implied Sharpe ratio.}
+\vspace{-2mm}
+\begin{justify}
+\begin{spacing}{1}
+\footnotesize{
+The figure shows the cumulative factor-implied Sharpe ratio as factors are added in order of their posterior probability $\mathbb{E}[\gamma_j|\text{data}]$.
+Each point represents the Sharpe ratio achievable using factors up to and including that factor, with factors ordered by their posterior inclusion probability (highest first).
+The shaded area represents the 8th to 92nd percentile of the posterior distribution.
+The dashed vertical line indicates the median number of factors in the posterior distribution.
+Colors indicate factor type: red for stock tradable factors, light blue for bond tradable factors, and dark blue for nontradable factors.
+Results are shown for prior Sharpe ratio shrinkage set to 80\% of the ex post maximum Sharpe ratio.
+The model uses duration-adjusted bond returns and is estimated using the 83 bond and stock portfolios and 40 tradable factors described in Section \ref{sec:data}.
+The sample period is 1986:01 to 2022:12 ($T = 444$).
+}
+\end{spacing}
+\end{justify}
+\vspace{-12mm}
+\label{fig:cum_sr}
+\end{figure}
+
