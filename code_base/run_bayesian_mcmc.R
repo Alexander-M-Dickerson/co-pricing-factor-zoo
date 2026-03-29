@@ -45,6 +45,7 @@
 #' @param verbose        Print progress messages?
 #' @param fac_to_drop    List of factor names to exclude (optional)
 #' @param weighting      Weighting scheme: "GLS" or "OLS"
+#' @param self_pricing_engine Engine for kappa=0 self-pricing models: "fast" or "reference"
 #' @param parallel_type  Parallel backend: "auto" (detect best), "PSOCK", "FORK", or "sequential"
 #' @param cluster_timeout Seconds to wait for cluster creation before fallback (default: 30)
 #'
@@ -122,6 +123,7 @@ run_bayesian_mcmc <- function(
   verbose       = TRUE,
   fac_to_drop   = NULL,
   weighting     = "GLS",
+  self_pricing_engine = c("fast", "reference"),
   parallel_type = "auto",
   cluster_timeout = 30
 ) {
@@ -142,6 +144,7 @@ run_bayesian_mcmc <- function(
   }
   
   return_type <- match.arg(return_type, c("excess", "duration"))
+  self_pricing_engine <- match.arg(self_pricing_engine)
   if (num_cores < 1L) stop("`num_cores` must be >= 1")
   
   # Determine if multi-file mode
@@ -561,7 +564,7 @@ run_bayesian_mcmc <- function(
   )
 
   # We will compile locally but send a plain function to workers (cmpfun on PSOCK can be brittle)
-  make_CJ_ss <- function(use_multi_asset, use_kappa_no_sp) {
+  make_CJ_ss <- function(use_multi_asset, use_kappa_no_sp, self_pricing_engine) {
     if (is.null(f2)) {
       # treasury (no self-pricing)
       if (use_kappa_no_sp) {
@@ -573,6 +576,8 @@ run_bayesian_mcmc <- function(
       # self-pricing
       if (use_multi_asset) {
         return(continuous_ss_sdf_multi_asset)
+      } else if (identical(self_pricing_engine, "fast")) {
+        return(continuous_ss_sdf_v2_fast)
       } else {
         return(BayesianFactorZoo::continuous_ss_sdf_v2)
       }
@@ -581,10 +586,12 @@ run_bayesian_mcmc <- function(
 
   CJ_ss_plain <- if (is.null(f2)) {
     make_CJ_ss(use_multi_asset = FALSE,
-               use_kappa_no_sp = (!is.null(kappa) && any(kappa != 0)))
+               use_kappa_no_sp = (!is.null(kappa) && any(kappa != 0)),
+               self_pricing_engine = self_pricing_engine)
   } else {
     make_CJ_ss(use_multi_asset = (!is.null(kappa) && any(kappa != 0)),
-               use_kappa_no_sp = FALSE)
+               use_kappa_no_sp = FALSE,
+               self_pricing_engine = self_pricing_engine)
   }
 
   # Create parallel cluster with timeout protection
@@ -666,6 +673,8 @@ run_bayesian_mcmc <- function(
     
     CJ_ss <- if (use_multi_asset) {
       compiler::cmpfun(continuous_ss_sdf_multi_asset)
+    } else if (identical(self_pricing_engine, "fast")) {
+      compiler::cmpfun(continuous_ss_sdf_v2_fast)
     } else {
       compiler::cmpfun(BayesianFactorZoo::continuous_ss_sdf_v2)
     }
@@ -674,7 +683,14 @@ run_bayesian_mcmc <- function(
     
     if (verbose) {
       message("Running MCMC (self-pricing, GLS",
-              if (use_multi_asset) " + kappa" else "", ") ...")
+              if (use_multi_asset) {
+                " + kappa"
+              } else if (identical(self_pricing_engine, "fast")) {
+                ", fast engine"
+              } else {
+                ", reference engine"
+              },
+              ") ...")
     }
     
     t0 <- Sys.time()
