@@ -1,0 +1,37 @@
+name: Usability Smoke
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - name: Validate repo docs and manifests
+        run: Rscript tools/validate_repo_docs.R
+
+      - name: Smoke main entrypoints
+        run: |
+          Rscript _run_full_replication.R --help
+          Rscript _run_all_unconditional.R --list
+          Rscript _run_all_conditional.R --help
+          Rscript ia/_run_ia_estimation.R --list

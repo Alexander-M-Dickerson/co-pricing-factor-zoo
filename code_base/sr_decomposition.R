@@ -3,6 +3,10 @@
 # =========================================================================
 # Decomposes the SDF Sharpe ratio contribution by factor type/group.
 #
+# Paper role: map posterior BMA-SDF draws into the factor-group decompositions
+# used in the main text and Treasury-component robustness sections.
+# Paper refs: Eq. (7); Table 1; Table 4; Table 5; Table IA.XVIII; IA.5; IA.6
+#
 # Mathematical Background
 # -----------------------
 # The stochastic discount factor (SDF) is:
@@ -122,6 +126,9 @@ sr_decomposition <- function(results,
   ## 4.  Helper – SDF builder
   ## ------------------------------------------------------------------ #
   process_row <- function(lambda_vec, sel_sd, sel_fac) {
+    # Paper: Eq. (7) forms a draw-specific SDF from the posterior market prices
+    # of risk; group-level SR contributions are computed by zeroing out the
+    # complement set of factors.
     lam_scaled <- lambda_vec / sel_sd
     sdf        <- 1 - sel_fac %*% lam_scaled
     sdf        <- sdf - mean(sdf) + 1

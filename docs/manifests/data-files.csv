@@ -1,0 +1,16 @@
+path,required_for,required,source,description,notes
+data/nontraded.csv,main paper; conditional; IA,yes,Open Source Bond Asset Pricing or current project bundle,Non-traded macro and sentiment factor panel,First column must be the date column
+data/traded_bond_excess.csv,main paper excess runs; IA,yes,Open Source Bond Asset Pricing or current project bundle,Tradable bond factor returns in excess-return form,Used in baseline bond and joint excess models
+data/traded_equity.csv,main paper; IA,yes,Open Source Bond Asset Pricing or current project bundle,Tradable equity factor returns,Used in stock and joint models
+data/traded_bond_duration_tmt.csv,main paper duration runs,yes,Open Source Bond Asset Pricing or current project bundle,Tradable bond factor returns in duration-adjusted form,Used in duration-adjusted bond and joint models
+data/bond_insample_test_assets_50_excess.csv,main paper excess runs; IA,yes,Open Source Bond Asset Pricing or current project bundle,In-sample bond test assets in excess-return form,Used in bond and joint excess estimation
+data/bond_insample_test_assets_50_duration_tmt.csv,main paper duration runs,yes,Open Source Bond Asset Pricing or current project bundle,In-sample bond test assets in duration-adjusted form,Used in duration-adjusted estimation
+data/bond_insample_test_assets_50_duration_tmt_tbond.csv,main paper treasury branch; IA treasury,yes,Open Source Bond Asset Pricing or current project bundle,Treasury-style in-sample test assets used for treasury component runs,Used by both main and IA treasury analyses
+data/equity_anomalies_composite_33.csv,main paper; IA,yes,Open Source Bond Asset Pricing or current project bundle,In-sample equity anomaly test assets,Used in stock and joint estimation
+data/frequentist_factors.csv,benchmark comparisons,yes,Open Source Bond Asset Pricing or current project bundle,Frequentist benchmark factor panel,Feeds benchmark pricing and SDF comparisons
+data/bond_oosample_all_excess.csv,main paper OOS pricing; IA sparse and isos,yes,Open Source Bond Asset Pricing or current project bundle,Out-of-sample bond test assets in excess-return form,Used by Table 3 and selected IA robustness outputs
+data/bond_oosample_all_duration_tmt.csv,main paper duration OOS pricing,yes,Open Source Bond Asset Pricing or current project bundle,Out-of-sample bond test assets in duration-adjusted form,Used by duration-adjusted out-of-sample pricing exercises
+data/equity_os_77.csv,main paper OOS pricing; IA sparse and isos,yes,Open Source Bond Asset Pricing or current project bundle,Out-of-sample equity anomaly test assets,Used by Table 3 and selected IA robustness outputs
+data/treasury_oosample_all_excess.csv,main paper treasury diagnostics,yes,Open Source Bond Asset Pricing or current project bundle,Out-of-sample Treasury returns for covariance diagnostics,Used by Figure 9
+data/variance_decomp_results_vuol.rds,main paper DR versus CF decomposition,yes,Current project bundle,Discount-rate versus cash-flow decomposition input,Used by Table 5
+ia/data/w_all.rds,IA treasury_weighted branch,no,Current project bundle or maintainer-provided IA artifact,DR-tilt kappa weights for the weighted treasury IA branch,Only required for weighted-treasury IA outputs

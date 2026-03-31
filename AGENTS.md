@@ -1,8 +1,9 @@
 # AGENTS.md
 
 Canonical repo guidance for coding agents working in this repository. Keep durable,
-repo-specific instructions here. Tool-specific files such as `CLAUDE.md` or
-`.github/copilot-instructions.md` should stay thin and defer to this document.
+repo-specific instructions here. Tool-specific entrypoints such as `CLAUDE.md`
+should remain aligned with this document and the shared docs under
+`docs/agent-context/`.
 
 ## Repo Mission
 
@@ -18,10 +19,63 @@ Primary goals:
 - preserve clear separation between upstream package code, local extensions, input
   data, and generated outputs
 
+## Agent Surfaces
+
+The repo is set up so Codex and Claude are both first-class entrypoints over the
+same shared knowledge base.
+
+Shared core:
+
+- `AGENTS.md`: canonical repo rules, invariants, and routing
+- `docs/agent-context/`: shared paper, pipeline, and output context
+- `docs/manifests/`: machine-readable data and exhibit maps
+- `docs/paper/`: canonical full-paper source for deep equation and appendix lookup
+- `code_review.md`: repo-specific review checklist for correctness and replication risks
+
+Codex-native surfaces:
+
+- `.codex/config.toml`
+- `.agents/skills/`
+
+Claude-native surfaces:
+
+- `CLAUDE.md`
+- `.claude/paper-context.md`
+- `.claude/skills/`
+
+Mirrored repo skills:
+
+- Codex: `$replication-onboard`, `$replicate-paper`, `$explain-paper`
+- Claude: `/onboard`, `/replicate-paper`, `/explain-paper`
+
+Directory-specific overrides:
+
+- `BayesianFactorZoo/AGENTS.override.md`
+- `ia/AGENTS.md`
+- `testing/AGENTS.md`
+
+## Shared Context Map
+
+High-value shared docs under `docs/agent-context/`:
+
+- `replication-onboarding.md`
+- `replication-pipeline.md`
+- `paper-reading-guide.md`
+- `paper-method.md`
+- `paper-results-main.md`
+- `paper-results-ia.md`
+- `tables-guide.md`
+- `figures-guide.md`
+- `factors-reference.md`
+
+Canonical full-paper source:
+
+- `docs/paper/co-pricing-factor-zoo.ai-optimized.md`
+
 ## High-Value File Map
 
 - Root runner scripts:
-  - `_run_full_replication.R`: end-to-end replication entrypoint
+  - `_run_full_replication.R`: main five-step replication entrypoint
   - `_run_all_unconditional.R`: batch unconditional estimation across model specs
   - `_run_all_conditional.R`: batch time-varying estimation
   - `_run_paper_results.R`: unconditional tables and figures
@@ -32,10 +86,22 @@ Primary goals:
 - `BayesianFactorZoo/`: local copy of the upstream BHJ package used as the base
   implementation. Treat this as upstream/reference code; prefer extending behavior
   in `code_base/` unless the change intentionally modifies package internals.
+- `ia/`: Internet Appendix estimation and output pipeline.
+- `testing/`: targeted validation and harness scripts.
+- `tools/bootstrap_packages.R`: canonical installable R package set
+- `tools/doctor.R`: public readiness check for packages, data, toolchain, and fast backends
+- `tools/validate_repo_docs.R`: doc and context drift check
+- `docs/manifests/`: source-of-truth CSV manifests for inputs and exhibits
 - `data/`: input data and cached intermediate data. Files here are gitignored.
 - `output/` and `logs/`: generated results and runtime logs. These are gitignored.
 - `README.md`, `QUICKSTART.md`, `README_PAPER_PIPELINE.md`: human-facing usage and
   pipeline documentation.
+
+Replication coverage today:
+
+- all main paper tables and figures
+- all main Appendix tables and figures
+- some Internet Appendix results
 
 ## Default Execution Flow
 
@@ -55,6 +121,9 @@ other derived outputs under `output/`.
 
 When orienting in the codebase, start with `code_base/run_bayesian_mcmc.R` for
 estimation behavior and the root `_run_*.R` scripts for orchestration.
+
+For execution guidance, also read `docs/agent-context/replication-pipeline.md`.
+For exact equation and appendix references, use `docs/paper/co-pricing-factor-zoo.ai-optimized.md`.
 
 ## Domain Invariants You Must Preserve
 
@@ -80,16 +149,24 @@ estimation behavior and the root `_run_*.R` scripts for orchestration.
 
 ### MCMC dispatch behavior
 
-- `kappa = 0` or `NULL` with tradable factors present: use
-  `BayesianFactorZoo::continuous_ss_sdf_v2`
-- `kappa = 0` or `NULL` with no `f2`: use
-  `BayesianFactorZoo::continuous_ss_sdf`
-- nonzero `kappa` with tradable factors present: use the local multi-asset-weight
-  extension in `code_base/`
-- nonzero `kappa` with no `f2`: use the local no-self-pricing extension in
-  `code_base/`
-- Current default behavior is `kappa = 0`, which routes to the package
-  implementation.
+There are two distinct decisions in the current code:
+
+- Prior calibration:
+  - `kappa = NULL`: use `BayesianFactorZoo::psi_to_priorSR`
+  - any supplied `kappa` object, including zero-valued numeric vectors: use the
+    local `psi_to_priorSR_multi_asset*` helper path
+- Sampler dispatch:
+  - tradable factors present and any `kappa != 0`: use the local multi-asset-weight
+    extension in `code_base/`
+  - no `f2` and any `kappa != 0`: use the local no-self-pricing extension in
+    `code_base/`
+  - otherwise: use the baseline package sampler path
+    (`BayesianFactorZoo::continuous_ss_sdf_v2` or
+    `BayesianFactorZoo::continuous_ss_sdf`), with fast wrappers when enabled
+
+Most baseline runner scripts still pass `kappa = 0`, so the sampler remains on
+the package path even though prior calibration may flow through the local helper
+because `kappa` is not `NULL`.
 
 ### Data and naming invariants
 
@@ -134,6 +211,8 @@ estimation behavior and the root `_run_*.R` scripts for orchestration.
   output folders rather than mixing them into source directories.
 - Do not commit generated `.Rdata`, `.rds`, `.csv`, `.pdf`, or log artifacts unless
   the task explicitly requires tracked fixture data.
+- Use `docs/manifests/exhibits.csv` when you need the paper-to-output mapping
+  before reading helper code in depth.
 
 ## Validation Expectations
 
@@ -151,12 +230,15 @@ Prefer one of these levels of verification:
 Useful commands from the repo root:
 
 ```bash
+Rscript tools/validate_repo_docs.R
 Rscript _run_full_replication.R --help
 Rscript _run_all_unconditional.R --ndraws=5000
 Rscript _run_all_conditional.R --ndraws=5000
 ```
 
 If a validation run is too expensive or blocked by missing data, say that plainly.
+
+For review-specific expectations, also read `code_review.md`.
 
 ## Common Mistakes To Avoid
 
@@ -167,6 +249,7 @@ If a validation run is too expensive or blocked by missing data, say that plainl
   contain the correct vectors
 - silently dropping matrix dimensions during subsetting
 - treating generated outputs as source files
+- describing the IA pipeline from stale prose instead of `ia/_run_ia_estimation.R`
 
 ## Maintainer Note
 

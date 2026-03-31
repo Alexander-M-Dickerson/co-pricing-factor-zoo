@@ -1,0 +1,4 @@
+interface:
+  display_name: "Replication Onboard"
+  short_description: "Prepare this repo to run on a new machine."
+  default_prompt: "Use $replication-onboard to set up or verify this repository's replication environment."

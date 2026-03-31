@@ -1,3 +1,8 @@
+## Paper role: Local self-pricing Gibbs sampler with heterogeneous class tilts
+## for tradable and non-tradable factors.
+## Paper refs: Eq. (1), Eq. (5), Eq. (6), Eq. (7)-(8), Appendix B;
+##   docs/paper/co-pricing-factor-zoo.ai-optimized.md
+
 continuous_ss_sdf_multi_asset <- function (f1, f2, R, sim_length,
                                            psi0      = 1,
                                            r         = 0.001,
@@ -38,6 +43,8 @@ continuous_ss_sdf_multi_asset <- function (f1, f2, R, sim_length,
   
   scaling <- 1 + κ_vec                                  # per-factor multiplier
   
+  # Paper: Eq. (6) perturbs the diagonal prior precision by factor class while
+  # preserving the self-pricing treatment of tradable factors in the v2 setup.
   ## ---- 2. pre-computations (unchanged) ---------------------------------
   Sigma_ols <- cov(Y)
   Corr_ols  <- cor(Y)
@@ -93,6 +100,9 @@ continuous_ss_sdf_multi_asset <- function (f1, f2, R, sim_length,
     # ----- κ-scaled (r_gamma * psi)  -------------------------------------
     rpsi_scaled <- scaling * r_gamma * psi   # length-k vector
     
+    # Paper: D is the diagonal prior precision matrix for lambda. The local
+    # extension replaces r_gamma * psi with the kappa-tilted version implied by
+    # Eq. (6) before drawing posterior market prices of risk.
     D <- if (intercept) {
       diag(c(1 / 1e5, 1 / rpsi_scaled))
     } else if (k == 1) {

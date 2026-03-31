@@ -22,6 +22,13 @@
 #' @param date_end Character or Date, estimation label (defaults to "unconditional")
 #' @param drop_draws_pct Burn-in percentage (0-0.5)
 #'
+#' Paper refs:
+#'   - Eq. (7)-(8): posterior BMA-SDF summaries, inclusion probabilities,
+#'     and market prices of risk
+#'   - Table 1, Table 2, Table 4, Table 6 Panel A
+#'   - Figure 2, Figure 4, Figure 7 benchmark portfolio inputs
+#'   - docs/paper/co-pricing-factor-zoo.ai-optimized.md
+#'
 #' @return List with elements:
 #'   - lambdas: Raw lambda estimates (1-row matrices)
 #'   - scaled_lambdas: Lambdas descaled by factor SDs
@@ -67,6 +74,9 @@ insample_asset_pricing_enhanced <- function(results, f_all, R, f1, f2,
   is_nested_rp <- !is.null(rp_out) && !is.null(rp_out$combined)
   is_nested_pca <- !is.null(pca_out) && !is.null(pca_out$combined)
   
+  # Paper: these posterior means are the code-level source for the factor
+  # probabilities and market prices of risk reported in Figure 2, Figure 4,
+  # Table A.2, and related summary tables.
   ## ---- BMA results extraction with burn-in handling -------------
   for (i in 1:4){
     # Calculate number of draws to keep (drop burn-in period)
@@ -156,6 +166,8 @@ insample_asset_pricing_enhanced <- function(results, f_all, R, f1, f2,
   })
   
   
+  # Paper: the optimal SDF-mimicking portfolios built below feed the trading
+  # exercises summarized in Table 6 and Figure 7.
   #### BMA Pricing ####
   # Compute factor matrix for correlation (handle NULL f1)
   f_combined <- if (is.null(f1)) f2 else cbind(f1, f2)

@@ -4,9 +4,13 @@
 ## ---------------------------------------------------------------------------
 ##
 ## This script runs the complete IA pipeline:
-##   1. Estimate all 5 models (parallel by default)
-##   2. Generate tables and figures
+##   1. Estimate the 9 IA-related models defined in ia/_run_ia_estimation.R
+##   2. Generate the currently implemented IA tables and figures
 ##   3. Compile LaTeX document
+##
+## Paper role: Convenience wrapper around the implemented IA subset.
+## Paper refs: IA.6, IA.7, IA.9, IA.10; docs/paper/co-pricing-factor-zoo.ai-optimized.md
+## Outputs: ia/output/unconditional/, ia/output/paper/, compiled IA LaTeX
 ##
 ## USAGE:
 ##   Rscript ia/_run_ia_full.R [options]
@@ -68,7 +72,9 @@ if (!skip_estimation) {
 
   # Build command
   estim_script <- file.path(main_path, "ia", "_run_ia_estimation.R")
-  estim_cmd <- paste("Rscript", shQuote(estim_script), paste(estim_args, collapse = " "))
+  rscript <- normalizePath(file.path(R.home("bin"), "Rscript"), winslash = "/", mustWork = FALSE)
+  if (.Platform$OS.type == "windows") rscript <- paste0(rscript, ".exe")
+  estim_cmd <- paste(shQuote(rscript), shQuote(estim_script), paste(estim_args, collapse = " "))
 
   cat("Running:", estim_cmd, "\n\n")
 

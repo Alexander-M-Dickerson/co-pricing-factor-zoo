@@ -1,3 +1,7 @@
+// Paper role: Fast C++ kernel for the self-pricing tradable-factor sampler.
+// Paper refs: Eq. (1), Eq. (5), Eq. (7)-(8), Appendix B;
+// docs/paper/co-pricing-factor-zoo.ai-optimized.md
+
 // [[Rcpp::depends(RcppArmadillo)]]
 
 #include <RcppArmadillo.h>
@@ -5,8 +9,9 @@
 namespace {
 
 arma::mat invert_spd(const arma::mat& x, const std::string& label) {
+  arma::mat sym_x = 0.5 * (x + x.t());
   arma::mat out;
-  if (arma::inv_sympd(out, x)) {
+  if (arma::inv_sympd(out, sym_x)) {
     return out;
   }
   if (arma::inv(out, x)) {
@@ -142,6 +147,9 @@ Rcpp::List continuous_ss_sdf_v2_fast_cpp_impl(const arma::mat& f,
 
     const arma::mat corrR = corr_Y.submat(k1, k1, p - 1, p - 1);
 
+    // Paper: D is the diagonal prior precision matrix for lambda. This v2 path
+    // preserves self-pricing tradable factors while applying the baseline Eq. (5)
+    // spike-and-slab prior inside the Gibbs update.
     arma::mat D(lambda_dim, lambda_dim, arma::fill::zeros);
     if (intercept) {
       D(0, 0) = 1.0 / 100000.0;

@@ -471,7 +471,9 @@ collect_toolchain_status <- function() {
   compile_message <- "Skipped compile probe."
   if (has_rcpp && nzchar(make_path)) {
     probe <- tryCatch({
-      env <- new.env(parent = emptyenv())
+      # Use a base-backed environment so the probe tests compilation, not missing
+      # core language bindings.
+      env <- new.env(parent = baseenv())
       Rcpp::cppFunction(
         code = "int add_ints(int x, int y) { return x + y; }",
         env = env

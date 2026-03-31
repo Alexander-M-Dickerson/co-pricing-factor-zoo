@@ -51,6 +51,15 @@
 #'
 #' @return Invisible list containing results, IS_AP, and output path
 #'
+#' Paper refs:
+#'   - Eq. (1): cross-sectional pricing relation for lambda and pricing errors
+#'   - Eq. (5): prior precision psi_j from factor-test-asset correlations
+#'   - Eq. (6): heterogeneous kappa tilt in local weighted extensions
+#'   - Eq. (7)-(8): BMA-SDF aggregation, posterior inclusion probabilities,
+#'     and posterior market prices of risk
+#'   - Eq. (10): duration-adjusted/Treasury-component runs when return_type="duration"
+#'   - Appendix B / docs/paper/co-pricing-factor-zoo.ai-optimized.md
+#'
 #' @examples
 #' \dontrun{
 #' # Single file mode
@@ -519,6 +528,8 @@ run_bayesian_mcmc <- function(
   ## ---- 9. Prior specification -----------------------------------------------
   if (verbose) message("Computing prior specifications...")
   
+  # Paper: Eq. (5) calibrates psi_j so the prior Sharpe ratio matches the
+  # requested SRscale share of the ex post maximum SR in the test-asset span.
   if (is.null(kappa)) {
     # No kappa: use BayesianFactorZoo::psi_to_priorSR
     Rc <- if (is.null(f2)) R_matrix else cbind(R_matrix, f2)
@@ -584,6 +595,9 @@ run_bayesian_mcmc <- function(
     }
   }
 
+  # Paper: this dispatch bridges the baseline BHJ sampler and the repo's Eq. (6)
+  # kappa-tilted variants. Self-pricing traded factors use the v2 kernels;
+  # Treasury/no-self-pricing runs use the no_sp path.
   CJ_ss_plain <- if (is.null(f2)) {
     make_CJ_ss(use_multi_asset = FALSE,
                use_kappa_no_sp = (!is.null(kappa) && any(kappa != 0)),
@@ -610,6 +624,18 @@ run_bayesian_mcmc <- function(
 
   # Register cleanup on exit
   on.exit(cluster_info$cleanup(), add = TRUE)
+
+  # Source code_base/ on PSOCK workers so fast kernels and helpers are available
+  if (isTRUE(cluster_info$has_cluster)) {
+    cluster_code_path <- normalizePath(code_path, winslash = "/", mustWork = TRUE)
+    parallel::clusterExport(cluster_info$cluster, varlist = "cluster_code_path", envir = environment())
+    parallel::clusterEvalQ(cluster_info$cluster, {
+      worker_r_files <- list.files(cluster_code_path, pattern = "[.][Rr]$", full.names = TRUE)
+      invisible(lapply(worker_r_files, source))
+      NULL
+    })
+  }
+
   ## ---- 11. MCMC estimation --------------------------------------------------
   # Determine self-pricing vs no-self-pricing based on f2 presence
   # Treasury models have f2=NULL (no-SP), others have f2 present (SP)
@@ -787,6 +813,9 @@ run_bayesian_mcmc <- function(
     pca_out <- NULL
   }
   ## ---- 13. In-Sample Asset Pricing -----------------------------------------
+  # Paper: IS_AP collects the posterior summaries used downstream for the main
+  # pricing tables, factor rankings, BMA-SDF mimicking portfolios, and trading
+  # results reported in Tables 1-6 and Figures 2-7.
   IS_AP <- insample_asset_pricing_enhanced(
     results   = results,
     f_all     = f_all_raw,

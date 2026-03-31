@@ -6,12 +6,21 @@
 ## This script runs the entire replication pipeline for:
 ##   "The Co-Pricing Factor Zoo" (Dickerson, Julliard, Mueller, JFE 2025)
 ##
+## Paper role: Top-level orchestrator for the main-text replication pipeline.
+## Paper refs: Sec. 3; Tables 1-6; Figures 2-7; Appendix A tables/figures;
+##   docs/paper/co-pricing-factor-zoo.ai-optimized.md
+## Outputs: output/unconditional/, output/time_varying/, output/paper/,
+##   final LaTeX assembly via _create_djm_tabs_figs.R
+##
 ## It sequentially executes all 5 steps:
 ##   1. Unconditional models (7 models, ~1-2 hours)
 ##   2. Conditional models (2 models, ~30-40 min)
 ##   3. Generate tables & figures (unconditional)
 ##   4. Generate tables & figures (conditional)
 ##   5. Compile LaTeX document
+##
+## Coverage note: this repo replicates all main-text tables/figures, all main
+## Appendix tables/figures, and a subset of Internet Appendix results.
 ##
 ## USAGE:
 ##   Rscript _run_full_replication.R [options]

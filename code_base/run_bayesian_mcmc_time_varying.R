@@ -57,6 +57,14 @@
 #'   - Calls insample_asset_pricing_time_varying() with date_end
 #'   - Saves only IS_AP output (not full workspace)
 #'   - Filename format: SS_{return_type}_{model_type}_alpha.w={alpha.w}_beta.w={beta.w}_SRscale={tag}{date_end}.Rdata
+#'
+#' Paper refs:
+#'   - Eq. (1): cross-sectional pricing relation within each expanding window
+#'   - Eq. (5): prior precision psi_j from factor-test-asset correlations
+#'   - Eq. (6): heterogeneous kappa tilt in local weighted extensions
+#'   - Eq. (7)-(8): BMA-SDF aggregation used in the investing exercise
+#'   - Figure 7 and Table 6 Panel B
+#'   - docs/paper/co-pricing-factor-zoo.ai-optimized.md
 
 run_bayesian_mcmc_time_varying <- function(
     # Paths
@@ -489,6 +497,9 @@ run_bayesian_mcmc_time_varying <- function(
   ## ---- 9. Prior specification -----------------------------------------------
   if (verbose) message("Computing prior specifications...")
   
+  # Paper: Eq. (5) is re-applied in each conditional run so the window-specific
+  # test-asset span implies the prior Sharpe ratio target used in Figure 7 and
+  # Table 6 Panel B.
   if (is.null(kappa)) {
     # No kappa: use BayesianFactorZoo::psi_to_priorSR
     Rc <- if (is.null(f2)) R_matrix else cbind(R_matrix, f2)
@@ -553,6 +564,9 @@ run_bayesian_mcmc_time_varying <- function(
     }
   }
 
+  # Paper: baseline conditional runs use the BHJ kernels, while nonzero kappa
+  # routes into the local Eq. (6) tilted samplers. Tradable factors remain
+  # self-pricing whenever the v2 path is selected.
   CJ_ss_plain <- if (is.null(f2)) {
     make_CJ_ss(use_multi_asset = FALSE,
                use_kappa_no_sp = (!is.null(kappa) && any(kappa != 0)),
@@ -579,6 +593,17 @@ run_bayesian_mcmc_time_varying <- function(
 
   # Register cleanup on exit
   on.exit(cluster_info$cleanup(), add = TRUE)
+
+  # Source code_base/ on PSOCK workers so fast kernels and helpers are available
+  if (isTRUE(cluster_info$has_cluster)) {
+    cluster_code_path <- normalizePath(code_path, winslash = "/", mustWork = TRUE)
+    parallel::clusterExport(cluster_info$cluster, varlist = "cluster_code_path", envir = environment())
+    parallel::clusterEvalQ(cluster_info$cluster, {
+      worker_r_files <- list.files(cluster_code_path, pattern = "[.][Rr]$", full.names = TRUE)
+      invisible(lapply(worker_r_files, source))
+      NULL
+    })
+  }
 
   ## ---- 11. MCMC estimation --------------------------------------------------
   # Determine self-pricing vs no-self-pricing based on f2 presence

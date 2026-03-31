@@ -3,6 +3,9 @@
 # =========================================================================
 # Functions to create Tables 1, 4, and 5 from sr_decomposition() output.
 #
+# Paper role: render the SR-decomposition outputs into manuscript-ready LaTeX.
+# Paper refs: Table 1; Table 4; Table 5; IA.5; IA.6; Table IA.XVIII
+#
 # Main Functions:
 #   generate_sr_tables()      - Generate all tables (1, 4, 5) in one call
 #   generate_table_1()        - Table 1: Top 5 factor contributions
@@ -107,6 +110,8 @@ build_latex_row <- function(label, values, digits = 2, is_integer = FALSE,
 # =========================================================================
 #' Generate Table 1: Most likely (top five) factor contributions to the SDF
 #'
+#' Paper refs: Table 1; Figure 2; Figure 4; Sec. 3.1.1
+#'
 #' @param res_tbl_top Named list from run_sr_decomposition_multi()
 #' @param output_path Path to save .tex file (NULL = don't save)
 #' @param verbose Print progress
@@ -197,6 +202,8 @@ generate_table_1 <- function(res_tbl_top,
 #  Table 4: BMA-SDF Dimensionality and SR by Factor Type
 # =========================================================================
 #' Generate Table 4: BMA-SDF dimensionality and SR decomposition by factor type
+#'
+#' Paper refs: Table 4; Figure 3; Sec. 3.2
 #'
 #' @param res_tbl_top Named list from run_sr_decomposition_multi()
 #' @param output_path Path to save .tex file (NULL = don't save)
@@ -318,6 +325,8 @@ generate_table_4 <- function(res_tbl_top,
 #  Table 5: Discount Rate vs Cash-Flow News
 # =========================================================================
 #' Generate Table 5: Discount rate vs. cash-flow news
+#'
+#' Paper refs: Table 5; IA.5; IA.6.2
 #'
 #' @param res_tbl_top Named list from run_sr_decomposition_multi()
 #' @param output_path Path to save .tex file (NULL = don't save)

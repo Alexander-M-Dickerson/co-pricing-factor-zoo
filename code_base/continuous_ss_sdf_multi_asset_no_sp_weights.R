@@ -1,3 +1,8 @@
+## Paper role: Local no-self-pricing Gibbs sampler for Treasury-style or
+## duration-adjusted runs where traded factors are not forced into the test-asset span.
+## Paper refs: Eq. (1), Eq. (5), Eq. (6), Eq. (10), Appendix B, IA.6;
+##   docs/paper/co-pricing-factor-zoo.ai-optimized.md
+
 continuous_ss_sdf_multi_asset_no_sp <- function (f, R, sim_length,
                                            psi0      = 1,
                                            r         = 0.001,
@@ -31,6 +36,8 @@ continuous_ss_sdf_multi_asset_no_sp <- function (f, R, sim_length,
     }
   }
   scaling <- 1 + κ_vec                              # length-k multiplier
+  # Paper: Eq. (6) tilts the prior toward selected factor groups even when the
+  # exercise does not impose self-pricing on tradable factors.
   ## ---------------------------------------------------------------------
   
   ## ---- 2. pre-computations (unchanged) --------------------------------
@@ -85,6 +92,8 @@ continuous_ss_sdf_multi_asset_no_sp <- function (f, R, sim_length,
     ## ----- κ-scaled (r_gamma * psi) ------------------------------------
     rpsi_scaled <- scaling * r_gamma * psi            # length-k vector
     
+    # Paper: D is the posterior-draw precision matrix for lambda after applying
+    # the Eq. (6) class tilt to the baseline Eq. (5) prior scale.
     D <- if (intercept) {
       diag(c(1 / 1e5, 1 / rpsi_scaled))
     } else if (k == 1) {

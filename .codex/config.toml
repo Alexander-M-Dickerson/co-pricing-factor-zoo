@@ -1,0 +1,15 @@
+#:schema https://developers.openai.com/codex/config-schema.json
+
+project_doc_max_bytes = 65536
+
+[[skills.config]]
+path = "../.agents/skills/replication-onboard"
+enabled = true
+
+[[skills.config]]
+path = "../.agents/skills/replicate-paper"
+enabled = true
+
+[[skills.config]]
+path = "../.agents/skills/explain-paper"
+enabled = true

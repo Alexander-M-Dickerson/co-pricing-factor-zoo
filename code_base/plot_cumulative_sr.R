@@ -274,9 +274,10 @@ plot_cumulative_sr <- function(
   # ------------------------------------------------------------------ #
   # 4.  axis labels & iteration numbers
   # ------------------------------------------------------------------ #
-  coloured_labels <- paste0(
-    "<span style='color:", dat$colour, ";'>", dat$factor_name, "</span>"
-  )
+  # Build per-label color vector for axis text (avoids ggtext HTML rendering
+  # issues with ggsave/PDF device)
+  label_colours <- dat$colour
+  plain_labels  <- dat$factor_name
 
   iter_y <- min(dat[[q08_col]]) -
     0.05 * (max(dat[[q92_col]]) - min(dat[[q08_col]]))
@@ -329,7 +330,7 @@ plot_cumulative_sr <- function(
     ggplot2::scale_shape_manual(values = shape_map,
                                 labels = lab_map, breaks = present_blocks) +
 
-    ggplot2::scale_x_continuous(breaks = dat$n_factors, labels = coloured_labels) +
+    ggplot2::scale_x_continuous(breaks = dat$n_factors, labels = plain_labels) +
 
     ggplot2::labs(x = NULL, y = y_lab, colour = NULL, shape = NULL) +
 
@@ -337,9 +338,10 @@ plot_cumulative_sr <- function(
     ggplot2::theme(
       panel.grid   = ggplot2::element_blank(),
       panel.border = ggplot2::element_rect(colour = "black", fill = NA, linewidth = 0.7),
-      axis.text.x  = ggtext::element_markdown(
+      axis.text.x  = ggplot2::element_text(
         angle = 45, hjust = 1, vjust = 1,
-        size = x_axis_text_size),
+        size = x_axis_text_size,
+        colour = label_colours),
       axis.text.y  = ggplot2::element_text(size = y_axis_text_size),
       axis.title.y = ggplot2::element_text(size = y_label_text_size),
       legend.text  = ggplot2::element_text(colour = "black",

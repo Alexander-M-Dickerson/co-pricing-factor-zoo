@@ -4,6 +4,12 @@
 ## Generate Figure 7 and Table 6 Panel B from conditional model results.
 ## This is a slimmed-down version of _run_eval_conditional_perf.R that only
 ## produces the paper outputs: fig7_oos_cumret.pdf and table_6_panel_b_trading.tex
+##
+## Paper role: Conditional-results output generator for the investing section.
+## Paper refs: Sec. 3.4; Figure 7; Table 6 Panel B;
+##   docs/paper/co-pricing-factor-zoo.ai-optimized.md
+## Outputs: output/paper/figures/fig7_oos_cumret.pdf and
+##   output/paper/tables/table_6_panel_b_trading.tex
 ###############################################################################
 
 cat("\n")

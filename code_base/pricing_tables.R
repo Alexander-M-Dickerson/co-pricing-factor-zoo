@@ -4,6 +4,10 @@
 #' Functions to collect pricing results across model types and generate
 #' LaTeX tables for in-sample (Table 2) and out-of-sample (Table 3) pricing.
 #'
+#' Paper role: aggregate saved pricing diagnostics into the manuscript's
+#' cross-sectional comparison tables.
+#' Paper refs: Eq. (1); Table 2; Table 3; Figure 5; Table IA.XVI; Table IA.XIX
+#'
 #' Main Functions:
 #'   run_pricing_multi()    - Collect IS/OS pricing across model types
 #'   generate_table_2()     - In-sample cross-sectional pricing (Table 2)
@@ -42,6 +46,11 @@ PRICING_MODELS <- c(
 #' @param output_path Path for saving output
 #' @param output_name Filename for saved output
 #' @param verbose Print progress?
+#'
+#' @details
+#' This loader is intentionally table-oriented: it reuses saved BMA-SDF objects
+#' rather than re-estimating models, then aligns the benchmark columns to the
+#' manuscript's Table 2/Table 3 comparison set.
 #'
 #' @return List with is_results and os_results (each a list by model_type)
 run_pricing_multi <- function(results_path,
@@ -93,6 +102,9 @@ run_pricing_multi <- function(results_path,
 
     if (verbose) message("  Loaded: ", rdata_filename)
 
+    # Paper: Table 2 is read directly from the saved in-sample pricing block.
+    # Table 3 and Figure 5 then reuse the same saved estimation object for the
+    # out-of-sample asset-pricing exercise.
     # ---- Extract IS results ----
     IS_AP_local <- get("IS_AP", envir = .GlobalEnv)
 
@@ -274,6 +286,8 @@ build_pricing_panel_rows <- function(data, model_cols, digits = 3) {
 # =========================================================================
 #' Generate Table 2: In-sample cross-sectional asset pricing performance
 #'
+#' Paper refs: Table 2; Sec. 3.1.2
+#'
 #' @param pricing_results List from run_pricing_multi()
 #' @param output_path Path to save .tex file (NULL = don't save)
 #' @param verbose Print progress
@@ -360,6 +374,8 @@ generate_table_2 <- function(pricing_results,
 #  generate_table_3: Out-of-sample cross-sectional asset pricing
 # =========================================================================
 #' Generate Table 3: Out-of-sample cross-sectional asset pricing performance
+#'
+#' Paper refs: Table 3; Figure 5; Sec. 3.1.2
 #'
 #' @param pricing_results List from run_pricing_multi()
 #' @param output_path Path to save .tex file (NULL = don't save)

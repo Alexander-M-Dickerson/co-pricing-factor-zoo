@@ -1,140 +1,117 @@
-# Quick Start Guide
+# Quick Start
 
-Replicate **["The Co-Pricing Factor Zoo"](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4589786)** (Dickerson, Julliard, Mueller, JFE 2025) in **1 command**.
+Use this file as the canonical human runbook.
 
-> **Important:** All commands should be run from the **root folder** of the repository (`co-pricing-factor-zoo-jfe/`).
-
----
-
-## 1. Install R and Packages
-
-**R version:** 4.4.2 or higher ([download](https://cran.r-project.org/))
-
-Open R and run:
-```r
-install.packages(c(
-  "lubridate", "dplyr", "tidyr", "purrr", "tibble", "data.table", "rlang",
-  "ggplot2", "RColorBrewer", "scales", "patchwork",
-  "parallel", "doParallel", "foreach", "doRNG",
-  "MASS", "Matrix", "matrixStats", "Hmisc", "proxyC",
-  "BayesianFactorZoo", "xtable"
-))
-```
-
----
-
-## 2. Clone Repository and Download Data
-
-**Clone the repository:**
-```bash
-git clone https://github.com/Alexander-M-Dickerson/co-pricing-factor-zoo-jfe.git
-cd co-pricing-factor-zoo-jfe
-```
-
-**Download the data:**
-
-**macOS/Linux:**
-```bash
-curl -L -o djm_data.zip https://openbondassetpricing.com/wp-content/uploads/2025/12/djm_data.zip
-unzip djm_data.zip -d data
-rm djm_data.zip
-```
-
-**Windows (Command Prompt):**
-```cmd
-curl -L -o djm_data.zip https://openbondassetpricing.com/wp-content/uploads/2025/12/djm_data.zip
-tar -xf djm_data.zip -C data
-del djm_data.zip
-```
-
----
-
-## 3. Run Replication
-
-### Option A: Single Command (Recommended)
+## 1. Clone The Repo
 
 ```bash
-mkdir -p logs
-nohup Rscript _run_full_replication.R > logs/full_replication_$(date +%Y%m%d_%H%M%S).log 2>&1 & disown
+git clone https://github.com/Alexander-M-Dickerson/co-pricing-factor-zoo.git
+cd co-pricing-factor-zoo
 ```
 
-This runs all 5 steps automatically. Runtime varies by hardware: ~1-2.5 hours (server with 24 cores), ~4-6 hours (laptop, with less optimized cores).
+Run all commands from the repo root.
 
-### Option B: Step-by-Step
+## 2. Place The Data
 
-From the project root folder (`co-pricing-factor-zoo-jfe/`):
+Copy the required project inputs into `data/` and any IA-only extras into `ia/data/`.
+
+- Use [docs/manifests/data-files.csv](./docs/manifests/data-files.csv) as the exact checklist.
+- The public source is Open Source Bond Asset Pricing: <https://openbondassetpricing.com/>.
+- Do not guess filenames from old docs. The manifest is the source of truth.
+
+## 3. Install The R Package Set
+
+Windows PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\bootstrap_packages.ps1
+```
+
+macOS or Linux:
 
 ```bash
-# 1. Unconditional models (~15 minutes hours, parallel by default)
+Rscript tools/bootstrap_packages.R
+```
+
+If your shell does not know `Rscript`, use the full executable path from your R installation. The PowerShell wrappers already resolve this on Windows.
+
+## 4. Run The Doctor
+
+Windows PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\doctor.ps1 --check-only
+```
+
+macOS or Linux:
+
+```bash
+Rscript tools/doctor.R --check-only
+```
+
+The doctor checks:
+
+- required R packages
+- required data files
+- build toolchain visibility
+- fast C++ backend readiness
+- optional LaTeX availability
+
+## 5. Run A Quick Smoke Test
+
+```bash
+Rscript _run_full_replication.R --quick
+```
+
+This keeps the full step boundaries intact while reducing MCMC draws for validation work.
+
+## 6. Run The Main Pipeline
+
+Single-command main pipeline:
+
+```bash
+Rscript _run_full_replication.R
+```
+
+Step-by-step main pipeline:
+
+```bash
 Rscript _run_all_unconditional.R
-
-# 2. Conditional models (~1-2 hours, parallel by default)
 Rscript _run_all_conditional.R
-
-# 3. Tables & figures (unconditional,~15 minutes)
 Rscript _run_paper_results.R
-
-# 4. Tables & figures (conditional, instant)
 Rscript _run_paper_conditional_results.R
-
-# 5. Compile LaTeX (instant)
 Rscript _create_djm_tabs_figs.R
 ```
 
----
+Useful reduced-scope commands:
 
-## 4. Find Your Results
-
-```
-output/
-├── paper/
-│   ├── tables/     # LaTeX tables (.tex)
-│   ├── figures/    # PDF figures (.pdf)
-│   └── latex/      # Final LaTeX document
-└── logs/           # Execution logs
-```
-
----
-
-## Quick Test Mode
-
-Run with fewer MCMC draws for testing (runtime varies, up to ~45 minutes max on server with many cores):
-
-```bash
-mkdir -p logs
-nohup Rscript _run_full_replication.R --quick > logs/full_replication_quick_$(date +%Y%m%d_%H%M%S).log 2>&1 & disown
-```
-
-Or step-by-step:
 ```bash
 Rscript _run_all_unconditional.R --ndraws=5000
+Rscript _run_all_unconditional.R --list
 Rscript _run_all_conditional.R --ndraws=5000
+Rscript ia/_run_ia_estimation.R --list
 ```
 
----
+## 7. Find Outputs
+
+- `output/paper/tables/`: main paper LaTeX tables
+- `output/paper/figures/`: main paper and appendix figures
+- `output/paper/latex/`: assembled LaTeX document
+- `ia/output/paper/`: implemented IA tables and figures
+- `output/logs/` and `ia/output/logs/`: run logs
+
+Use [docs/manifests/exhibits.csv](./docs/manifests/exhibits.csv) to map an exhibit back to its generating script and saved inputs.
 
 ## Troubleshooting
 
-| Problem | Solution |
-|---------|----------|
-| `Rscript not recognized` | Use RStudio Terminal instead of PowerShell |
-| Package not found | Run `install.packages("package_name")` |
-| Memory issues | Close other applications (needs ~4 GB RAM) |
+- Missing packages: rerun `tools/bootstrap_packages.R` or the PowerShell wrapper.
+- Missing data files: compare your folders against `docs/manifests/data-files.csv`.
+- Fast backend compile failures: rerun `tools/doctor.R --force-rebuild` after fixing the toolchain.
+- Fast backend compile failures inside a managed terminal: rerun the doctor in a normal PowerShell or shell before changing repo code.
+- Final PDF blocked: `pdflatex` is optional until `_create_djm_tabs_figs.R`.
 
-**Help:** `Rscript _run_full_replication.R --help`
+For drift checks before pushing docs or workflow changes:
 
-**Contact:** alexander.dickerson1@unsw.edu.au
-
----
-
-## Citation
-
-```bibtex
-@article{dickerson2023corporate,
-  title   = {The Co-Pricing Factor Zoo},
-  author  = {Dickerson, Alexander and Julliard, Christian and Mueller, Philippe},
-  journal = {Journal of Financial Economics},
-  year    = {2025},
-  note    = {Forthcoming}
-}
+```bash
+Rscript tools/validate_repo_docs.R
 ```

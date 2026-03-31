@@ -3,6 +3,8 @@
 #  ------------------------------------------------------------
 #  Generates Table 6 Panel A: In-sample trading performance
 #  of BMA-SDF and benchmark models.
+#  Paper refs: Table 6; Figure 7; Sec. 3.4;
+#    docs/paper/co-pricing-factor-zoo.ai-optimized.md
 # ============================================================
 
 #' Generate Table 6 Panel A: In-sample Trading Performance
@@ -20,6 +22,8 @@
 #' All factors are scaled to have the same monthly volatility as CAPM.
 #' Mean and ratios are annualized. Kurtosis is excess kurtosis.
 #' IR is computed as alpha / residual_vol from regression on EqualWeight.
+#' The table mirrors the manuscript's trading comparison by evaluating the
+#' BMA-SDF tradable portfolio alongside KNS, RP-PCA, frequentist, and EW benchmarks.
 #'
 #' @examples
 #' \dontrun{

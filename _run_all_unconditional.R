@@ -4,6 +4,11 @@
 ## ---------------------------------------------------------------------------
 ## This script runs all 7 unconditional models required for the paper:
 ##
+## Paper role: Main-text unconditional estimation orchestrator.
+## Paper refs: Sec. 2; Sec. 3.1-3.3; Eq. (1), Eq. (5), Eq. (7), Eq. (8),
+##   Eq. (10); Tables 1-5; Figures 2-5, 9; Appendix A/B
+## Outputs: output/unconditional/{model_type}/...Rdata and output/logs/
+##
 ##   1. stock              - Stock factors only
 ##   2. bond_excess        - Bond factors with excess returns
 ##   3. bond_duration      - Bond factors with duration-adjusted returns
@@ -44,6 +49,10 @@
 ##   output/unconditional/{model_type}/
 ##     {return_type}_{model_type}_alpha.w=1_beta.w=1_kappa=0_{tag}.Rdata
 ##     e.g., excess_stock_alpha.w=1_beta.w=1_kappa=0_baseline.Rdata
+##
+## Note: names such as bond_excess and joint_duration are orchestration labels.
+## The underlying model_type values passed to run_bayesian_mcmc() remain the
+## canonical repo values in AGENTS.md: bond, stock, bond_stock_with_sp, treasury.
 ##
 ###############################################################################
 
@@ -311,11 +320,14 @@ launch_background_process <- function(script_path, log_path, is_windows, working
   working_dir <- normalizePath(working_dir, winslash = "/", mustWork = FALSE)
 
   if (is_windows) {
-    # Windows: use start /B with cmd
+    # Windows: use start /B with cmd; must use full Rscript path since child
+    # cmd.exe may not have R on its PATH
+    rscript_exe <- file.path(R.home("bin"), "Rscript.exe")
+    rscript_win <- normalizePath(rscript_exe, winslash = "\\", mustWork = TRUE)
     script_win <- normalizePath(script_path, winslash = "\\", mustWork = FALSE)
     log_win <- normalizePath(log_path, winslash = "\\", mustWork = FALSE)
     work_win <- normalizePath(working_dir, winslash = "\\", mustWork = FALSE)
-    cmd <- sprintf('start /B cmd /C "cd /d "%s" && Rscript "%s" > "%s" 2>&1"', work_win, script_win, log_win)
+    cmd <- sprintf('start /B cmd /C "cd /d "%s" && "%s" "%s" > "%s" 2>&1"', work_win, rscript_win, script_win, log_win)
     shell(cmd, wait = FALSE)
   } else {
     # Unix/macOS/Linux: use nohup with explicit bash for reliable backgrounding

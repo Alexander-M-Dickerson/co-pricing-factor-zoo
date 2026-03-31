@@ -1,3 +1,8 @@
+## Paper role: Local prior-SR calibration helper for heterogeneous factor-class
+## tilts. This extends the BHJ psi calibration with factor-specific scaling.
+## Paper refs: Eq. (5), Eq. (6), Appendix B;
+##   docs/paper/co-pricing-factor-zoo.ai-optimized.md
+
 psi_to_priorSR_multi_asset <- function(R, f,
                                        psi0      = NULL,
                                        priorSR   = NULL,
@@ -29,6 +34,8 @@ psi_to_priorSR_multi_asset <- function(R, f,
   
   scaling <- 1 + κ_vec                # per-factor multiplier (length = ncol(f))
   
+  # Paper: Eq. (6) enters through factor-specific scaling of the Eq. (5)
+  # correlation-based prior precision.
   ## ---- 2. helper -------------------------------------------------------
   SR_quad <- function(Rmat) {
     μ <- colMeans(Rmat)

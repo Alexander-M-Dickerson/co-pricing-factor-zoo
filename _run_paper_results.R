@@ -6,6 +6,13 @@
 ## figures for the paper. It is designed to be extensible - add new tables
 ## and figures in the designated sections below.
 ##
+## Paper role: Main-text and Appendix output generator from saved unconditional
+##   estimation results.
+## Paper refs: Tables 1-6 Panel A; Figures 2-5, 9; Appendix A/B tables and
+##   figures; IA.6 Treasury-component follow-on outputs
+## Outputs: output/paper/tables/, output/paper/figures/, cached intermediates
+##   under data/
+##
 ## WORKFLOW:
 ##   1. Configure paths and model settings in Section 1
 ##   2. The script constructs the .Rdata filename and loads it
@@ -84,6 +91,8 @@ if (save_figures && !dir.exists(figures_dir)) {
 if (verbose) message("Sourcing helper functions...")
 
 # Source all required helper files from code_base
+# These helpers implement the manuscript mapping for Tables 1-6 and
+# Figures 2-5/9 from saved BMA-SDF estimation objects.
 # Add new helper sources here as needed
 helper_files <- c(
   "pp_figure_table.R",
@@ -116,6 +125,8 @@ for (helper in helper_files) {
 
 #### 2.3 Construct Filename and Load Data -------------------------------------
 # Build the .Rdata filename based on configuration
+# The saved file contains the posterior draws, factor classifications, and
+# pricing objects that feed the paper's BMA-SDF tables and figures.
 rdata_filename <- sprintf(
   "%s_%s_alpha.w=%s_beta.w=%s_kappa=%s_%s.Rdata",
   return_type,
@@ -1180,6 +1191,42 @@ save_figure <- function(plot_fn, name, width = 8, height = 6, format = figure_fo
     dev.off()
     if (verbose) message("  Saved: ", png_path)
   }
+}
+
+
+#### Figure 13: Cumulative co-pricing SDF-implied Sharpe ratio ----------------
+if (verbose) message("Figure 13: Cumulative SDF-implied Sharpe Ratio")
+
+fig13_path <- file.path(figures_dir, "fig13_cum_sr_80pct.pdf")
+
+if (file.exists(fig13_path)) {
+  if (verbose) message("  Skipping Figure 13: file already exists")
+} else {
+  source(file.path(code_folder, "plot_cumulative_sr.R"))
+
+  sr_tbl <- cumulative_sharpe_ratio(
+    main_path    = main_path,
+    output_folder = "output",
+    model_type   = "bond_stock_with_sp",
+    return_type  = return_type,
+    kappa        = kappa,
+    alpha.w      = alpha.w,
+    beta.w       = beta.w,
+    tag          = tag,
+    verbose      = verbose
+  )
+
+  plot_cumulative_sr(
+    sharpe_tbl    = sr_tbl,
+    sr_shrinkage  = "80%",
+    use_ratio     = FALSE,
+    main_path     = main_path,
+    output_folder = figures_dir,
+    fig_name      = "fig13_cum_sr_80pct.pdf",
+    verbose       = verbose
+  )
+
+  if (verbose) message("  Generated: fig13_cum_sr_80pct.pdf")
 }
 
 

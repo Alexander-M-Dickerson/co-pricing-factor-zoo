@@ -4,6 +4,11 @@
 ## ---------------------------------------------------------------------------
 ## This script runs all models required for the Internet Appendix:
 ##
+## Paper role: IA estimation orchestrator for robustness and extension models.
+## Paper refs: IA.6, IA.7, IA.9, IA.10; Eq. (6), Eq. (10); Tables IA.XVI-XXIX;
+##   Figures IA.22-39; docs/paper/co-pricing-factor-zoo.ai-optimized.md
+## Outputs: ia/output/unconditional/{model_type}/...Rdata and ia/output/logs/
+##
 ##   INTERCEPT = TRUE (with constant):
 ##     1. bond_intercept      - Bond factors with intercept
 ##     2. stock_intercept     - Stock factors with intercept
@@ -47,6 +52,10 @@
 ## OUTPUT:
 ##   ia/output/unconditional/{model_type}/
 ##     {return_type}_{model_type}_alpha.w=1_beta.w=1_kappa=0_{tag}.Rdata
+##
+## Coverage note: this script estimates 9 IA-related models, but the repo only
+## generates a subset of IA tables/figures downstream. Use ia/_run_ia_results.R
+## as the source of truth for the currently implemented IA output subset.
 ##
 ###############################################################################
 
@@ -586,10 +595,12 @@ launch_background_process <- function(script_path, log_path, is_windows, working
   working_dir <- normalizePath(working_dir, winslash = "/", mustWork = FALSE)
 
   if (is_windows) {
+    rscript_exe <- file.path(R.home("bin"), "Rscript.exe")
+    rscript_win <- normalizePath(rscript_exe, winslash = "\\", mustWork = TRUE)
     script_win <- normalizePath(script_path, winslash = "\\", mustWork = FALSE)
     log_win <- normalizePath(log_path, winslash = "\\", mustWork = FALSE)
     work_win <- normalizePath(working_dir, winslash = "\\", mustWork = FALSE)
-    cmd <- sprintf('start /B cmd /C "cd /d "%s" && Rscript "%s" > "%s" 2>&1"', work_win, script_win, log_win)
+    cmd <- sprintf('start /B cmd /C "cd /d "%s" && "%s" "%s" > "%s" 2>&1"', work_win, rscript_win, script_win, log_win)
     shell(cmd, wait = FALSE)
   } else {
     cmd <- sprintf('nohup bash -c \'cd "%s" && Rscript "%s" > "%s" 2>&1\' &',

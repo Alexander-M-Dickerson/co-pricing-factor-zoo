@@ -3,13 +3,19 @@
 ## _run_ia_results.R - Generate Internet Appendix Tables and Figures
 ## ---------------------------------------------------------------------------
 ##
-## This script generates all tables and figures for the Internet Appendix.
+## This script generates the currently implemented subset of Internet Appendix
+## tables and figures from saved IA estimation results.
 ## It requires the MCMC estimation to have been run first via:
 ##   Rscript ia/_run_ia_estimation.R
 ##
+## Paper role: IA output generator for the implemented robustness subset.
+## Paper refs: IA.6, IA.7, IA.9, IA.10; Eq. (6), Eq. (10); Tables IA.XVI-XXIX;
+##   Figures IA.22-39; docs/paper/co-pricing-factor-zoo.ai-optimized.md
+## Outputs: ia/output/paper/tables/ and ia/output/paper/figures/
+##
 ## OUTPUTS:
 ##   Tables:
-##     - Posterior probabilities & risk prices for ALL 5 IA models
+##     - Posterior probabilities & risk prices for the 5 baseline IA document models
 ##     - Table IA.6: In-sample pricing (no intercept models)
 ##     - Table IA.7: Out-of-sample pricing (no intercept models)
 ##     - Duration pricing table (4 panels: IS/OS for bond_stock_with_sp and bond)
@@ -29,6 +35,9 @@
 ##     - Treasury DR-tilt bar plots figure (weighted kappa model)
 ##     - Sparse model posterior probabilities figure
 ##     - IS/OS switch posterior probabilities figure
+##
+## Coverage note: the manuscript's Internet Appendix is broader than the output
+## set implemented here. This script is intentionally partial.
 ##
 ## USAGE:
 ##   From R:

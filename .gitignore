@@ -5,6 +5,7 @@
 *.rds
 *.csv
 *.parquet
+!docs/manifests/*.csv
 
 # R session files
 .Rhistory
@@ -22,6 +23,7 @@
 *.swo
 *~
 .idea/
+.claude/settings.local.json
 
 # OS generated files
 .DS_Store
@@ -48,3 +50,10 @@ logs/
 # Cache directories
 __pycache__/
 .cache/
+
+# Maintainer scratch scripts
+testing/inspect_dr_cf.R
+testing/inspect_dr_cf2.R
+
+# Vendored package build artifacts
+BayesianFactorZoo/build/

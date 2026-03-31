@@ -4,6 +4,12 @@
 ## ---------------------------------------------------------------------------
 ## This script runs 2 conditional models in parallel:
 ##
+## Paper role: Conditional estimation orchestrator for the investing exercise.
+## Paper refs: Sec. 3.4; Table 6 Panel B; Figure 7; Appendix D benchmark
+##   comparisons; docs/paper/co-pricing-factor-zoo.ai-optimized.md
+## Outputs: output/time_varying/bond_stock_with_sp/...ALL_RESULTS.rds and
+##   output/logs/
+##
 ##   1. ExpandingForward  - Expanding windows forward in time (reverse_time = FALSE)
 ##   2. ExpandingBackward - Expanding windows backward in time (reverse_time = TRUE)
 ##
@@ -361,11 +367,14 @@ launch_background_process <- function(script_path, log_path, is_windows, working
   working_dir <- normalizePath(working_dir, winslash = "/", mustWork = FALSE)
 
   if (is_windows) {
-    # Windows: use start /B with cmd
+    # Windows: use start /B with cmd; must use full Rscript path since child
+    # cmd.exe may not have R on its PATH
+    rscript_exe <- file.path(R.home("bin"), "Rscript.exe")
+    rscript_win <- normalizePath(rscript_exe, winslash = "\\", mustWork = TRUE)
     script_win <- normalizePath(script_path, winslash = "\\", mustWork = FALSE)
     log_win <- normalizePath(log_path, winslash = "\\", mustWork = FALSE)
     work_win <- normalizePath(working_dir, winslash = "\\", mustWork = FALSE)
-    cmd <- sprintf('start /B cmd /C "cd /d "%s" && Rscript "%s" > "%s" 2>&1"', work_win, script_win, log_win)
+    cmd <- sprintf('start /B cmd /C "cd /d "%s" && "%s" "%s" > "%s" 2>&1"', work_win, rscript_win, script_win, log_win)
     shell(cmd, wait = FALSE)
   } else {
     # Unix/macOS/Linux: use nohup with explicit bash for reliable backgrounding
