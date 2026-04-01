@@ -22,7 +22,9 @@ Read only the docs needed for the question:
 - `docs/agent-context/paper-results-ia.md`
 - `docs/agent-context/tables-guide.md`
 - `docs/agent-context/figures-guide.md`
+- `docs/agent-context/factor-interpretation.md`
 - `docs/agent-context/factors-reference.md`
+- `docs/agent-context/factors/`
 
 ## Use When
 
@@ -64,6 +66,8 @@ Read only the docs needed for the question:
 - "Explain Table 5 and show the code path."
 - "Why does the paper say the SDF is dense?"
 - "Which equation is the treasury decomposition using?"
+- "What does it mean for a factor to be included in the SDF?"
+- "Is PEAD just a small-cap effect?"
 
 ## Failure Boundaries
 

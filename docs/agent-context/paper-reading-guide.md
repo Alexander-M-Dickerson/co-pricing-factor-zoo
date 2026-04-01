@@ -46,8 +46,10 @@ The paper argues that the bond factor zoo becomes much less special once Treasur
 ### If the user wants factor-specific context
 
 1. [factors-reference.md](./factors-reference.md)
-2. [paper-results-main.md](./paper-results-main.md)
-3. saved factor-name vectors in estimation outputs
+2. [factor-interpretation.md](./factor-interpretation.md)
+3. [factors/README.md](./factors/README.md)
+4. [paper-results-main.md](./paper-results-main.md)
+5. saved factor-name vectors in estimation outputs
 
 ## Minimal Notation Cheat Sheet
 

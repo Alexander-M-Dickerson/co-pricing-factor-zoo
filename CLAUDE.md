@@ -30,7 +30,9 @@ The detailed shared docs live in `docs/agent-context/`:
 - `paper-results-ia.md`
 - `tables-guide.md`
 - `figures-guide.md`
+- `factor-interpretation.md`
 - `factors-reference.md`
+- `factors/`
 
 The canonical full paper lives at:
 

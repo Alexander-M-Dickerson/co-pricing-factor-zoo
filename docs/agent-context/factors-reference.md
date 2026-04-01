@@ -10,6 +10,9 @@ This is the repo's canonical factor map for answering questions like:
 Use this file before loading the full paper when the user wants factor-level
 explanations.
 
+For interpretation questions about `gamma`, `lambda`, dense versus sparse SDFs,
+or noisy proxies, use `factor-interpretation.md` before or alongside this file.
+
 ## Manuscript Anchor
 
 - Manuscript Table A.1: `List of factors for cross-sectional asset pricing`
@@ -38,6 +41,8 @@ than reconstructing groups from heuristics:
 ## How To Answer Factor Questions
 
 - If the user asks for the full factor list, start from this file and say it is the repo version of manuscript Table A.1.
+- If the user asks what it means for a factor to be "in the SDF", route next to
+  `factor-interpretation.md`.
 - If the user asks for one factor, explain:
   - factor group
   - economic idea
@@ -151,6 +156,8 @@ If the user asks why bond factors matter:
 
 ## Related Files
 
+- gamma/MPR interpretation: `docs/agent-context/factor-interpretation.md`
+- deep factor dossiers: `docs/agent-context/factors/README.md`
 - manuscript Table A.1 explanation: `docs/agent-context/exhibits/table-a1.md`
 - posterior-probability appendix table: `docs/agent-context/exhibits/table-a2.md`
 - main factor-importance results: `docs/agent-context/exhibits/figure-2.md`

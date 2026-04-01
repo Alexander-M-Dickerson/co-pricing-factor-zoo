@@ -31,6 +31,26 @@ repo.
 
 `Fully explain Table A.1. Treat it as the factor-list appendix table, not the posterior-probability table. Group the 54 factors into traded bond, traded stock, and nontraded blocks, and point me to the repo factor map.` 
 
+## Explain Factor Inclusion
+
+`Explain what it means for a factor to be included in the SDF. Distinguish posterior inclusion probability gamma from posterior market price of risk lambda, connect Figure 2, Figure 4, Table 1, and Figure 3, and explain why the paper still finds a dense SDF.` 
+
+## Explain Gamma Versus MPR
+
+`Explain the difference between posterior inclusion probability and market price of risk in this paper. Use Eq. (8), the noisy-proxy intuition, and the repo's factor-interpretation guide.` 
+
+## Fully Explain PEAD
+
+`Fully explain PEAD in this paper. Cover what the factor is, why it matters in the co-pricing results, what high gamma and high lambda mean for PEAD, and how the appendix argues PEAD is not just a micro-cap effect.` 
+
+## Explain PEAD Robustness
+
+`Is PEAD just concentrated in small-cap or micro-cap stocks? Explain the appendix evidence in IA.4 and Tables IA.XIII-XIV, and say clearly whether that evidence is generated in the repo or paper-only.` 
+
+## Explain Dense SDF
+
+`Explain why the paper says the SDF is dense even though only a few factors have very high posterior inclusion probabilities. Use the noisy-proxy logic, Figure 2, Figure 3, Figure 4, and Table 1.` 
+
 ## Replicate The Internet Appendix
 
 `Replicate the Internet Appendix. Bootstrap what is needed, run the 500-draw IA smoke boundary first, stop at the first failing model if anything breaks, and then tell me the exact next scale-up boundary.`

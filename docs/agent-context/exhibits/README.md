@@ -30,7 +30,15 @@ Main and appendix dossiers in this folder:
 - `figure-13.md`
 - `figure-ia-17.md`
 - `ia-implemented-subset.md`
+- `ia-pead-robustness.md`
 
 When the user asks about a manuscript exhibit that is not executable in the repo,
 use `docs/manifests/manuscript_exhibits.csv` to distinguish paper coverage from
 repo coverage before answering from the full paper.
+
+For factor-specific questions, use these shared docs before or alongside the
+exhibit dossiers:
+
+- `docs/agent-context/factor-interpretation.md`
+- `docs/agent-context/factors-reference.md`
+- `docs/agent-context/factors/`

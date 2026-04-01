@@ -68,7 +68,9 @@ High-value shared docs under `docs/agent-context/`:
 - `paper-results-ia.md`
 - `tables-guide.md`
 - `figures-guide.md`
+- `factor-interpretation.md`
 - `factors-reference.md`
+- `factors/`
 
 Canonical full-paper source:
 

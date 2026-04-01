@@ -443,12 +443,27 @@ required_dossiers <- c(
   "docs/agent-context/exhibits/table-5.md",
   "docs/agent-context/exhibits/figure-7.md",
   "docs/agent-context/exhibits/figure-9.md",
-  "docs/agent-context/exhibits/ia-implemented-subset.md"
+  "docs/agent-context/exhibits/ia-implemented-subset.md",
+  "docs/agent-context/exhibits/ia-pead-robustness.md"
 )
 expect_true(
   all(file.exists(file.path(repo_root, required_dossiers))),
   "Key exhibit dossiers exist for explanation tasks.",
   "One or more required exhibit dossiers are missing."
+)
+required_factor_docs <- c(
+  "docs/agent-context/factor-interpretation.md",
+  "docs/agent-context/factors/README.md",
+  "docs/agent-context/factors/pead.md",
+  "docs/agent-context/factors/peadb.md",
+  "docs/agent-context/factors/ivol.md",
+  "docs/agent-context/factors/credit.md",
+  "docs/agent-context/factors/ysp.md"
+)
+expect_true(
+  all(file.exists(file.path(repo_root, required_factor_docs))),
+  "Factor interpretation guide and top-factor dossiers exist.",
+  "One or more factor interpretation docs or top-factor dossiers are missing."
 )
 prompt_recipes_text <- read_text(file.path(repo_root, "docs", "agent-context", "prompt-recipes.md"))
 expect_true(
@@ -458,6 +473,15 @@ expect_true(
     grepl("Fully Explain Figure 1", prompt_recipes_text, fixed = TRUE),
   "Prompt recipes include the IA prompts and the Figure 1 prompts.",
   "Prompt recipes are missing the IA prompts or the Figure 1 prompts."
+)
+expect_true(
+  grepl("Explain Factor Inclusion", prompt_recipes_text, fixed = TRUE) &&
+    grepl("Explain Gamma Versus MPR", prompt_recipes_text, fixed = TRUE) &&
+    grepl("Fully Explain PEAD", prompt_recipes_text, fixed = TRUE) &&
+    grepl("Explain PEAD Robustness", prompt_recipes_text, fixed = TRUE) &&
+    grepl("Explain Dense SDF", prompt_recipes_text, fixed = TRUE),
+  "Prompt recipes include the factor-interpretation and PEAD robustness prompts.",
+  "Prompt recipes are missing the factor-interpretation or PEAD robustness prompts."
 )
 
 skill_files <- c(
@@ -497,7 +521,7 @@ skill_expectations <- list(
   ),
   list(
     path = file.path(repo_root, ".agents", "skills", "explain-paper", "SKILL.md"),
-    needles = c("docs/manifests/manuscript_exhibits.csv", "docs/manifests/paper_claims.csv", "docs/agent-context/exhibits/README.md")
+    needles = c("docs/manifests/manuscript_exhibits.csv", "docs/manifests/paper_claims.csv", "docs/agent-context/exhibits/README.md", "docs/agent-context/factor-interpretation.md", "docs/agent-context/factors/")
   ),
   list(
     path = file.path(repo_root, ".claude", "skills", "onboard", "SKILL.md"),
@@ -509,7 +533,7 @@ skill_expectations <- list(
   ),
   list(
     path = file.path(repo_root, ".claude", "skills", "explain-paper", "SKILL.md"),
-    needles = c("docs/manifests/manuscript_exhibits.csv", "docs/manifests/paper_claims.csv", "docs/agent-context/exhibits/README.md")
+    needles = c("docs/manifests/manuscript_exhibits.csv", "docs/manifests/paper_claims.csv", "docs/agent-context/exhibits/README.md", "docs/agent-context/factor-interpretation.md", "docs/agent-context/factors/")
   )
 )
 skill_routing_ok <- vapply(
@@ -524,6 +548,14 @@ expect_true(
   all(skill_routing_ok),
   "Codex and Claude skill routing point at the new data, manifest, and exhibit surfaces.",
   "One or more Codex or Claude skills are missing the new data, manifest, or exhibit routing surfaces."
+)
+claim11_row <- subset(paper_claims_manifest, claim_id == 11)
+expect_true(
+  nrow(claim11_row) == 1 &&
+    identical(claim11_row$repo_coverage_status[[1]], "paper-only") &&
+    grepl("ia-pead-robustness.md", claim11_row$notes[[1]], fixed = TRUE),
+  "Paper claims manifest routes PEAD robustness through the paper-only dossier.",
+  "PEAD robustness claim routing is missing or no longer marked paper-only."
 )
 
 rscript_name <- if (.Platform$OS.type == "windows") "Rscript.exe" else "Rscript"
