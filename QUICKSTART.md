@@ -13,6 +13,9 @@ Recommended human shells:
 Human default:
 - use the public wrappers first
 - use the raw `Rscript` boundaries below when you want transparency about the exact script order
+- use the no-flag full pipeline for exact replication, because it defaults to
+  50,000 draws
+- treat quick or smoke runs as reduced-draw setup validation only
 
 If a long run fails inside a managed IDE or AI terminal, rerun it from a normal
 PowerShell or Terminal before changing repo code.
@@ -25,14 +28,14 @@ Windows Posit/RStudio Terminal:
 - wrapper path:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File tools\run_full_replication.ps1 -Quick
+powershell -ExecutionPolicy Bypass -File tools\run_full_replication.ps1
 powershell -ExecutionPolicy Bypass -File tools\build_paper.ps1
 ```
 
 - raw `Rscript` path:
 
 ```powershell
-Rscript _run_full_replication.R --quick
+Rscript _run_full_replication.R
 powershell -ExecutionPolicy Bypass -File tools\build_paper.ps1
 ```
 
@@ -40,14 +43,14 @@ macOS Posit/RStudio Terminal:
 - wrapper path:
 
 ```bash
-bash tools/run_full_replication.sh --quick
+bash tools/run_full_replication.sh
 bash tools/build_paper.sh
 ```
 
 - raw `Rscript` path:
 
 ```bash
-Rscript _run_full_replication.R --quick
+Rscript _run_full_replication.R
 bash tools/build_paper.sh
 ```
 
@@ -115,9 +118,68 @@ macOS toolchain note:
 - install the CRAN-recommended GNU Fortran that matches your installed CRAN R version
 - official references: <https://cran.r-project.org/bin/macosx/tools/> and <https://mac.r-project.org/tools/>
 
-## 5. Fastest Validated Main-Paper Path
+## 5. Exact Main-Paper Replication (50,000 Draws)
 
-This is the shortest human path that keeps the validated wrapper flow intact.
+This is the proper paper setting. The no-flag main pipeline defaults to 50,000
+draws, which is the exact replication path.
+
+Windows PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\run_full_replication.ps1
+powershell -ExecutionPolicy Bypass -File tools\build_paper.ps1
+```
+
+Windows Command Prompt:
+
+```bat
+tools\run_full_replication.cmd
+tools\build_paper.cmd
+```
+
+macOS Terminal:
+
+```bash
+bash tools/run_full_replication.sh
+bash tools/build_paper.sh
+```
+
+Raw `Rscript` equivalent:
+
+```bash
+Rscript _run_full_replication.R
+```
+
+Full transparency step-by-step path:
+
+```bash
+Rscript _run_all_unconditional.R
+Rscript _run_all_conditional.R --direction=both
+Rscript _run_paper_results.R
+Rscript _run_paper_conditional_results.R
+Rscript _create_djm_tabs_figs.R
+```
+
+Then build the PDF with the platform wrapper for your shell:
+- Windows PowerShell: `powershell -ExecutionPolicy Bypass -File tools\build_paper.ps1`
+- Windows Command Prompt: `tools\build_paper.cmd`
+- macOS Terminal: `bash tools/build_paper.sh`
+
+Success looks like:
+- main PDF at [djm_main.pdf](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/output/paper/latex/djm_main.pdf)
+- tables under [output/paper/tables](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/output/paper/tables)
+- figures under [output/paper/figures](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/output/paper/figures)
+- Figure 1 published from the tracked paper fixtures in `misc/figure1_simulation/`
+  rather than rerun as a Monte Carlo job
+
+If something fails, rerun here:
+- start with the same wrapper command that failed
+- if you need exact script boundaries, use the step-by-step main path below
+
+## 6. Validated Main Smoke Boundary (5,000 Draws)
+
+Use this only to validate setup on a new machine before scaling back to the
+no-flag 50,000-draw path in Section 5.
 
 Windows PowerShell:
 
@@ -146,66 +208,54 @@ Raw `Rscript` equivalent:
 Rscript _run_full_replication.R --quick
 ```
 
-Then build the PDF with the platform wrapper for your shell:
-- Windows PowerShell: `powershell -ExecutionPolicy Bypass -File tools\build_paper.ps1`
-- Windows Command Prompt: `tools\build_paper.cmd`
-- macOS Terminal: `bash tools/build_paper.sh`
+## 7. Exact IA Replication (50,000 Draws)
 
-Success looks like:
-- main PDF at [djm_main.pdf](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/output/paper/latex/djm_main.pdf)
-- tables under [output/paper/tables](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/output/paper/tables)
-- figures under [output/paper/figures](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/output/paper/figures)
-
-If something fails, rerun here:
-- start with the same wrapper command that failed
-- if you need exact script boundaries, use the step-by-step main path below
-
-## 6. Full Main-Paper Path
+This is the proper IA replication setting. The no-flag IA full pipeline defaults
+to 50,000 draws.
 
 Wrapper path:
 
 Windows PowerShell:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File tools\run_full_replication.ps1 -Draws 5000
-powershell -ExecutionPolicy Bypass -File tools\build_paper.ps1
+powershell -ExecutionPolicy Bypass -File tools\run_ia_full.ps1
+powershell -ExecutionPolicy Bypass -File tools\build_ia_paper.ps1
 ```
 
 Windows Command Prompt:
 
 ```bat
-tools\run_full_replication.cmd -Draws 5000
-tools\build_paper.cmd
+tools\run_ia_full.cmd
+tools\build_ia_paper.cmd
 ```
 
 macOS Terminal:
 
 ```bash
-bash tools/run_full_replication.sh --ndraws=5000
-bash tools/build_paper.sh
+bash tools/run_ia_full.sh
+bash tools/build_ia_paper.sh
 ```
 
 Raw `Rscript` equivalent:
 
 ```bash
-Rscript _run_full_replication.R
+Rscript ia/_run_ia_full.R
 ```
 
 Full transparency step-by-step path:
 
 ```bash
-Rscript _run_all_unconditional.R
-Rscript _run_all_conditional.R --direction=both
-Rscript _run_paper_results.R
-Rscript _run_paper_conditional_results.R
-Rscript _create_djm_tabs_figs.R
+Rscript ia/_run_ia_estimation.R
+Rscript ia/_run_ia_results.R
+Rscript ia/_create_ia_latex.R
 ```
 
-Then compile the PDF with the wrapper for your shell.
+Then compile the IA PDF with the wrapper for your shell.
 
-## 7. Fastest Validated IA Path
+## 8. Validated IA Smoke And Scale-Up Path
 
-On a new machine, run the IA smoke boundary first.
+On a new machine, run the IA smoke boundary first. This is a setup-validation
+path, not the exact paper setting.
 
 Windows PowerShell:
 
@@ -233,6 +283,11 @@ Rscript ia/_run_ia_results.R --expected-ndraws=500
 Rscript ia/_create_ia_latex.R
 ```
 
+Optional validated reduced-draw scale-up boundary after the 500-draw smoke:
+- Windows PowerShell: `powershell -ExecutionPolicy Bypass -File tools\run_ia_full.ps1 -Draws 5000`
+- Windows Command Prompt: `tools\run_ia_full.cmd -Draws 5000`
+- macOS Terminal: `bash tools/run_ia_full.sh --ndraws=5000`
+
 Then build the IA PDF with the wrapper for your shell:
 - Windows PowerShell: `powershell -ExecutionPolicy Bypass -File tools\build_ia_paper.ps1`
 - Windows Command Prompt: `tools\build_ia_paper.cmd`
@@ -246,47 +301,6 @@ If something fails, rerun here:
 - rerun the same smoke boundary first
 - only scale up after the smoke path and doctor both pass
 
-## 8. Full IA Path
-
-Wrapper path:
-
-Windows PowerShell:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File tools\run_ia_full.ps1 -Draws 5000
-powershell -ExecutionPolicy Bypass -File tools\build_ia_paper.ps1
-```
-
-Windows Command Prompt:
-
-```bat
-tools\run_ia_full.cmd -Draws 5000
-tools\build_ia_paper.cmd
-```
-
-macOS Terminal:
-
-```bash
-bash tools/run_ia_full.sh --ndraws=5000
-bash tools/build_ia_paper.sh
-```
-
-Raw `Rscript` equivalent:
-
-```bash
-Rscript ia/_run_ia_full.R
-```
-
-Full transparency step-by-step path:
-
-```bash
-Rscript ia/_run_ia_estimation.R
-Rscript ia/_run_ia_results.R
-Rscript ia/_create_ia_latex.R
-```
-
-Then compile the IA PDF with the wrapper for your shell.
-
 ## 9. Find Outputs
 
 - main tables: [output/paper/tables](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/output/paper/tables)
@@ -296,6 +310,12 @@ Then compile the IA PDF with the wrapper for your shell.
 - IA outputs: [ia/output/paper](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/ia/output/paper)
 - IA LaTeX tree and PDF: [ia/output/paper/latex](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/ia/output/paper/latex)
 - logs: [output/logs](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/output/logs) and [ia/output/logs](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/ia/output/logs)
+
+Figure 1 note:
+- normal paper replication publishes the tracked Figure 1 assets and does not
+  rerun the Monte Carlo simulation
+- use [run_figure1_simulation.R](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/tools/run_figure1_simulation.R)
+  only if you explicitly want to regenerate Figure 1 from the simulation path
 
 Useful human references:
 - [README_PAPER_PIPELINE.md](./README_PAPER_PIPELINE.md): short boundary map

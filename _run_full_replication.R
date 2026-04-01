@@ -26,15 +26,15 @@
 ##   Rscript _run_full_replication.R [options]
 ##
 ## OPTIONS:
-##   --ndraws=N        Number of MCMC draws (default: 50000, use 5000 for quick test)
-##   --quick           Shortcut for --ndraws=5000 (quick test mode)
+##   --ndraws=N        Number of MCMC draws (default: 50000; this is the paper setting)
+##   --quick           Shortcut for --ndraws=5000 (reduced-draw smoke mode)
 ##   --sequential      Run models sequentially instead of parallel (default: parallel)
 ##   --skip-estimation Skip steps 1-2, only regenerate tables/figures and LaTeX sources
 ##   --help            Show this help message
 ##
 ## EXAMPLES:
-##   Rscript _run_full_replication.R                    # Full replication
-##   Rscript _run_full_replication.R --quick            # Quick test (~30 min)
+##   Rscript _run_full_replication.R                    # Exact paper replication (50,000 draws)
+##   Rscript _run_full_replication.R --quick            # Reduced-draw smoke validation (~30 min)
 ##   Rscript _run_full_replication.R --skip-estimation  # Regenerate outputs only
 ##
 ###############################################################################
@@ -75,15 +75,15 @@ USAGE:
   Rscript _run_full_replication.R [options]
 
 OPTIONS:
-  --ndraws=N        Number of MCMC draws (default: 50000)
-  --quick           Quick test mode (--ndraws=5000)
+  --ndraws=N        Number of MCMC draws (default: 50000; paper setting)
+  --quick           Reduced-draw smoke mode (--ndraws=5000)
   --sequential      Run models sequentially (default: parallel)
   --skip-estimation Skip estimation, only regenerate tables/figures and LaTeX sources
   --help            Show this help message
 
 EXAMPLES:
-  Rscript _run_full_replication.R                    # Full replication
-  Rscript _run_full_replication.R --quick            # Quick test
+  Rscript _run_full_replication.R                    # Exact paper replication (50,000 draws)
+  Rscript _run_full_replication.R --quick            # Reduced-draw smoke validation
   Rscript _run_full_replication.R --skip-estimation  # Regenerate outputs and LaTeX sources only
 
 ")

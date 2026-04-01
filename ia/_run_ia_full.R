@@ -9,6 +9,8 @@
 ##   3. Assemble the IA LaTeX tree
 ##
 ## PDF compilation is a separate public step via tools/build_ia_paper.*.
+## The no-flag path is the exact IA replication setting and defaults to 50,000
+## draws.
 ###############################################################################
 
 parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
@@ -44,7 +46,7 @@ parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
       cat(
         "Usage: Rscript ia/_run_ia_full.R [options]\n\n",
         "Options:\n",
-        "  --ndraws=N                  Number of MCMC draws (default: 50000)\n",
+        "  --ndraws=N                  Number of MCMC draws (default: 50000; paper setting)\n",
         "  --sequential                Run IA estimation sequentially instead of supervised parallel\n",
         "  --skip-estim                Skip IA estimation and use existing IA results\n",
         "  --skip-results              Skip IA tables/figures generation\n",
@@ -52,7 +54,8 @@ parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
         "  --cores=N                   Total available cores for IA estimation\n",
         "  --cores-per-model=N         Cores per IA model (default: 4)\n",
         "  --self-pricing-engine=NAME  fast or reference (default: fast)\n",
-        "  --help, -h                  Show this help message\n",
+        "  --help, -h                  Show this help message\n\n",
+        "The no-flag path uses 50,000 draws for exact IA replication.\n",
         sep = ""
       )
       quit(save = "no", status = 0)

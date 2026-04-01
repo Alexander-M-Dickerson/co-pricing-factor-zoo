@@ -38,8 +38,12 @@ commands. They are the default human path because they handle platform-specific
 `Rscript`, LaTeX, and process details for you. If you want exact script
 boundaries, the raw `Rscript` equivalents are documented in
 [QUICKSTART.md](./QUICKSTART.md) and [README_PAPER_PIPELINE.md](./README_PAPER_PIPELINE.md).
+To exactly replicate the reported paper results, use the no-flag full pipeline:
+it defaults to 50,000 draws for the main paper and the Internet Appendix.
+Reduced-draw quick or smoke paths are setup-validation shortcuts, not the paper
+setting.
 
-### Fastest Validated Main-Paper Path
+### Exact Main-Paper Replication (50,000 Draws)
 
 Windows PowerShell:
 
@@ -47,7 +51,7 @@ Windows PowerShell:
 powershell -ExecutionPolicy Bypass -File tools\bootstrap_data.ps1
 powershell -ExecutionPolicy Bypass -File tools\bootstrap_packages.ps1
 powershell -ExecutionPolicy Bypass -File tools\doctor.ps1 --check-only
-powershell -ExecutionPolicy Bypass -File tools\run_full_replication.ps1 -Quick
+powershell -ExecutionPolicy Bypass -File tools\run_full_replication.ps1
 powershell -ExecutionPolicy Bypass -File tools\build_paper.ps1
 ```
 
@@ -57,7 +61,7 @@ Windows Command Prompt:
 tools\bootstrap_data.cmd
 tools\bootstrap_packages.cmd
 tools\doctor.cmd --check-only
-tools\run_full_replication.cmd -Quick
+tools\run_full_replication.cmd
 tools\build_paper.cmd
 ```
 
@@ -67,7 +71,7 @@ macOS Terminal:
 bash tools/bootstrap_data.sh
 bash tools/bootstrap_packages.sh
 bash tools/doctor.sh --check-only
-bash tools/run_full_replication.sh --quick
+bash tools/run_full_replication.sh
 bash tools/build_paper.sh
 ```
 
@@ -80,10 +84,51 @@ Posit/RStudio Terminal:
 Expected output:
 - main PDF: [djm_main.pdf](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/output/paper/latex/djm_main.pdf)
 
-### Fastest Validated IA Path
+If you want a reduced-draw setup check first, use the validated 5,000-draw main
+smoke path from [QUICKSTART.md](./QUICKSTART.md), then scale back to the no-flag
+50,000-draw path for exact replication.
+
+### Exact IA Replication (50,000 Draws)
+
+Use the no-flag IA full pipeline for exact replication. On a new machine, you
+may still want to run the 500-draw IA smoke boundary first, but that smoke path
+is only a setup check.
+
+Windows PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\run_ia_full.ps1
+powershell -ExecutionPolicy Bypass -File tools\build_ia_paper.ps1
+```
+
+Windows Command Prompt:
+
+```bat
+tools\run_ia_full.cmd
+tools\build_ia_paper.cmd
+```
+
+macOS Terminal:
+
+```bash
+bash tools/run_ia_full.sh
+bash tools/build_ia_paper.sh
+```
+
+Posit/RStudio Terminal:
+- on Windows, use the same PowerShell wrapper commands shown above, or the raw
+  `Rscript` IA boundaries from [QUICKSTART.md](./QUICKSTART.md)
+- on macOS, use the same `bash` wrapper commands shown above, or the raw `Rscript`
+  IA boundaries from [QUICKSTART.md](./QUICKSTART.md)
+
+Expected output:
+- IA PDF: [ia_main.pdf](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/ia/output/paper/latex/ia_main.pdf)
+
+### Validated IA Smoke And Scale-Up Path
 
 Use the IA smoke boundary first on a new machine, then scale up to the full IA
-run once the smoke path passes.
+run once the smoke path passes. These reduced-draw boundaries are for setup
+validation only; exact IA replication is the no-flag 50,000-draw path above.
 
 Windows PowerShell:
 
@@ -115,9 +160,6 @@ Posit/RStudio Terminal:
 - on macOS, use the same `bash` wrapper commands shown above, or the raw `Rscript`
   IA boundaries from [QUICKSTART.md](./QUICKSTART.md)
 
-Expected output:
-- IA PDF: [ia_main.pdf](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/ia/output/paper/latex/ia_main.pdf)
-
 ### Where Outputs Appear
 
 - main tables: [output/paper/tables](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/output/paper/tables)
@@ -126,6 +168,12 @@ Expected output:
 - IA outputs: [ia/output/paper](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/ia/output/paper)
 - IA LaTeX tree and PDF: [ia/output/paper/latex](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/ia/output/paper/latex)
 - logs: [output/logs](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/output/logs) and [ia/output/logs](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/ia/output/logs)
+
+Figure 1 note:
+- ordinary paper replication publishes the tracked Figure 1 assets and does not
+  rerun the Monte Carlo simulation
+- use `tools/run_figure1_simulation.*` only if you explicitly want to regenerate
+  Figure 1; that regeneration tool has its own separate 5,000-draw default
 
 ## Start Here
 

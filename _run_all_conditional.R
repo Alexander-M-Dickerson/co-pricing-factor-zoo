@@ -13,7 +13,7 @@
 ##   Rscript _run_all_conditional.R [options]
 ##
 ## OPTIONS:
-##   --ndraws=N                 Number of MCMC draws (default: 50000)
+##   --ndraws=N                 Number of MCMC draws (default: 50000; paper setting)
 ##   --direction=both|forward|backward
 ##                              Run both directions in supervised parallel
 ##                              mode (default), or a single direction directly
@@ -62,7 +62,7 @@ parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
       cat(
         "Usage: Rscript _run_all_conditional.R [options]\n\n",
         "Options:\n",
-        "  --ndraws=N                 Number of MCMC draws (default: 50000)\n",
+        "  --ndraws=N                 Number of MCMC draws (default: 50000; paper setting)\n",
         "  --direction=both|forward|backward\n",
         "                             Run both directions in supervised parallel mode,\n",
         "                             or a single direction directly in-process\n",
@@ -71,6 +71,7 @@ parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
         "  --parallel-type=TYPE       auto, PSOCK, FORK, sequential\n",
         "  --cluster-timeout=SECONDS  Cluster creation timeout (default: 30)\n",
         "  --help, -h                 Show this help message\n\n",
+        "The no-flag path uses 50,000 draws for the paper setting.\n\n",
         "Smoke test:\n",
         "  Rscript _run_all_conditional.R --direction=both --ndraws=500\n",
         sep = ""

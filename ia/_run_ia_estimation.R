@@ -13,7 +13,7 @@
 ##
 ## OPTIONS:
 ##   --models=1,2,3              Run specific models (comma-separated, default: all)
-##   --ndraws=N                  Number of MCMC draws (default: 50000)
+##   --ndraws=N                  Number of MCMC draws (default: 50000; paper setting)
 ##   --parallel                  Run models in supervised parallel batches (default)
 ##   --sequential                Run models sequentially in-process
 ##   --cores=N                   Total available cores (default: auto-detect)
@@ -90,7 +90,7 @@ parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
         "Usage: Rscript ia/_run_ia_estimation.R [options]\n\n",
         "Options:\n",
         "  --models=1,2,3              Run specific models (comma-separated)\n",
-        "  --ndraws=N                  Number of MCMC draws (default: 50000)\n",
+        "  --ndraws=N                  Number of MCMC draws (default: 50000; paper setting)\n",
         "  --parallel                  Run models in supervised parallel batches (default)\n",
         "  --sequential                Run models sequentially\n",
         "  --cores=N                   Total available cores\n",
@@ -98,7 +98,8 @@ parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
         "  --self-pricing-engine=NAME  fast or reference (default: fast)\n",
         "  --dry-run                   Show what would be run\n",
         "  --list                      List all available models\n",
-        "  --help, -h                  Show this help message\n",
+        "  --help, -h                  Show this help message\n\n",
+        "The no-flag path uses 50,000 draws for the IA estimation paper setting.\n",
         sep = ""
       )
       quit(save = "no", status = 0)

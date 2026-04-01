@@ -361,8 +361,11 @@ expect_true(
 )
 expect_true(
   grepl("Run This Repo As A Human", readme_text, fixed = TRUE) &&
-    grepl("Fastest Validated Main-Paper Path", readme_text, fixed = TRUE) &&
-    grepl("Fastest Validated IA Path", readme_text, fixed = TRUE) &&
+    grepl("Exact Main-Paper Replication", readme_text, fixed = TRUE) &&
+    grepl("Exact IA Replication", readme_text, fixed = TRUE) &&
+    grepl("50,000", readme_text, fixed = TRUE) &&
+    grepl("setup-validation shortcuts", readme_text, fixed = TRUE) &&
+    grepl("Figure 1 note", readme_text, fixed = TRUE) &&
     grepl("output/paper/latex/djm_main.pdf", readme_text, fixed = TRUE) &&
     grepl("ia/output/paper/latex/ia_main.pdf", readme_text, fixed = TRUE) &&
     grepl("For Codex / Claude", readme_text, fixed = TRUE),
@@ -391,22 +394,31 @@ expect_true(
 )
 expect_true(
   grepl("Using Posit/RStudio Terminal", quickstart_text, fixed = TRUE) &&
-    grepl("tools\\\\run_full_replication\\.ps1 -Quick", quickstart_text) &&
-    grepl("tools\\\\run_full_replication\\.cmd -Quick", quickstart_text) &&
-    grepl("bash tools/run_full_replication.sh --quick", quickstart_text, fixed = TRUE) &&
+    grepl("Exact Main-Paper Replication", quickstart_text, fixed = TRUE) &&
+    grepl("Validated Main Smoke Boundary", quickstart_text, fixed = TRUE) &&
+    grepl("tools\\\\run_full_replication\\.ps1", quickstart_text) &&
+    grepl("tools\\\\run_full_replication\\.cmd", quickstart_text) &&
+    grepl("bash tools/run_full_replication.sh", quickstart_text, fixed = TRUE) &&
     grepl("Rscript _run_full_replication.R --quick", quickstart_text, fixed = TRUE) &&
     grepl("Rscript _run_full_replication.R", quickstart_text, fixed = TRUE) &&
+    grepl("Rscript _run_all_unconditional.R", quickstart_text, fixed = TRUE) &&
+    grepl("Rscript _run_all_conditional.R --direction=both", quickstart_text, fixed = TRUE) &&
+    grepl("Exact IA Replication", quickstart_text, fixed = TRUE) &&
     grepl("Rscript ia/_run_ia_full.R", quickstart_text, fixed = TRUE) &&
+    grepl("50,000", quickstart_text, fixed = TRUE) &&
+    grepl("Figure 1 note", quickstart_text, fixed = TRUE) &&
     grepl("output/paper/latex/djm_main.pdf", quickstart_text, fixed = TRUE) &&
     grepl("ia/output/paper/latex/ia_main.pdf", quickstart_text, fixed = TRUE),
   "QUICKSTART now supports humans directly with Posit guidance, wrappers first, and raw Rscript equivalents.",
   "QUICKSTART is missing the Posit guidance, wrapper-first path, or raw Rscript equivalents."
 )
 expect_true(
-  grepl("Main Smoke Boundary", pipeline_readme_text, fixed = TRUE) &&
-    grepl("Main Full Boundary", pipeline_readme_text, fixed = TRUE) &&
+  grepl("Main Exact Boundary", pipeline_readme_text, fixed = TRUE) &&
+    grepl("Main Smoke Boundary", pipeline_readme_text, fixed = TRUE) &&
+    grepl("IA Exact Boundary", pipeline_readme_text, fixed = TRUE) &&
     grepl("IA Smoke Boundary", pipeline_readme_text, fixed = TRUE) &&
-    grepl("IA Full Boundary", pipeline_readme_text, fixed = TRUE) &&
+    grepl("50,000", pipeline_readme_text, fixed = TRUE) &&
+    grepl("Figure 1 note", pipeline_readme_text, fixed = TRUE) &&
     grepl("output/paper/latex/djm_main.pdf", pipeline_readme_text, fixed = TRUE) &&
     grepl("ia/output/paper/latex/ia_main.pdf", pipeline_readme_text, fixed = TRUE),
   "README_PAPER_PIPELINE now acts as a concise human boundary map.",

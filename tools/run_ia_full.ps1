@@ -17,6 +17,8 @@ if ($Help) {
   Write-Host "Usage: tools/run_ia_full.ps1 [-Draws <int>] [-Sequential] [-CoresPerModel <int>] [-Cores <int>] [-SelfPricingEngine fast|reference] [-SkipEstimation] [-SkipResults] [-SkipAssembly] [-Help]"
   Write-Host ""
   Write-Host "Run the implemented IA pipeline from the Windows host execution path."
+  Write-Host "No flags runs the exact IA setting at the default 50,000 draws."
+  Write-Host "Use the reduced-draw 500 and 5,000 IA boundaries only for setup validation and scale-up checks."
   exit 0
 }
 

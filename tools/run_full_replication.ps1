@@ -12,6 +12,8 @@ if ($Help) {
   Write-Host "Usage: tools/run_full_replication.ps1 [-Draws <int> | -Quick] [-Sequential] [-SkipEstimation] [-Help]"
   Write-Host ""
   Write-Host "Run the full replication pipeline from the Windows host execution path."
+  Write-Host "No flags runs the exact paper setting at the default 50,000 draws."
+  Write-Host "-Quick is a reduced-draw 5,000 smoke boundary for setup validation."
   exit 0
 }
 

@@ -32,7 +32,7 @@
 ##
 ## OPTIONS:
 ##   --models=1,2,3      Run specific models (comma-separated, default: all)
-##   --ndraws=N          Number of MCMC draws (default: 50000, use 5000 for quick test)
+##   --ndraws=N          Number of MCMC draws (default: 50000; paper setting)
 ##   --parallel          Run models in parallel (default)
 ##   --cores=N           Total available cores (default: auto-detect)
 ##   --cores-per-model=N Cores per model (default: 4)
@@ -119,7 +119,7 @@ main_path <- getwd()  # Assumes script is run from project root
 # Default execution settings (can be overridden by command-line args)
 DEFAULT_CORES_PER_MODEL <- 4
 DEFAULT_TOTAL_CORES     <- parallel::detectCores() - 1
-DEFAULT_NDRAWS          <- 50000  # Use 5000 for quick test runs
+DEFAULT_NDRAWS          <- 50000  # Paper setting; use lower draws only for smoke validation
 RUN_PARALLEL            <- TRUE   # Parallel by default (use --sequential to disable)
 MODELS_TO_RUN           <- 1:7  # All models by default
 DRY_RUN                 <- FALSE
@@ -293,7 +293,7 @@ parse_args <- function() {
       cat("\nUsage: Rscript _run_all_unconditional.R [options]\n\n")
       cat("Options:\n")
       cat("  --models=1,2,3      Run specific models (comma-separated)\n")
-      cat("  --ndraws=N          Number of MCMC draws (default: 50000, use 5000 for quick test)\n")
+      cat("  --ndraws=N          Number of MCMC draws (default: 50000; paper setting)\n")
       cat("  --parallel          Run models in parallel (default)\n")
       cat("  --sequential        Run models sequentially\n")
       cat("  --cores=N           Total available cores (default: auto-detect)\n")
@@ -713,7 +713,7 @@ run_sequential_models <- function(configs, main_path, cores_per_model, ndraws, t
     cat("    Bond/Stock models: ~10 min (laptop) / ~3 min (server)\n")
   } else {
     cat("\n")
-    cat(sprintf("  Note: Running with %d draws (quick test mode)\n", ndraws))
+    cat(sprintf("  Note: Running with %d draws (reduced-draw smoke validation)\n", ndraws))
   }
   cat("=", rep("=", 70), "\n", sep = "")
 
