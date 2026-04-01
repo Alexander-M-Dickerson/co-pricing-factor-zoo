@@ -1,4 +1,15 @@
 #!/usr/bin/env Rscript
+###############################################################################
+## validate_repo_docs.R
+## ---------------------------------------------------------------------------
+##
+## Paper role:
+##   Drift guard for the repo's public human/AI replication contract.
+##
+## Paper refs:
+##   - validated setup and execution surfaces for the main paper and IA subset
+##   - exhibit/manuscript coverage claims exposed to Codex and Claude
+###############################################################################
 
 get_script_dir <- function() {
   args <- commandArgs(trailingOnly = FALSE)

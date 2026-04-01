@@ -1202,6 +1202,9 @@ gc(verbose = FALSE)
 ###############################################################################
 ## SECTION 5.6: TREASURY MODEL FIGURES AND TABLE
 ###############################################################################
+# Paper: IA.9 Treasury-component robustness. This block repackages the
+# Treasury-only estimation into the IA analogues of Figure 2, Figure 3,
+# Figure 4, and the Treasury SR-decomposition table tied to Eq. (10).
 # Generate Figures and Tables for Treasury component:
 # - Posterior probability figure (like Figure 2)
 # - Posterior probability table (like Table A.2)
@@ -1509,6 +1512,9 @@ if (treasury_globals_assigned) {
 ###############################################################################
 ## SECTION 5.7: TREASURY WEIGHTED MODEL (DR-TILT) FIGURE
 ###############################################################################
+# Paper: IA.9 DR-tilt robustness. This reuses the weighted-kappa Treasury run
+# where the prior tilt vector follows the CF/DR classification discussed in the
+# appendix, so the resulting bar plot is the weighted analogue of Figure 4.
 # Generate Figure 4 equivalent for the treasury model with DR-tilt kappa weights.
 # This requires the weighted estimation to have been run via:
 #   Rscript ia/_run_treasury_weighted.R
@@ -1680,6 +1686,10 @@ if (treasury_wt_globals_assigned) {
 ###############################################################################
 ## SECTION 5.8: SPARSE JOINT MODEL (SPARSITY-INDUCING PRIOR)
 ###############################################################################
+# Paper: IA.10 sparse-prior robustness. This block swaps the flat Beta(1,1)
+# inclusion prior for the sparse Beta(3.54, 34.66) calibration so the expected
+# number of active factors is about five, then regenerates the posterior-probability
+# and asset-pricing exhibits for that sparse specification.
 # Generate tables for the sparse joint model (bond_stock_with_sp with sparsity prior):
 # - Table: Posterior factor probabilities and risk prices -- imposing sparsity
 # - Table: Asset pricing performance with two panels:
@@ -1996,6 +2006,10 @@ if (sparse_globals_assigned) {
 ###############################################################################
 ## SECTION 5.9: IS/OS SWITCH MODEL
 ###############################################################################
+# Paper: IA.10 IS/OS-switch robustness. This block re-estimates the joint model
+# on the original OOS test assets and then prices the original IS assets out of
+# sample, asking whether the main findings depend materially on the benchmark
+# train/test split rather than on the factor-selection mechanism itself.
 # Generate tables and figure for the IS/OS switch model:
 # - Estimated on OOS test assets (equity_os_77, bond_oosample_all_excess)
 # - Table: Asset pricing with:

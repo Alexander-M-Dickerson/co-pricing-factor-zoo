@@ -1,3 +1,19 @@
+###############################################################################
+## ia_run_helpers.R
+## ---------------------------------------------------------------------------
+##
+## Paper role:
+##   Shared registry and validation helpers for the implemented Internet
+##   Appendix estimation subset.
+##
+## Paper refs:
+##   - IA.6 and IA.7: intercept/no-intercept robustness
+##   - IA.9: Treasury-component and DR-tilt robustness
+##   - IA.10: sparse and IS/OS-switch robustness
+##   - Eq. (6): heterogeneous kappa tilt for weighted Treasury runs
+##   - Eq. (10): Treasury-component decomposition
+###############################################################################
+
 ia_value_or <- function(x, y) {
   if (is.null(x) || length(x) == 0 || all(is.na(x))) {
     y
@@ -26,6 +42,8 @@ ia_treasury_frequentist_models <- function() {
 
 ia_model_configs <- function() {
   list(
+    # Paper: Models 1-5 are the baseline IA robustness block that toggles
+    # intercept inclusion and compares bond, stock, and joint co-pricing runs.
     list(
       id = 1L,
       name = "bond_intercept",
@@ -111,6 +129,8 @@ ia_model_configs <- function() {
       kappa_file = NULL,
       frequentist_models = ia_default_frequentist_models()
     ),
+    # Paper: Treasury base is the Eq. (10) component exercise with Treasury-
+    # matched bond returns, reported separately from the main co-pricing model.
     list(
       id = 6L,
       name = "treasury_base",
@@ -128,6 +148,8 @@ ia_model_configs <- function() {
       kappa_file = NULL,
       frequentist_models = ia_treasury_frequentist_models()
     ),
+    # Paper: Treasury weighted is the DR-tilt robustness that applies Eq. (6)
+    # style prior tilts using the CF/DR-informed weights stored in w_all.rds.
     list(
       id = 7L,
       name = "treasury_weighted",
@@ -145,6 +167,8 @@ ia_model_configs <- function() {
       kappa_file = "ia/data/w_all.rds",
       frequentist_models = ia_treasury_frequentist_models()
     ),
+    # Paper: Sparse joint uses the Beta prior calibrated so the expected model
+    # size is close to the canonical five-factor benchmark.
     list(
       id = 8L,
       name = "sparse_joint",
@@ -162,6 +186,8 @@ ia_model_configs <- function() {
       kappa_file = NULL,
       frequentist_models = ia_default_frequentist_models()
     ),
+    # Paper: IS/OS switch re-estimates the joint model on the original OOS test
+    # assets to test whether the main findings depend on the canonical IS split.
     list(
       id = 9L,
       name = "isos_switch",
@@ -271,8 +297,10 @@ ia_results_path <- function(model,
 
 ia_expected_engine <- function(model, self_pricing_engine = "fast") {
   self_pricing_engine <- match.arg(self_pricing_engine, c("fast", "reference"))
-  # Treasury models are routed through the no-self-pricing branch in
-  # run_bayesian_mcmc(); their bond file is merged into f1 and f2 becomes NULL.
+  # Paper: Treasury-component runs are estimated through the no-self-pricing
+  # branch because the Treasury factors are folded into the non-traded block for
+  # the BMA-SDF step. Fast self-pricing applies only to the tradable-factor
+  # v2 sampler used by the bond, stock, and joint co-pricing IA models.
   has_tradable_factors <- !identical(model$model_type, "treasury") &&
     !is.null(model$f2) &&
     length(model$f2) > 0

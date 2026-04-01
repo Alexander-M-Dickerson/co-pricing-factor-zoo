@@ -346,8 +346,10 @@ run_bayesian_mcmc_time_varying <- function(
       all_factor_names = if (is.null(f1_matrix)) colnames(f2_matrix) else c(colnames(f1_matrix), colnames(f2_matrix))
     )
   } else if (model_type == "treasury") {
-    # Treasury: all factors treated as non-traded FOR BMA estimation
-    # But we preserve f2_matrix for benchmark models (KNS, RP-PCA, PCA)
+    # Paper: Treasury-component conditional runs collapse the tradable Treasury
+    # block into the non-traded factor matrix for the BMA-SDF step, keeping the
+    # time-varying Eq. (10) decomposition on the no-self-pricing branch while
+    # preserving the original factor identities for downstream labeling.
     #
     # IMPORTANT: For downstream analysis (pp_bar_plots, generate_sr_tables),
     # we preserve the TRUE factor types based on the tag:
@@ -844,6 +846,9 @@ run_bayesian_mcmc_time_varying <- function(
   # Extract date_end from aligned data
   estimation_date_end <- aligned$date_range["end"]
   
+  # Paper: this conditional IS_AP object is the direct input to the investing
+  # exercise summaries, especially Figure 7 and Table 6 Panel B, because it
+  # stores the window-specific posterior prices of risk, weights, and gamma draws.
   IS_AP <- insample_asset_pricing_time_varying(
     results   = results,
     f_all     = f_all_raw,

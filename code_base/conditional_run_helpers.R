@@ -1,3 +1,17 @@
+###############################################################################
+## conditional_run_helpers.R
+## ---------------------------------------------------------------------------
+##
+## Paper role:
+##   Validation and status helpers for the conditional investing-exercise
+##   artifacts consumed by Figure 7 and Table 6 Panel B.
+##
+## Paper refs:
+##   - Sec. 3.4
+##   - Figure 7
+##   - Table 6 Panel B
+###############################################################################
+
 conditional_value_or <- function(x, y) {
   if (is.null(x) || length(x) == 0 || all(is.na(x))) {
     y

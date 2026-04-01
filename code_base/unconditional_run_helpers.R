@@ -1,3 +1,18 @@
+###############################################################################
+## unconditional_run_helpers.R
+## ---------------------------------------------------------------------------
+##
+## Paper role:
+##   Validation helpers for the saved unconditional workspaces that feed the
+##   main-text tables and figures.
+##
+## Paper refs:
+##   - Sec. 3
+##   - Tables 1-6
+##   - Figures 2-5 and 9
+##   - Appendix A/B output paths
+###############################################################################
+
 unconditional_value_or <- function(x, y) {
   if (is.null(x) || length(x) == 0 || all(is.na(x))) {
     y
@@ -28,6 +43,9 @@ coerce_unconditional_time <- function(value) {
 }
 
 unconditional_model_specs <- function() {
+  # Paper: these seven saved workspaces are the baseline unconditional inputs
+  # required by the public paper-output path, including the stock- and
+  # bond-Treasury component runs used by Figure 9 and the IA Treasury outputs.
   list(
     list(model_type = "stock", return_type = "excess", alpha.w = 1, beta.w = 1, kappa = 0, tag = "baseline"),
     list(model_type = "bond", return_type = "excess", alpha.w = 1, beta.w = 1, kappa = 0, tag = "baseline"),

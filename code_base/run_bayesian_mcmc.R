@@ -379,8 +379,11 @@ run_bayesian_mcmc <- function(
       all_factor_names = c(colnames(f1_matrix), colnames(f2_matrix))
     )
   } else if (model_type == "treasury") {
-    # Treasury: all factors treated as non-traded FOR BMA estimation
-    # But we preserve f2_matrix for benchmark models (KNS, RP-PCA, PCA)
+    # Paper: Treasury-component runs collapse the tradable Treasury block into
+    # the non-traded factor matrix for the BMA-SDF step, which routes the model
+    # through the no-self-pricing sampler used for the Eq. (10) decomposition.
+    # We still preserve f2_matrix for benchmark models and for the downstream
+    # factor labeling used in the Treasury IA exhibits.
     #
     # IMPORTANT: For downstream analysis (pp_bar_plots, generate_sr_tables),
     # we preserve the TRUE factor types based on the tag:
@@ -904,7 +907,9 @@ run_bayesian_mcmc <- function(
   ## ---- 13. In-Sample Asset Pricing -----------------------------------------
   # Paper: IS_AP collects the posterior summaries used downstream for the main
   # pricing tables, factor rankings, BMA-SDF mimicking portfolios, and trading
-  # results reported in Tables 1-6 and Figures 2-7.
+  # results reported in Table 1, Tables 2-3, Table 6 Panel A, and Figures 2-5.
+  # The conditional pipeline consumes the analogous time-varying object for
+  # Figure 7 and Table 6 Panel B.
   IS_AP <- insample_asset_pricing_enhanced(
     results   = results,
     f_all     = f_all_raw,

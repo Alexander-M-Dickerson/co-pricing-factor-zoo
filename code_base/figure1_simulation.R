@@ -382,6 +382,9 @@ build_figure1_panel_plots <- function(simulation, pseudo_true) {
     expression(u[f]), expression(f[1]), expression(f[2]), expression(f[3]), expression(f[4])
   )
 
+  # Paper: Figure 1, Section 2.4, IA.2. Panels A/B summarize the Monte Carlo
+  # distribution of the BMA-SDF market price of risk across the six experiment
+  # designs described in the caption and simulation appendix.
   mpr_values <- matrix(NA_real_, nrow = sim_size, ncol = 6)
   mpr_values[, 1] <- vapply(simulation, function(x) x$MPR_uf_f, numeric(1))
   mpr_values[, 2] <- vapply(simulation, function(x) x$MPR_uf_f_f1, numeric(1))
@@ -390,6 +393,8 @@ build_figure1_panel_plots <- function(simulation, pseudo_true) {
   mpr_values[, 5] <- vapply(simulation, function(x) x$MPR_uf_f1_f2, numeric(1))
   mpr_values[, 6] <- vapply(simulation, function(x) x$MPR_uf_f1_f2_f3_f4, numeric(1))
 
+  # Paper: the red dashed line and grey confidence band in Figure 1 use the
+  # pseudo-true HML market price of risk and its historical 95% GMM interval.
   bma_plot <- plot_figure1_sims(
     mpr_values,
     ylim = c(0, 0.35),
@@ -405,6 +410,8 @@ build_figure1_panel_plots <- function(simulation, pseudo_true) {
     label_cex = 1.5
   )
 
+  # Paper: Panels E/F plot posterior inclusion probabilities E[gamma_j | data]
+  # for each factor appearing in each experiment.
   post_probs <- t(vapply(simulation, function(x) x$post_probs_uf_f, numeric(2)))
   post_probs <- cbind(post_probs, t(vapply(simulation, function(x) x$post_probs_uf_f_f1, numeric(3))))
   post_probs <- cbind(post_probs, t(vapply(simulation, function(x) x$post_probs_uf_f_f1_f2, numeric(4))))
@@ -426,6 +433,8 @@ build_figure1_panel_plots <- function(simulation, pseudo_true) {
     label_cex = 1.5
   )
 
+  # Paper: Panels C/D plot posterior mean market prices of risk E[lambda_j | data]
+  # for the same factor sets, against the pseudo-true HML benchmark.
   post_lambdas <- t(vapply(simulation, function(x) x$post_lambdas_uf_f, numeric(2)))
   post_lambdas <- cbind(post_lambdas, t(vapply(simulation, function(x) x$post_lambdas_uf_f_f1, numeric(3))))
   post_lambdas <- cbind(post_lambdas, t(vapply(simulation, function(x) x$post_lambdas_uf_f_f1_f2, numeric(4))))
@@ -962,6 +971,10 @@ run_figure1_simulation_batch <- function(sim_size,
     sim_f <- sim_y[, (1 + calibration$n_assets):(calibration$n_assets + 1), drop = FALSE]
     uf <- sample_sim$uf
 
+    # Paper: IA.2 fixes the noisy-proxy correlations at 0.4, 0.3, 0.2, and 0.1.
+    # Experiments I-VI are then the six nested factor sets listed in the Figure 1
+    # caption, combining the useless factor, the pseudo-true factor, and up to
+    # four noisy proxies.
     rho <- c(0.4, 0.3, 0.2, 0.1)
     sim_f1 <- rho[1] * sim_f + sqrt(1 - rho[1]^2) * stats::rnorm(length(sim_f), sd = stats::sd(sim_f))
     sim_f2 <- rho[2] * sim_f + sqrt(1 - rho[2]^2) * stats::rnorm(length(sim_f), sd = stats::sd(sim_f))
@@ -991,6 +1004,9 @@ run_figure1_simulation_batch <- function(sim_size,
         project_root = project_root
       )
 
+      # Paper: store the three Figure 1 summaries from the posterior draws after
+      # burn-in: BMA-SDF market price of risk, factor inclusion probabilities,
+      # and posterior mean factor risk prices.
       output[[paste0("MPR_", model_name)]] <- mean(
         matrixStats::colSds(t(shrinkage$sdf_path[post_start:ndraws, , drop = FALSE]))
       )
@@ -1079,6 +1095,8 @@ run_figure1_simulation <- function(sim_size = 1000L,
 
   run_log <- list()
   for (prior_pct in prior_pcts) {
+    # Paper: Figure 1 uses the prior Sharpe ratio calibration from Section 2.4,
+    # set here as a percentage of the ex post maximum Sharpe ratio of the test assets.
     psi1 <- BayesianFactorZoo::psi_to_priorSR(
       calibration$R,
       calibration$HML,
