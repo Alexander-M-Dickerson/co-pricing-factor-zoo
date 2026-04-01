@@ -1,86 +1,102 @@
 # Paper Pipeline
 
-Use this file as the short map to the executable replication boundaries.
+Use this file as the short human boundary map.
 
 Primary references:
-
-- [QUICKSTART.md](./QUICKSTART.md): human runbook
-- [docs/agent-context/replication-pipeline.md](./docs/agent-context/replication-pipeline.md): shared agent pipeline context
+- [QUICKSTART.md](./QUICKSTART.md): full human runbook
+- [docs/validation/validated_runs.csv](./docs/validation/validated_runs.csv): source of truth for validated runtime and build boundaries
 - [docs/manifests/exhibits.csv](./docs/manifests/exhibits.csv): exhibit-to-code mapping
-- [docs/manifests/manuscript_exhibits.csv](./docs/manifests/manuscript_exhibits.csv): full paper inventory with repo coverage status
-- [docs/manifests/paper_claims.csv](./docs/manifests/paper_claims.csv): claim-to-evidence coverage map
-- [docs/agent-context/prompt-recipes.md](./docs/agent-context/prompt-recipes.md): canonical prompt surface for Codex and Claude
-- [docs/paper/co-pricing-factor-zoo.ai-optimized.md](./docs/paper/co-pricing-factor-zoo.ai-optimized.md): full paper
 
-Fresh-clone default:
+## Main Smoke Boundary
 
-1. `tools/bootstrap_packages.*`
-2. `tools/bootstrap_data.*`
-3. `tools/doctor.*`
-4. requested pipeline boundary
+Wrapper path:
+- Windows PowerShell: `powershell -ExecutionPolicy Bypass -File tools\run_full_replication.ps1 -Quick`
+- Windows Command Prompt: `tools\run_full_replication.cmd -Quick`
+- macOS Terminal: `bash tools/run_full_replication.sh --quick`
 
-Main five-step pipeline:
-
-1. `_run_all_unconditional.R`
-2. `_run_all_conditional.R`
-3. `_run_paper_results.R`
-4. `_run_paper_conditional_results.R`
-5. `_create_djm_tabs_figs.R` to assemble the LaTeX source tree
-6. `tools/build_paper.*` to compile `output/paper/latex/djm_main.tex`
-7. `tools/run_figure1_simulation.*` only when you explicitly want to regenerate the Figure 1 simulation fixtures rather than use the tracked default build
-
-Validated Windows host path as of March 31, 2026:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File tools\run_full_replication.ps1 -Draws 5000
-powershell -ExecutionPolicy Bypass -File tools\build_paper.ps1
-```
-
-Windows Command Prompt equivalents:
-
-```bat
-tools\run_full_replication.cmd -Draws 5000
-tools\build_paper.cmd
-```
-
-macOS or Linux equivalents:
+Raw `Rscript` equivalent:
 
 ```bash
-bash tools/run_full_replication.sh --ndraws=5000
-bash tools/build_paper.sh
+Rscript _run_full_replication.R --quick
 ```
 
-That run completed end-to-end on the maintainer Windows host. The new build
-wrapper turns the final PDF compilation step into a public repo command instead
-of a manual `pdflatex` and `bibtex` sequence.
+Build the PDF with:
+- Windows PowerShell: `powershell -ExecutionPolicy Bypass -File tools\build_paper.ps1`
+- Windows Command Prompt: `tools\build_paper.cmd`
+- macOS Terminal: `bash tools/build_paper.sh`
 
-IA pipeline:
+Output:
+- [djm_main.pdf](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/output/paper/latex/djm_main.pdf)
 
-1. `tools/run_ia_smoke.*` for the canonical 500-draw IA smoke boundary
-2. `tools/run_ia_full.*` or `ia/_run_ia_full.R` for estimation + outputs + LaTeX assembly
-3. `tools/build_ia_paper.*` to compile `ia/output/paper/latex/ia_main.tex`
+## Main Full Boundary
 
-Validated IA Windows host path as of April 1, 2026:
+Wrapper path:
+- Windows PowerShell: `powershell -ExecutionPolicy Bypass -File tools\run_full_replication.ps1 -Draws 5000`
+- Windows Command Prompt: `tools\run_full_replication.cmd -Draws 5000`
+- macOS Terminal: `bash tools/run_full_replication.sh --ndraws=5000`
 
-```powershell
-powershell -ExecutionPolicy Bypass -File tools\run_ia_smoke.ps1 -Draws 500
-powershell -ExecutionPolicy Bypass -File tools\run_ia_full.ps1 -Draws 5000
-powershell -ExecutionPolicy Bypass -File tools\build_ia_paper.ps1
+Raw `Rscript` equivalent:
+
+```bash
+Rscript _run_full_replication.R
 ```
 
-That IA run completed end-to-end on the maintainer Windows host, including the
-5,000-draw estimation boundary, implemented IA outputs, LaTeX assembly, and IA
-PDF compilation.
+Step-by-step transparency path:
 
-IA entrypoint breakdown:
+```bash
+Rscript _run_all_unconditional.R
+Rscript _run_all_conditional.R --direction=both
+Rscript _run_paper_results.R
+Rscript _run_paper_conditional_results.R
+Rscript _create_djm_tabs_figs.R
+```
 
-1. `ia/_run_ia_estimation.R`
-2. `ia/_run_ia_results.R`
-3. `ia/_create_ia_latex.R`
-4. `ia/_run_ia_full.R`
+## IA Smoke Boundary
 
-Resume rule:
+Wrapper path:
+- Windows PowerShell: `powershell -ExecutionPolicy Bypass -File tools\run_ia_smoke.ps1 -Draws 500`
+- Windows Command Prompt: `tools\run_ia_smoke.cmd -Draws 500`
+- macOS Terminal: `bash tools/run_ia_smoke.sh --ndraws=500`
 
-- stop at the first failing script
+Raw `Rscript` equivalent:
+
+```bash
+Rscript ia/_run_ia_estimation.R --ndraws=500
+Rscript ia/_run_ia_results.R --expected-ndraws=500
+Rscript ia/_create_ia_latex.R
+```
+
+## IA Full Boundary
+
+Wrapper path:
+- Windows PowerShell: `powershell -ExecutionPolicy Bypass -File tools\run_ia_full.ps1 -Draws 5000`
+- Windows Command Prompt: `tools\run_ia_full.cmd -Draws 5000`
+- macOS Terminal: `bash tools/run_ia_full.sh --ndraws=5000`
+
+Raw `Rscript` equivalent:
+
+```bash
+Rscript ia/_run_ia_full.R
+```
+
+Step-by-step transparency path:
+
+```bash
+Rscript ia/_run_ia_estimation.R
+Rscript ia/_run_ia_results.R
+Rscript ia/_create_ia_latex.R
+```
+
+Build the IA PDF with:
+- Windows PowerShell: `powershell -ExecutionPolicy Bypass -File tools\build_ia_paper.ps1`
+- Windows Command Prompt: `tools\build_ia_paper.cmd`
+- macOS Terminal: `bash tools/build_ia_paper.sh`
+
+Output:
+- [ia_main.pdf](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/ia/output/paper/latex/ia_main.pdf)
+
+## If Something Fails, Rerun Here
+
 - rerun the smallest failing boundary
-- use the executable manifest, manuscript manifest, and shared pipeline doc before reading source in depth
+- use the smoke boundary before the full boundary on a new machine
+- use [docs/manifests/exhibits.csv](./docs/manifests/exhibits.csv) when you need to map a table or figure back to the smallest script boundary

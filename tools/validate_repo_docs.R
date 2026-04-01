@@ -344,46 +344,54 @@ expect_true(
 
 readme_text <- read_text(file.path(repo_root, "README.md"))
 quickstart_text <- read_text(file.path(repo_root, "QUICKSTART.md"))
+pipeline_readme_text <- read_text(file.path(repo_root, "README_PAPER_PIPELINE.md"))
 agents_text <- read_text(file.path(repo_root, "AGENTS.md"))
 claude_text <- read_text(file.path(repo_root, "CLAUDE.md"))
 expect_true(
-  grepl("tools/bootstrap_packages.R", readme_text, fixed = TRUE) &&
-    grepl("tools/bootstrap_data.R", readme_text, fixed = TRUE) &&
-    grepl("tools/doctor.R", readme_text, fixed = TRUE) &&
-    grepl("docs/manifests/exhibits.csv", readme_text, fixed = TRUE) &&
-    grepl("docs/agent-context/prompt-recipes.md", readme_text, fixed = TRUE),
-  "README points to the new tooling and manifest surfaces.",
-  "README does not point to the new tooling and manifest surfaces."
+  grepl("Run This Repo As A Human", readme_text, fixed = TRUE) &&
+    grepl("Fastest Validated Main-Paper Path", readme_text, fixed = TRUE) &&
+    grepl("Fastest Validated IA Path", readme_text, fixed = TRUE) &&
+    grepl("output/paper/latex/djm_main.pdf", readme_text, fixed = TRUE) &&
+    grepl("ia/output/paper/latex/ia_main.pdf", readme_text, fixed = TRUE) &&
+    grepl("For Codex / Claude", readme_text, fixed = TRUE),
+  "README now exposes a balanced human-first front door plus a separate AI section.",
+  "README is missing the human-first run path or the separate AI section."
 )
 expect_true(
   grepl("docs/acceptance/prompt_harness.csv", readme_text, fixed = TRUE) &&
     grepl("docs/validation/validated_runs.csv", readme_text, fixed = TRUE) &&
     grepl("docs/validation/agent_acceptance_log.csv", readme_text, fixed = TRUE) &&
-    grepl("docs/acceptance/prompt_harness.csv", quickstart_text, fixed = TRUE) &&
-    grepl("docs/validation/validated_runs.csv", quickstart_text, fixed = TRUE) &&
-    grepl("docs/validation/agent_acceptance_log.csv", quickstart_text, fixed = TRUE) &&
     grepl("docs/acceptance/prompt_harness.csv", agents_text, fixed = TRUE) &&
     grepl("docs/validation/validated_runs.csv", agents_text, fixed = TRUE) &&
     grepl("docs/validation/agent_acceptance_log.csv", agents_text, fixed = TRUE) &&
     grepl("docs/acceptance/prompt_harness.csv", claude_text, fixed = TRUE) &&
     grepl("docs/validation/validated_runs.csv", claude_text, fixed = TRUE) &&
     grepl("docs/validation/agent_acceptance_log.csv", claude_text, fixed = TRUE),
-  "Primary human and agent docs point at the acceptance harness and validation ledgers.",
-  "One or more primary docs are missing the acceptance harness or validation ledger surfaces."
+  "README and the agent docs point at the acceptance harness and validation ledgers.",
+  "README, AGENTS.md, or CLAUDE.md is missing the acceptance harness or validation ledger surfaces."
 )
 expect_true(
-  grepl("tools/bootstrap_packages.R", quickstart_text, fixed = TRUE) &&
-    grepl("tools/bootstrap_data.R", quickstart_text, fixed = TRUE) &&
-    grepl("tools/doctor.R", quickstart_text, fixed = TRUE) &&
-    grepl("tools/build_paper.ps1", quickstart_text, fixed = TRUE) &&
-    grepl("tools/build_ia_paper.ps1", quickstart_text, fixed = TRUE) &&
-    grepl("tools/build_paper.cmd", quickstart_text, fixed = TRUE) &&
-    grepl("tools/build_ia_paper.cmd", quickstart_text, fixed = TRUE) &&
-    grepl("tools/build_paper.sh", quickstart_text, fixed = TRUE) &&
-    grepl("tools/build_ia_paper.sh", quickstart_text, fixed = TRUE) &&
-    grepl("docs/agent-context/prompt-recipes.md", quickstart_text, fixed = TRUE),
-  "QUICKSTART uses the shared bootstrap and doctor scripts.",
-  "QUICKSTART does not use the shared bootstrap, doctor, and build wrapper surfaces."
+  grepl("Using Posit/RStudio Terminal", quickstart_text, fixed = TRUE) &&
+    grepl("tools\\\\run_full_replication\\.ps1 -Quick", quickstart_text) &&
+    grepl("tools\\\\run_full_replication\\.cmd -Quick", quickstart_text) &&
+    grepl("bash tools/run_full_replication.sh --quick", quickstart_text, fixed = TRUE) &&
+    grepl("Rscript _run_full_replication.R --quick", quickstart_text, fixed = TRUE) &&
+    grepl("Rscript _run_full_replication.R", quickstart_text, fixed = TRUE) &&
+    grepl("Rscript ia/_run_ia_full.R", quickstart_text, fixed = TRUE) &&
+    grepl("output/paper/latex/djm_main.pdf", quickstart_text, fixed = TRUE) &&
+    grepl("ia/output/paper/latex/ia_main.pdf", quickstart_text, fixed = TRUE),
+  "QUICKSTART now supports humans directly with Posit guidance, wrappers first, and raw Rscript equivalents.",
+  "QUICKSTART is missing the Posit guidance, wrapper-first path, or raw Rscript equivalents."
+)
+expect_true(
+  grepl("Main Smoke Boundary", pipeline_readme_text, fixed = TRUE) &&
+    grepl("Main Full Boundary", pipeline_readme_text, fixed = TRUE) &&
+    grepl("IA Smoke Boundary", pipeline_readme_text, fixed = TRUE) &&
+    grepl("IA Full Boundary", pipeline_readme_text, fixed = TRUE) &&
+    grepl("output/paper/latex/djm_main.pdf", pipeline_readme_text, fixed = TRUE) &&
+    grepl("ia/output/paper/latex/ia_main.pdf", pipeline_readme_text, fixed = TRUE),
+  "README_PAPER_PIPELINE now acts as a concise human boundary map.",
+  "README_PAPER_PIPELINE is missing the short human boundary map structure."
 )
 mac_toolchain_targets <- file.path(repo_root, c(
   "README.md",
