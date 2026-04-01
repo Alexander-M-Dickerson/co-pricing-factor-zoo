@@ -34,6 +34,9 @@ The IA compares with-intercept and no-intercept specifications to show that the 
 
 The IA treasury models stress-test whether the bond-side findings are dominated by treasury-related exposure and how `kappa`-weighted emphasis changes the result.
 
+The weighted treasury branch is part of the required IA baseline in this repo.
+It relies on the tracked clone file `ia/data/w_all.rds`.
+
 ### Sparse-prior stress test
 
 The `sparse_joint` model asks what happens when the prior is pushed toward a much smaller active set. This helps separate the paper's preferred dense posterior interpretation from an aggressively sparse alternative.

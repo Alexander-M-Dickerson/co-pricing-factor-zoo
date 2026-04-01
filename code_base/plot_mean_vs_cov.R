@@ -251,7 +251,9 @@ plot_mean_vs_cov <- function(
     fpath <- file.path(output_path, fname)
     ggsave(fpath,
            plot   = pg,
-           device = cairo_pdf,
+           device = function(filename, ...) {
+             grDevices::pdf(file = filename, ..., version = "1.4", useDingbats = FALSE)
+           },
            width  = width, height = height, units = "in", bg = "white")
     if (verbose) message("Saved: ", fpath)
     fpath

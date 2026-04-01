@@ -345,7 +345,7 @@ cat("\n")
 cat("To compile the document:\n")
 cat("  1. cd", latex_dir, "\n")
 cat("  2. pdflatex djm_main.tex\n")
-cat("  3. bibtex bu1  (for bibliography)\n")
+cat("  3. bibtex djm_main  (for bibliography)\n")
 cat("  4. pdflatex djm_main.tex\n")
 cat("  5. pdflatex djm_main.tex\n")
 

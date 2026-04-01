@@ -1,18 +1,18 @@
 continuous_ss_sdf_v2_fast_code_dir <- local({
-  cached_dir <- NULL
+  source_time_dir <- NULL
+  for (idx in rev(seq_along(sys.frames()))) {
+    candidate <- sys.frames()[[idx]]$ofile
+    if (!is.null(candidate) && file.exists(candidate)) {
+      source_time_dir <- dirname(normalizePath(candidate, winslash = "/", mustWork = TRUE))
+      break
+    }
+  }
+
+  cached_dir <- source_time_dir
 
   function() {
     if (!is.null(cached_dir) && dir.exists(cached_dir)) {
       return(cached_dir)
-    }
-
-    frame_ids <- rev(seq_along(sys.frames()))
-    for (idx in frame_ids) {
-      candidate <- sys.frames()[[idx]]$ofile
-      if (!is.null(candidate) && file.exists(candidate)) {
-        cached_dir <<- dirname(normalizePath(candidate, winslash = "/", mustWork = TRUE))
-        return(cached_dir)
-      }
     }
 
     fallback <- normalizePath(file.path(getwd(), "code_base"), winslash = "/", mustWork = FALSE)
@@ -30,10 +30,91 @@ continuous_ss_sdf_v2_fast_cpp_state <- local({
   state$attempted <- FALSE
   state$compiled <- FALSE
   state$last_error <- NULL
+  state$cache_dir <- NULL
+  state$cache_load_error <- NULL
+  state$load_source <- NULL
   state$cpp_name <- "continuous_ss_sdf_v2_fast_cpp_impl"
   state$cpp_env <- new.env(parent = baseenv())
   state
 })
+
+`%||%` <- function(x, y) {
+  if (is.null(x) || length(x) == 0 || all(is.na(x))) {
+    y
+  } else {
+    x
+  }
+}
+
+annotate_continuous_ss_sdf_v2_fast_error <- function(message) {
+  if (is.null(message) || length(message) == 0 || !nzchar(message)) {
+    return(message)
+  }
+
+  if (grepl("CreateFileMapping|nzchar\\(cxx\\)|status 322|Execution halted", message, ignore.case = TRUE)) {
+    paste(
+      message,
+      "Windows note: this signature usually means the fast self-pricing backend attempted",
+      "to compile inside a restricted or worker session instead of loading a cached build."
+    )
+  } else {
+    message
+  }
+}
+
+continuous_ss_sdf_v2_fast_cpp_cache_dir <- function() {
+  state <- continuous_ss_sdf_v2_fast_cpp_state
+  if (!is.null(state$cache_dir) && dir.exists(state$cache_dir)) {
+    return(state$cache_dir)
+  }
+
+  cache_dir <- file.path(
+    dirname(continuous_ss_sdf_v2_fast_code_dir()),
+    ".cache",
+    "continuous_ss_sdf_v2_fast"
+  )
+  dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
+  state$cache_dir <- normalizePath(cache_dir, winslash = "/", mustWork = FALSE)
+  state$cache_dir
+}
+
+load_continuous_ss_sdf_v2_fast_cpp_from_cache <- function() {
+  state <- continuous_ss_sdf_v2_fast_cpp_state
+  cache_dir <- continuous_ss_sdf_v2_fast_cpp_cache_dir()
+  state$cache_load_error <- NULL
+  wrapper_files <- list.files(
+    cache_dir,
+    pattern = "^continuous_ss_sdf_v2_fast\\.cpp\\.R$",
+    recursive = TRUE,
+    full.names = TRUE
+  )
+  if (length(wrapper_files) == 0) {
+    return(FALSE)
+  }
+
+  wrapper_info <- file.info(wrapper_files)
+  wrapper_files <- wrapper_files[order(wrapper_info$mtime, decreasing = TRUE)]
+
+  for (wrapper_file in wrapper_files) {
+    loaded_ok <- tryCatch({
+      sys.source(wrapper_file, envir = state$cpp_env)
+      exists(state$cpp_name, envir = state$cpp_env, inherits = FALSE)
+    }, error = function(e) {
+      state$cache_load_error <- annotate_continuous_ss_sdf_v2_fast_error(conditionMessage(e))
+      state$last_error <- state$cache_load_error
+      FALSE
+    })
+
+    if (loaded_ok) {
+      state$compiled <- TRUE
+      state$last_error <- NULL
+      state$load_source <- "cache"
+      return(TRUE)
+    }
+  }
+
+  FALSE
+}
 
 prepare_continuous_ss_sdf_v2_fast_cpp_inputs <- function(f1,
                                                           f2,
@@ -106,6 +187,12 @@ load_continuous_ss_sdf_v2_fast_cpp <- function(force_rebuild = FALSE) {
   if (!force_rebuild &&
       isTRUE(state$compiled) &&
       exists(state$cpp_name, envir = state$cpp_env, inherits = FALSE)) {
+    state$load_source <- state$load_source %||% "session"
+    return(TRUE)
+  }
+
+  if (!force_rebuild && load_continuous_ss_sdf_v2_fast_cpp_from_cache()) {
+    state$attempted <- TRUE
     return(TRUE)
   }
 
@@ -116,6 +203,7 @@ load_continuous_ss_sdf_v2_fast_cpp <- function(force_rebuild = FALSE) {
   state$attempted <- TRUE
   state$compiled <- FALSE
   state$last_error <- NULL
+  state$load_source <- NULL
 
   if (!requireNamespace("Rcpp", quietly = TRUE) ||
       !requireNamespace("RcppArmadillo", quietly = TRUE)) {
@@ -147,19 +235,29 @@ load_continuous_ss_sdf_v2_fast_cpp <- function(force_rebuild = FALSE) {
     Rcpp::sourceCpp(
       file = cpp_file,
       env = state$cpp_env,
+      cacheDir = continuous_ss_sdf_v2_fast_cpp_cache_dir(),
       rebuild = force_rebuild,
       showOutput = FALSE,
       verbose = FALSE
     )
     exists(state$cpp_name, envir = state$cpp_env, inherits = FALSE)
   }, error = function(e) {
-    state$last_error <- conditionMessage(e)
+    state$last_error <- annotate_continuous_ss_sdf_v2_fast_error(conditionMessage(e))
     FALSE
   })
 
   state$compiled <- compiled_ok
-  if (!compiled_ok && is.null(state$last_error)) {
+  if (!compiled_ok && !is.null(state$cache_load_error) && nzchar(state$cache_load_error)) {
+    state$last_error <- paste(
+      "Cached fast backend wrapper was found but could not be loaded:",
+      state$cache_load_error,
+      "Compile fallback then failed:",
+      state$last_error %||% "unknown compile error."
+    )
+  } else if (!compiled_ok && is.null(state$last_error)) {
     state$last_error <- "C++ backend compiled without exporting continuous_ss_sdf_v2_fast_cpp_impl."
+  } else if (compiled_ok) {
+    state$load_source <- "compiled"
   }
 
   compiled_ok
@@ -183,7 +281,9 @@ continuous_ss_sdf_v2_fast_backend_status <- function() {
   list(
     attempted = isTRUE(state$attempted),
     compiled = isTRUE(state$compiled),
-    last_error = state$last_error
+    last_error = state$last_error,
+    load_source = state$load_source,
+    cache_dir = state$cache_dir
   )
 }
 

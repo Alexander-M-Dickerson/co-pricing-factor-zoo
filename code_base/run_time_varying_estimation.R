@@ -109,8 +109,18 @@ run_time_varying_estimation <- function(
   verbose       = TRUE,
   fac_to_drop   = NULL,
   weighting     = "GLS",
-  drop_draws_pct = 0
+  drop_draws_pct = 0,
+  self_pricing_engine = c("fast", "reference"),
+  parallel_type = "auto",
+  cluster_timeout = 30,
+  require_all_windows = TRUE
 ) {
+  self_pricing_engine <- match.arg(self_pricing_engine)
+  parallel_type <- match.arg(parallel_type, c("auto", "PSOCK", "FORK", "sequential"))
+  f1_input <- f1
+  f2_input <- f2
+  R_input <- R
+  fac_freq_input <- fac_freq
   
   ## =========================================================================
   ## 0. VALIDATION
@@ -167,18 +177,24 @@ run_time_varying_estimation <- function(
     dir.create(model_output_dir, recursive = TRUE)
   }
   
-  # Error log file
-  error_log_path <- file.path(logs_dir, "estimation_errors.log")
-  if (file.exists(error_log_path)) file.remove(error_log_path)
-  
   # Execution log file with timestamp
   log_timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
+  
+  # Keep per-run error logs separate so paired forward/backward runs do not
+  # overwrite each other's diagnostics.
+  error_log_path <- file.path(
+    logs_dir,
+    sprintf("estimation_errors_%s_%s.log", tag, log_timestamp)
+  )
+  if (file.exists(error_log_path)) file.remove(error_log_path)
+
   exec_log_path <- file.path(logs_dir, 
                              sprintf("execution_%s_%s_%s.log", 
                                      window_type, tag, log_timestamp))
   
   # Open log file
   log_con <- file(exec_log_path, open = "wt")
+  run_started_at <- Sys.time()
   
   # Custom logging function (writes to both console and file)
   log_msg <- function(...) {
@@ -294,7 +310,10 @@ run_time_varying_estimation <- function(
         verbose       = verbose,  # Show summary for each window
         fac_to_drop   = fac_to_drop,
         weighting     = weighting,
-        drop_draws_pct = drop_draws_pct
+        drop_draws_pct = drop_draws_pct,
+        self_pricing_engine = self_pricing_engine,
+        parallel_type = parallel_type,
+        cluster_timeout = cluster_timeout
       )
       
       
@@ -334,6 +353,22 @@ run_time_varying_estimation <- function(
       
       # Write to error log file
       cat(error_msg, file = error_log_path, append = TRUE)
+
+      if (isTRUE(require_all_windows)) {
+        stop(
+          "Window ",
+          i,
+          " failed and require_all_windows=TRUE.\n",
+          "Period: ",
+          window_start,
+          " to ",
+          window_end,
+          "\n",
+          "Error: ",
+          e$message,
+          call. = FALSE
+        )
+      }
     })
   }
   
@@ -350,6 +385,18 @@ run_time_varying_estimation <- function(
   
   if (length(failed_windows) > 0 && verbose) {
     log_msg("\nWARNING: ", length(failed_windows), " window(s) failed. See: ", error_log_path, "\n\n")
+  }
+
+  if (length(failed_windows) > 0 && isTRUE(require_all_windows)) {
+    stop(
+      "Time-varying estimation failed for ",
+      length(failed_windows),
+      " window(s); refusing to save a partial ALL_RESULTS.rds.\n",
+      "Failed windows: ",
+      paste(failed_windows, collapse = ", "),
+      "\nSee error log: ",
+      error_log_path
+    )
   }
   
   if (verbose) {
@@ -388,6 +435,7 @@ run_time_varying_estimation <- function(
   } else {
     normalizePath(file.path(main_path, code_folder), winslash = "/", mustWork = FALSE)
   }
+  run_completed_at <- Sys.time()
   
   combined_results$metadata <- list(
     # Paths (resolved absolute paths)
@@ -400,10 +448,10 @@ run_time_varying_estimation <- function(
     
     # Data files
     data_files = list(
-      f1             = f1,
-      f2             = f2,
-      R              = R,
-      fac_freq       = fac_freq,
+      f1             = f1_input,
+      f2             = f2_input,
+      R              = R_input,
+      fac_freq       = fac_freq_input,
       n_bond_factors = n_bond_factors
     ),
     
@@ -430,6 +478,10 @@ run_time_varying_estimation <- function(
     tag                = tag,
     intercept          = intercept,
     weighting          = weighting,
+    self_pricing_engine = self_pricing_engine,
+    parallel_type_requested = parallel_type,
+    cluster_timeout     = cluster_timeout,
+    require_all_windows = require_all_windows,
     kappa              = kappa,
     kappa_fac          = kappa_fac,
     seed               = seed,
@@ -446,7 +498,9 @@ run_time_varying_estimation <- function(
     n_windows_success  = length(successful_windows),
     n_windows_failed   = length(failed_windows),
     failed_window_ids  = failed_windows,
-    estimation_windows = window_schedule
+    estimation_windows = window_schedule,
+    run_started_at     = run_started_at,
+    run_completed_at   = run_completed_at
   )
   
   ## =========================================================================
@@ -471,6 +525,9 @@ run_time_varying_estimation <- function(
     verbose          = verbose,
     log_msg          = log_msg
   )
+
+  attr(combined_results, "saved_paths") <- saved_paths
+  attr(combined_results, "execution_log_path") <- exec_log_path
   
   ## =========================================================================
   ## 8. SUMMARY

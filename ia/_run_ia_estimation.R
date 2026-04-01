@@ -2,862 +2,375 @@
 ###############################################################################
 ## _run_ia_estimation.R - Internet Appendix Model Estimation
 ## ---------------------------------------------------------------------------
-## This script runs all models required for the Internet Appendix:
 ##
 ## Paper role: IA estimation orchestrator for robustness and extension models.
 ## Paper refs: IA.6, IA.7, IA.9, IA.10; Eq. (6), Eq. (10); Tables IA.XVI-XXIX;
 ##   Figures IA.22-39; docs/paper/co-pricing-factor-zoo.ai-optimized.md
 ## Outputs: ia/output/unconditional/{model_type}/...Rdata and ia/output/logs/
 ##
-##   INTERCEPT = TRUE (with constant):
-##     1. bond_intercept      - Bond factors with intercept
-##     2. stock_intercept     - Stock factors with intercept
-##
-##   INTERCEPT = FALSE (no constant):
-##     3. bond_no_intercept   - Bond factors without intercept
-##     4. stock_no_intercept  - Stock factors without intercept
-##     5. joint_no_intercept  - Joint bond+stock without intercept
-##
-##   TREASURY MODELS:
-##     6. treasury_base       - Treasury bond component (kappa=0)
-##     7. treasury_weighted   - Treasury with DR-tilt kappa weights
-##
-##   SPARSE MODEL:
-##     8. sparse_joint        - Joint bond+stock with sparsity-inducing prior
-##                              (uses beta_params_auto_sd(5,54) for ~5 active factors)
-##
-##   IS/OS SWITCH MODEL:
-##     9. isos_switch         - Joint bond+stock estimated on OOS test assets
-##                              (swaps IS/OOS test assets for robustness check)
-##
-## All models use return_type = "excess"
-##
 ## USAGE:
-##   From R:
-##     source("ia/_run_ia_estimation.R")
-##
-##   From terminal:
-##     Rscript ia/_run_ia_estimation.R [options]
+##   Rscript ia/_run_ia_estimation.R [options]
 ##
 ## OPTIONS:
-##   --models=1,2,3      Run specific models (comma-separated, default: all)
-##   --ndraws=N          Number of MCMC draws (default: 50000)
-##   --parallel          Run models in parallel (default)
-##   --sequential        Run models sequentially
-##   --cores=N           Total available cores (default: auto-detect)
-##   --cores-per-model=N Cores per model (default: 4)
-##   --dry-run           Show what would be run without executing
-##   --list              List all available models and exit
+##   --models=1,2,3              Run specific models (comma-separated, default: all)
+##   --ndraws=N                  Number of MCMC draws (default: 50000)
+##   --parallel                  Run models in supervised parallel batches (default)
+##   --sequential                Run models sequentially in-process
+##   --cores=N                   Total available cores (default: auto-detect)
+##   --cores-per-model=N         Cores per model (default: 4)
+##   --self-pricing-engine=NAME  fast or reference (default: fast)
+##   --dry-run                   Show what would be run without executing
+##   --list                      List all available models and exit
+##   --help, -h                  Show this help message
 ##
 ## OUTPUT:
-##   ia/output/unconditional/{model_type}/
-##     {return_type}_{model_type}_alpha.w=1_beta.w=1_kappa=0_{tag}.Rdata
+##   ia/output/unconditional/{model_type}/...Rdata
+##   ia/output/logs/log_ia_model_* and ia_status_model_*.rds
 ##
 ## Coverage note: this script estimates 9 IA-related models, but the repo only
 ## generates a subset of IA tables/figures downstream. Use ia/_run_ia_results.R
 ## as the source of truth for the currently implemented IA output subset.
-##
-###############################################################################
-
-###############################################################################
-## SECTION 0: SETUP
 ###############################################################################
 
 gc()
 
-# Ensure we're in project root (handle both sourcing from root and from ia/)
 if (basename(getwd()) == "ia") {
   setwd("..")
 }
-main_path <- getwd()
 
-# Verify we're in the right place
+main_path <- normalizePath(getwd(), winslash = "/", mustWork = TRUE)
 if (!file.exists("code_base/run_bayesian_mcmc.R")) {
-  stop("Please run this script from the project root directory (co-pricing-factor-zoo/)")
+  stop("Please run this script from the project root directory (co-pricing-factor-zoo/).", call. = FALSE)
 }
 
-# Generate timestamp for this run
-RUN_TIMESTAMP <- format(Sys.time(), "%Y%m%d_%H%M%S")
+source(file.path("code_base", "ia_run_helpers.R"))
 
-# Detect operating system
-is_windows <- .Platform$OS.type == "windows"
+DEFAULT_CORES_PER_MODEL <- 4L
+DEFAULT_TOTAL_CORES <- max(1L, parallel::detectCores() - 1L)
+DEFAULT_NDRAWS <- 50000L
+DEFAULT_RUN_PARALLEL <- TRUE
+DEFAULT_MODELS <- ia_model_ids()
+MAX_RUNTIME_MINS <- 240
+POLL_SECONDS <- 15
 
-###############################################################################
-## SECTION 1: USER CONFIGURATION
-###############################################################################
-
-# Default execution settings
-DEFAULT_CORES_PER_MODEL <- 4
-DEFAULT_TOTAL_CORES     <- parallel::detectCores() - 1
-DEFAULT_NDRAWS          <- 50000
-RUN_PARALLEL            <- TRUE   # Parallel by default
-MODELS_TO_RUN           <- 1:9
-DRY_RUN                 <- FALSE
-
-###############################################################################
-## SECTION 2: MODEL DEFINITIONS
-###############################################################################
-
-# Define all 9 IA models
-MODEL_CONFIGS <- list(
-
-  # Model 1: Bond with intercept
-  list(
-    id          = 1,
-    name        = "bond_intercept",
-    description = "Bond factors WITH intercept (excess returns)",
-    model_type  = "bond",
-    return_type = "excess",
-    intercept   = TRUE,
-    tag         = "ia_intercept",
-    f2          = 'c("traded_bond_excess.csv")',
-    R           = 'c("bond_insample_test_assets_50_excess.csv")'
-  ),
-
-  # Model 2: Stock with intercept
-  list(
-    id          = 2,
-    name        = "stock_intercept",
-    description = "Stock factors WITH intercept (excess returns)",
-    model_type  = "stock",
-    return_type = "excess",
-    intercept   = TRUE,
-    tag         = "ia_intercept",
-    f2          = 'c("traded_equity.csv")',
-    R           = 'c("equity_anomalies_composite_33.csv")'
-  ),
-
-  # Model 3: Bond without intercept
-  list(
-    id          = 3,
-    name        = "bond_no_intercept",
-    description = "Bond factors WITHOUT intercept (excess returns)",
-    model_type  = "bond",
-    return_type = "excess",
-    intercept   = FALSE,
-    tag         = "ia_no_intercept",
-    f2          = 'c("traded_bond_excess.csv")',
-    R           = 'c("bond_insample_test_assets_50_excess.csv")'
-  ),
-
-  # Model 4: Stock without intercept
-  list(
-    id          = 4,
-    name        = "stock_no_intercept",
-    description = "Stock factors WITHOUT intercept (excess returns)",
-    model_type  = "stock",
-    return_type = "excess",
-    intercept   = FALSE,
-    tag         = "ia_no_intercept",
-    f2          = 'c("traded_equity.csv")',
-    R           = 'c("equity_anomalies_composite_33.csv")'
-  ),
-
-  # Model 5: Joint bond+stock without intercept
-  list(
-    id          = 5,
-    name        = "joint_no_intercept",
-    description = "Joint bond+stock WITHOUT intercept (excess returns)",
-    model_type  = "bond_stock_with_sp",
-    return_type = "excess",
-    intercept   = FALSE,
-    tag         = "ia_no_intercept",
-    f2          = 'c("traded_bond_excess.csv", "traded_equity.csv")',
-    R           = 'c("bond_insample_test_assets_50_excess.csv", "equity_anomalies_composite_33.csv")'
-  ),
-
-  # Model 6: Treasury (bond component) - base model
-  list(
-    id          = 6,
-    name        = "treasury_base",
-    description = "Treasury bond component (excess returns)",
-    model_type  = "treasury",
-    return_type = "excess",
-    intercept   = TRUE,
-    tag         = "bond_treasury",
-    f1          = "nontraded.csv",
-    f2          = 'c("traded_bond_excess.csv")',
-    R           = 'c("bond_insample_test_assets_50_duration_tmt_tbond.csv")',
-    kappa_file  = NULL,  # No kappa weighting
-    frequentist = list(
-      CAPM  = c("MKTB"),
-      CAPMB = c("MKTB", "MKTBD"),
-      HKM   = c("MKTB", "DEF", "TERM"),
-      FF5   = c("MKTB", "SZE", "HMLB", "CRF", "DRF")
-    )
-  ),
-
-  # Model 7: Treasury (bond component) with DR-tilt kappa weights
-  list(
-    id          = 7,
-    name        = "treasury_weighted",
-    description = "Treasury bond component with DR-tilt kappa (excess returns)",
-    model_type  = "treasury",
-    return_type = "excess",
-    intercept   = TRUE,
-    tag         = "bond_treasury",
-    f1          = "nontraded.csv",
-    f2          = 'c("traded_bond_excess.csv")',
-    R           = 'c("bond_insample_test_assets_50_duration_tmt_tbond.csv")',
-    kappa_file  = "ia/data/w_all.rds",  # DR-tilt kappa weights
-    frequentist = list(
-      CAPM  = c("MKTB"),
-      CAPMB = c("MKTB", "MKTBD"),
-      HKM   = c("MKTB", "DEF", "TERM"),
-      FF5   = c("MKTB", "SZE", "HMLB", "CRF", "DRF")
-    )
-  ),
-
-  # Model 8: Sparse joint model (bond+stock) with sparsity-inducing prior
-  # Uses beta_params_auto_sd(5, 54) to set alpha.w and beta.w for sparse factor selection
-  # Expected ~5 active factors out of 54 total
-  list(
-    id          = 8,
-    name        = "sparse_joint",
-    description = "Joint bond+stock with sparsity prior (excess returns)",
-    model_type  = "bond_stock_with_sp",
-    return_type = "excess",
-    intercept   = TRUE,
-    tag         = "baseline",
-    f2          = 'c("traded_bond_excess.csv", "traded_equity.csv")',
-    R           = 'c("bond_insample_test_assets_50_excess.csv", "equity_anomalies_composite_33.csv")',
-    # Sparse prior: beta_params_auto_sd(5, 54) -> alpha ≈ 3.537, beta ≈ 34.663
-    alpha_w     = 3.537037,
-    beta_w      = 34.662963
-  ),
-
-  # Model 9: IS/OS Switch - Joint bond+stock estimated on OOS test assets
-  # Uses OOS test assets (equity_os_77, bond_oosample_all_excess) as IN-SAMPLE
-  # Then tests OOS on the original IS assets (equity_anomalies_composite_33, bond_insample_test_assets_50_excess)
-  list(
-    id          = 9,
-    name        = "isos_switch",
-    description = "Joint bond+stock IS/OS switch (excess returns)",
-    model_type  = "bond_stock_with_sp",
-    return_type = "excess",
-    intercept   = TRUE,
-    tag         = "isos_switch",
-    f2          = 'c("traded_bond_excess.csv", "traded_equity.csv")',
-    # SWAPPED: Use OOS assets as IS test assets for estimation
-    R           = 'c("bond_oosample_all_excess.csv", "equity_os_77.csv")'
-  )
-)
-
-###############################################################################
-## SECTION 3: HELPER FUNCTIONS
-###############################################################################
-
-#' Get environment info for logging
-get_environment_info <- function() {
-  lines <- character()
-  lines <- c(lines, "")
-  lines <- c(lines, "========================================")
-  lines <- c(lines, "INTERNET APPENDIX ESTIMATION")
-  lines <- c(lines, "========================================")
-  lines <- c(lines, "")
-  lines <- c(lines, sprintf("R Version: %s", R.version.string))
-  lines <- c(lines, sprintf("Platform: %s", R.version$platform))
-  lines <- c(lines, sprintf("OS: %s %s", Sys.info()["sysname"], Sys.info()["release"]))
-  lines <- c(lines, "")
-  return(lines)
-}
-
-#' Get log file path for a model
-get_log_path <- function(cfg, main_path, timestamp) {
-  logs_dir <- file.path(main_path, "ia", "output", "logs")
-  if (!dir.exists(logs_dir)) dir.create(logs_dir, recursive = TRUE)
-  file.path(logs_dir, sprintf("log_ia_model_%d_%s_%s.txt", cfg$id, cfg$name, timestamp))
-}
-
-#' Print model list
-print_model_list <- function() {
-  cat("\n")
-  cat("=", rep("=", 70), "\n", sep = "")
-  cat("  INTERNET APPENDIX MODELS\n")
-  cat("=", rep("=", 70), "\n", sep = "")
-  cat("\n")
-
-  for (cfg in MODEL_CONFIGS) {
-    intercept_str <- if (cfg$intercept) "YES" else "NO"
-    cat(sprintf("  [%d] %-25s\n", cfg$id, cfg$name))
-    cat(sprintf("      %s\n", cfg$description))
-    cat(sprintf("      model_type: %-20s intercept: %s\n",
-                cfg$model_type, intercept_str))
-    cat("\n")
-  }
-
-  cat("=", rep("=", 70), "\n", sep = "")
-  cat("\n")
-}
-
-#' Parse command-line arguments
-parse_args <- function() {
-  args <- commandArgs(trailingOnly = TRUE)
-
-  result <- list(
-    models   = MODELS_TO_RUN,
-    ndraws   = DEFAULT_NDRAWS,
-    parallel = RUN_PARALLEL,
-    cores    = DEFAULT_TOTAL_CORES,
+parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
+  opts <- list(
+    models = DEFAULT_MODELS,
+    ndraws = DEFAULT_NDRAWS,
+    parallel = DEFAULT_RUN_PARALLEL,
+    cores = DEFAULT_TOTAL_CORES,
     cores_per_model = DEFAULT_CORES_PER_MODEL,
-    dry_run  = DRY_RUN,
+    self_pricing_engine = "fast",
+    dry_run = FALSE,
     list_only = FALSE
   )
 
   for (arg in args) {
-    if (arg == "--list") {
-      result$list_only <- TRUE
-    } else if (arg == "--parallel") {
-      result$parallel <- TRUE
-    } else if (arg == "--sequential") {
-      result$parallel <- FALSE
-    } else if (arg == "--dry-run") {
-      result$dry_run <- TRUE
+    if (identical(arg, "--list")) {
+      opts$list_only <- TRUE
+    } else if (identical(arg, "--parallel")) {
+      opts$parallel <- TRUE
+    } else if (identical(arg, "--sequential")) {
+      opts$parallel <- FALSE
+    } else if (identical(arg, "--dry-run")) {
+      opts$dry_run <- TRUE
     } else if (grepl("^--models=", arg)) {
       model_str <- sub("^--models=", "", arg)
-      result$models <- as.integer(strsplit(model_str, ",")[[1]])
+      opts$models <- as.integer(strsplit(model_str, ",")[[1]])
     } else if (grepl("^--ndraws=", arg)) {
-      result$ndraws <- as.integer(sub("^--ndraws=", "", arg))
+      opts$ndraws <- as.integer(sub("^--ndraws=", "", arg))
     } else if (grepl("^--cores=", arg)) {
-      result$cores <- as.integer(sub("^--cores=", "", arg))
+      opts$cores <- as.integer(sub("^--cores=", "", arg))
     } else if (grepl("^--cores-per-model=", arg)) {
-      result$cores_per_model <- as.integer(sub("^--cores-per-model=", "", arg))
-    } else if (arg == "--help" || arg == "-h") {
-      cat("\nUsage: Rscript ia/_run_ia_estimation.R [options]\n\n")
-      cat("Options:\n")
-      cat("  --models=1,2,3      Run specific models (comma-separated)\n")
-      cat("  --ndraws=N          Number of MCMC draws (default: 50000)\n")
-      cat("  --parallel          Run models in parallel (default)\n")
-      cat("  --sequential        Run models sequentially\n")
-      cat("  --cores=N           Total available cores\n")
-      cat("  --cores-per-model=N Cores per model (default: 4)\n")
-      cat("  --dry-run           Show what would be run\n")
-      cat("  --list              List all available models\n")
-      cat("  --help              Show this help message\n\n")
+      opts$cores_per_model <- as.integer(sub("^--cores-per-model=", "", arg))
+    } else if (grepl("^--self-pricing-engine=", arg)) {
+      opts$self_pricing_engine <- sub("^--self-pricing-engine=", "", arg)
+    } else if (identical(arg, "--help") || identical(arg, "-h")) {
+      cat(
+        "Usage: Rscript ia/_run_ia_estimation.R [options]\n\n",
+        "Options:\n",
+        "  --models=1,2,3              Run specific models (comma-separated)\n",
+        "  --ndraws=N                  Number of MCMC draws (default: 50000)\n",
+        "  --parallel                  Run models in supervised parallel batches (default)\n",
+        "  --sequential                Run models sequentially\n",
+        "  --cores=N                   Total available cores\n",
+        "  --cores-per-model=N         Cores per model (default: 4)\n",
+        "  --self-pricing-engine=NAME  fast or reference (default: fast)\n",
+        "  --dry-run                   Show what would be run\n",
+        "  --list                      List all available models\n",
+        "  --help, -h                  Show this help message\n",
+        sep = ""
+      )
       quit(save = "no", status = 0)
+    } else {
+      stop("Unknown argument: ", arg, call. = FALSE)
     }
   }
 
-  return(result)
+  opts$self_pricing_engine <- match.arg(opts$self_pricing_engine, c("fast", "reference"))
+  opts
 }
 
-#' Generate R script for a single model
-generate_model_script <- function(cfg, main_path, cores_per_model, ndraws) {
-  main_path_escaped <- gsub("\\\\", "/", main_path)
-  env_info <- paste(get_environment_info(), collapse = "\\n")
-  intercept_str <- if (cfg$intercept) "TRUE" else "FALSE"
-
-  # Determine f1 file (custom for treasury, default for others)
-  f1_file <- if (!is.null(cfg$f1)) cfg$f1 else "nontraded.csv"
-
-  # Determine alpha.w and beta.w (custom for sparse models, default 1)
-  alpha_w_val <- if (!is.null(cfg$alpha_w)) cfg$alpha_w else 1
-  beta_w_val <- if (!is.null(cfg$beta_w)) cfg$beta_w else 1
-
-  # Build frequentist models string
-  if (!is.null(cfg$frequentist)) {
-    freq_lines <- sapply(names(cfg$frequentist), function(nm) {
-      vals <- cfg$frequentist[[nm]]
-      sprintf('  %s = c(%s)', nm, paste0('"', vals, '"', collapse = ", "))
-    })
-    freq_str <- paste0("list(\n", paste(freq_lines, collapse = ",\n"), "\n)")
-  } else {
-    freq_str <- 'list(
-  CAPM = "MKTS",
-  CAPMB= "MKTB",
-  FF5  = c("MKTS","HML","SMB","DEF","TERM"),
-  HKM  = c("MKTS","CPTLT")
-)'
-  }
-
-  # Build kappa loading code
-  if (!is.null(cfg$kappa_file)) {
-    kappa_code <- sprintf('
-#### Load kappa weights from file
-kappa_file <- "%s"
-cat("\\n--- Kappa Weights Loading ---\\n")
-cat("  Looking for: ", kappa_file, "\\n")
-if (!file.exists(kappa_file)) {
-  stop("Kappa weights file not found: ", kappa_file,
-       "\\n  Working directory: ", getwd(),
-       "\\n  Expected location: ", normalizePath(kappa_file, mustWork = FALSE))
-}
-w_all <- tryCatch({
-  readRDS(kappa_file)
-}, error = function(e) {
-  stop("Failed to read kappa file: ", e$message)
-})
-if (!is.numeric(w_all) || is.null(names(w_all))) {
-  stop("kappa_file must contain a named numeric vector. Got: ",
-       "numeric=", is.numeric(w_all), ", has_names=", !is.null(names(w_all)))
-}
-cat("  Loaded ", length(w_all), " kappa weights\\n")
-cat("  Weight range: [", round(min(w_all), 4), ", ", round(max(w_all), 4), "]\\n")
-cat("  First 5 factors: ", paste(head(names(w_all), 5), collapse = ", "), "\\n")
-kappa     <- w_all
-kappa_fac <- names(w_all)
-cat("--- Kappa Weights Loaded Successfully ---\\n\\n")
-', cfg$kappa_file)
-  } else {
-    kappa_code <- '
-#### Kappa parameters (no weighting)
-kappa          <- 0
-kappa_fac      <- NULL
-'
-  }
-
-  script <- sprintf('
-###############################################################################
-## Auto-generated script for IA model: %s
-## Generated at: %s
-###############################################################################
-
-gc()
-
-cat("%s\\n")
-cat("Model: %s\\n")
-cat("Intercept: %s\\n")
-cat("Started: ", as.character(Sys.time()), "\\n\\n")
-
-#### Paths
-main_path      <- "%s"
-data_folder    <- "data"
-output_folder  <- "ia/output"
-code_folder    <- "code_base"
-
-#### Model Configuration
-model_type     <- "%s"
-return_type    <- "%s"
-
-#### Data Files
-f1             <- "%s"
-f2             <- %s
-R              <- %s
-n_bond_factors <- NULL
-fac_freq       <- "frequentist_factors.csv"
-
-#### Date Range
-date_start     <- NULL
-date_end       <- NULL
-
-#### Frequentist Models
-frequentist_models <- %s
-
-#### MCMC Parameters
-ndraws         <- %d
-SRscale        <- c(0.20, 0.40, 0.60, 0.80)
-alpha.w        <- %.6f
-beta.w         <- %.6f
-drop_draws_pct <- 0
-%s
-#### Other Settings
-tag            <- "%s"
-num_cores      <- %d
-seed           <- 234
-intercept      <- %s
-save_flag      <- TRUE
-verbose        <- TRUE
-fac_to_drop    <- NULL
-weighting      <- "GLS"
-
-#### Source helper files
-setwd(main_path)
-
-source(file.path(code_folder, "logging_helpers.R"))
-source(file.path(code_folder, "validate_and_align_dates.R"))
-source(file.path(code_folder, "data_loading_helpers.R"))
-source(file.path(code_folder, "run_bayesian_mcmc.R"))
-
-#### Validate data files exist
-cat("\\n--- Data File Validation ---\\n")
-cat("  Working directory: ", getwd(), "\\n")
-cat("  Data folder: ", data_folder, "\\n")
-
-# Check f1 file
-f1_path <- file.path(data_folder, f1)
-if (!file.exists(f1_path)) {
-  stop("f1 data file not found: ", f1_path)
-}
-cat("  f1 file OK: ", f1, "\\n")
-
-# Check f2 files (may be a vector)
-for (f2_file in f2) {
-  f2_path <- file.path(data_folder, f2_file)
-  if (!file.exists(f2_path)) {
-    stop("f2 data file not found: ", f2_path)
-  }
-  cat("  f2 file OK: ", f2_file, "\\n")
-}
-
-# Check R files (test assets, may be a vector)
-for (R_file in R) {
-  R_path <- file.path(data_folder, R_file)
-  if (!file.exists(R_path)) {
-    stop("R (test assets) data file not found: ", R_path)
-  }
-  cat("  R file OK: ", R_file, "\\n")
-}
-
-cat("--- All Data Files Validated ---\\n\\n")
-
-#### Run the estimation
-tryCatch({
-  res <- run_bayesian_mcmc(
-    main_path          = main_path,
-    data_folder        = data_folder,
-    output_folder      = output_folder,
-    code_folder        = code_folder,
-    model_type         = model_type,
-    return_type        = return_type,
-    f1                 = f1,
-    f2                 = f2,
-    R                  = R,
-    fac_freq           = fac_freq,
-    n_bond_factors     = n_bond_factors,
-    date_start         = date_start,
-    date_end           = date_end,
-    frequentist_models = frequentist_models,
-    ndraws             = ndraws,
-    SRscale            = SRscale,
-    alpha.w            = alpha.w,
-    beta.w             = beta.w,
-    kappa              = kappa,
-    kappa_fac          = kappa_fac,
-    drop_draws_pct     = drop_draws_pct,
-    tag                = tag,
-    num_cores          = num_cores,
-    seed               = seed,
-    intercept          = intercept,
-    save_flag          = save_flag,
-    verbose            = verbose,
-    fac_to_drop        = fac_to_drop,
-    weighting          = weighting
-  )
-
-  cat("\\n========================================\\n")
-  cat("MODEL COMPLETE: %s\\n")
-  cat("Results saved to: ", res$saved_path, "\\n")
-  cat("Finished: ", as.character(Sys.time()), "\\n")
-  cat("========================================\\n")
-
-}, error = function(e) {
-  cat("\\n========================================\\n")
-  cat("ERROR in model %s:\\n")
-  cat("Message: ", e$message, "\\n")
-  cat("\\nStack trace:\\n")
-  traceback_output <- capture.output(traceback())
-  cat(paste(traceback_output, collapse = "\\n"), "\\n")
-  cat("\\nModel configuration:\\n")
-  cat("  model_type: ", model_type, "\\n")
-  cat("  return_type: ", return_type, "\\n")
-  cat("  tag: ", tag, "\\n")
-  cat("  intercept: ", intercept, "\\n")
-  cat("  ndraws: ", ndraws, "\\n")
-  cat("  kappa type: ", if(is.numeric(kappa) && length(kappa) > 1) "weighted vector" else as.character(kappa), "\\n")
-  cat("========================================\\n")
-  stop(e)
-})
-',
-    cfg$name,
-    as.character(Sys.time()),
-    env_info,
-    cfg$name,
-    intercept_str,
-    main_path_escaped,
-    cfg$model_type,
-    cfg$return_type,
-    f1_file,
-    cfg$f2,
-    cfg$R,
-    freq_str,
-    ndraws,
-    alpha_w_val,
-    beta_w_val,
-    kappa_code,
-    cfg$tag,
-    cores_per_model,
-    intercept_str,
-    cfg$name,
-    cfg$name
-  )
-
-  return(script)
-}
-
-#' Launch background process (cross-platform)
-launch_background_process <- function(script_path, log_path, is_windows, working_dir = NULL) {
-  script_path <- normalizePath(script_path, winslash = "/", mustWork = FALSE)
-  log_path <- normalizePath(log_path, winslash = "/", mustWork = FALSE)
-
-  if (is.null(working_dir)) {
-    working_dir <- dirname(script_path)
-  }
-  working_dir <- normalizePath(working_dir, winslash = "/", mustWork = FALSE)
-
-  if (is_windows) {
-    rscript_exe <- file.path(R.home("bin"), "Rscript.exe")
-    rscript_win <- normalizePath(rscript_exe, winslash = "\\", mustWork = TRUE)
-    script_win <- normalizePath(script_path, winslash = "\\", mustWork = FALSE)
-    log_win <- normalizePath(log_path, winslash = "\\", mustWork = FALSE)
-    work_win <- normalizePath(working_dir, winslash = "\\", mustWork = FALSE)
-    cmd <- sprintf('start /B cmd /C "cd /d "%s" && "%s" "%s" > "%s" 2>&1"', work_win, rscript_win, script_win, log_win)
-    shell(cmd, wait = FALSE)
-  } else {
-    cmd <- sprintf('nohup bash -c \'cd "%s" && Rscript "%s" > "%s" 2>&1\' &',
-                   working_dir, script_path, log_path)
-    system(cmd, ignore.stdout = TRUE, ignore.stderr = TRUE, wait = FALSE)
-  }
-}
-
-#' Run a single model (sequential mode)
-run_single_model <- function(cfg, main_path, cores_per_model, ndraws, timestamp, dry_run = FALSE) {
-
-  log_file <- get_log_path(cfg, main_path, timestamp)
-  intercept_str <- if (cfg$intercept) "YES" else "NO"
-
+print_model_list <- function() {
   cat("\n")
-  cat("-", rep("-", 70), "\n", sep = "")
-  cat(sprintf("  MODEL %d: %s\n", cfg$id, cfg$name))
-  cat(sprintf("  %s\n", cfg$description))
-  cat(sprintf("  Intercept: %s\n", intercept_str))
-  cat(sprintf("  Log: %s\n", log_file))
-  cat("-", rep("-", 70), "\n", sep = "")
+  cat("======================================================================\n")
+  cat("  INTERNET APPENDIX MODELS\n")
+  cat("======================================================================\n\n")
 
-  if (dry_run) {
-    cat("  [DRY RUN] Would execute with:\n")
-    cat(sprintf("    model_type:  %s\n", cfg$model_type))
-    cat(sprintf("    return_type: %s\n", cfg$return_type))
-    cat(sprintf("    intercept:   %s\n", intercept_str))
-    cat(sprintf("    tag:         %s\n", cfg$tag))
-    cat(sprintf("    ndraws:      %d\n", ndraws))
-    return(list(success = TRUE, time = 0, log_file = log_file))
+  for (cfg in ia_model_configs()) {
+    cat(sprintf("  [%d] %-25s\n", cfg$id, cfg$name))
+    cat(sprintf("      %s\n", cfg$description))
+    cat(sprintf("      model_type: %-20s intercept: %s\n", cfg$model_type, if (cfg$intercept) "YES" else "NO"))
+    cat(sprintf("      expected engine: %s\n\n", ia_expected_engine(cfg)$function_name))
+  }
+}
+
+child_rscript <- function() {
+  if (.Platform$OS.type == "windows") {
+    return(file.path(R.home("bin"), "Rscript.exe"))
+  }
+  file.path(R.home("bin"), "Rscript")
+}
+
+build_child_args <- function(model, opts, run_timestamp, status_path) {
+  c(
+    "ia/_run_ia_model.R",
+    paste0("--model-id=", model$id),
+    paste0("--ndraws=", opts$ndraws),
+    paste0("--num-cores=", opts$cores_per_model),
+    paste0("--run-timestamp=", run_timestamp),
+    paste0("--self-pricing-engine=", opts$self_pricing_engine),
+    paste0("--status-path=", status_path)
+  )
+}
+
+launch_model_process <- function(model, opts, run_timestamp, logs_dir) {
+  status_path <- ia_status_path(logs_dir, model_id = model$id, model_name = model$name, run_timestamp = run_timestamp)
+  log_path <- ia_log_path(logs_dir, model_id = model$id, model_name = model$name, run_timestamp = run_timestamp)
+  args <- build_child_args(model, opts, run_timestamp, status_path)
+
+  proc <- processx::process$new(
+    command = child_rscript(),
+    args = args,
+    wd = getwd(),
+    stdout = log_path,
+    stderr = log_path,
+    cleanup_tree = TRUE
+  )
+
+  list(
+    model = model,
+    log_path = normalizePath(log_path, winslash = "/", mustWork = FALSE),
+    status_path = normalizePath(status_path, winslash = "/", mustWork = FALSE),
+    results_path = normalizePath(ia_results_path(model, main_path = getwd(), output_folder = file.path("ia", "output")), winslash = "/", mustWork = FALSE),
+    process = proc
+  )
+}
+
+validate_child_model_result <- function(proc_info, opts, min_mtime) {
+  exit_status <- proc_info$process$get_exit_status()
+  status <- read_ia_status(proc_info$status_path)
+
+  if (is.null(exit_status) || exit_status != 0L) {
+    status_error <- if (is.null(status)) NULL else status$error
+    stop(
+      sprintf(
+        "IA model %s failed with exit status %s.\nStatus: %s\nLog: %s",
+        proc_info$model$name,
+        ia_value_or(exit_status, NA_integer_),
+        ia_value_or(status_error, "Child process exited without a successful status artifact."),
+        proc_info$log_path
+      ),
+      call. = FALSE
+    )
   }
 
-  # Generate and run script
-  script_content <- generate_model_script(cfg, main_path, cores_per_model, ndraws)
-  temp_script <- tempfile(pattern = paste0("ia_model_", cfg$id, "_"), fileext = ".R")
-  writeLines(script_content, temp_script)
+  validation <- validate_ia_results_artifact(
+    results_file = proc_info$results_path,
+    status_path = proc_info$status_path,
+    expected_ndraws = opts$ndraws,
+    min_mtime = min_mtime,
+    expected_engine = ia_expected_engine(proc_info$model, self_pricing_engine = opts$self_pricing_engine)
+  )
 
-  cat(sprintf("  Starting at: %s\n", Sys.time()))
-  start_time <- Sys.time()
+  if (!isTRUE(validation$ok)) {
+    stop(
+      sprintf(
+        "IA model %s outputs failed validation.\nStatus: %s\nLog: %s\n%s",
+        proc_info$model$name,
+        proc_info$status_path,
+        proc_info$log_path,
+        format_ia_validation_issues(validation)
+      ),
+      call. = FALSE
+    )
+  }
 
-  tryCatch({
-    log_con <- file(log_file, open = "wt")
-    sink(log_con, type = "output")
-    sink(log_con, type = "message", append = TRUE)
+  validation
+}
 
-    source(temp_script, local = new.env())
+run_sequential_models <- function(models, opts, run_timestamp) {
+  source(file.path("code_base", "ia_run_helpers.R"))
+  source(file.path("ia", "_run_ia_model.R"))
 
-    sink(type = "message")
-    sink(type = "output")
-    close(log_con)
-
-    end_time <- Sys.time()
-    elapsed <- difftime(end_time, start_time, units = "mins")
-    cat(sprintf("  Completed at: %s (%.1f minutes)\n", end_time, as.numeric(elapsed)))
-    unlink(temp_script)
-    return(list(success = TRUE, time = as.numeric(elapsed), log_file = log_file))
-  }, error = function(e) {
-    try(sink(type = "message"), silent = TRUE)
-    try(sink(type = "output"), silent = TRUE)
-    cat(sprintf("  ERROR: %s\n", e$message))
-    unlink(temp_script)
-    return(list(success = FALSE, time = NA, error = e$message, log_file = log_file))
+  results <- lapply(models, function(model) {
+    run_ia_model(
+      model_id = model$id,
+      ndraws = opts$ndraws,
+      num_cores = opts$cores_per_model,
+      run_timestamp = run_timestamp,
+      self_pricing_engine = opts$self_pricing_engine
+    )
   })
+
+  invisible(results)
 }
 
-#' Run models in parallel (with proper batching and waiting)
-run_parallel_models <- function(configs, main_path, total_cores, cores_per_model, ndraws, timestamp, dry_run = FALSE) {
-
-  # Calculate how many models can run simultaneously
-  available_cores <- total_cores - 1
-  max_concurrent <- floor(available_cores / cores_per_model)
-  max_concurrent <- max(1, max_concurrent)
-
-  cat("\n")
-  cat("=", rep("=", 70), "\n", sep = "")
-  cat("  PARALLEL EXECUTION MODE\n")
-  cat("=", rep("=", 70), "\n", sep = "")
-  cat(sprintf("  Platform:              %s\n", if (is_windows) "Windows" else "Unix/macOS/Linux"))
-  cat(sprintf("  Total cores available: %d\n", total_cores))
-  cat(sprintf("  Cores per model:       %d\n", cores_per_model))
-  cat(sprintf("  MCMC draws:            %d\n", ndraws))
-  cat(sprintf("  Max concurrent models: %d\n", max_concurrent))
-  cat(sprintf("  Models to run:         %d\n", length(configs)))
-  cat(sprintf("  Log folder:            ia/output/logs/\n"))
-  cat("=", rep("=", 70), "\n", sep = "")
-
-  if (dry_run) {
-    cat("\n[DRY RUN] Would run the following batches:\n\n")
-    batch_num <- 1
-    for (i in seq(1, length(configs), by = max_concurrent)) {
-      batch_end <- min(i + max_concurrent - 1, length(configs))
-      batch_configs <- configs[i:batch_end]
-      cat(sprintf("  Batch %d: Models %s\n", batch_num,
-                  paste(sapply(batch_configs, function(x) x$name), collapse = ", ")))
-      batch_num <- batch_num + 1
-    }
-    return(invisible(NULL))
+run_parallel_models <- function(models, opts, run_timestamp) {
+  if (!requireNamespace("processx", quietly = TRUE)) {
+    cat("Package 'processx' is not installed. Falling back to sequential IA execution.\n\n")
+    return(run_sequential_models(models, opts, run_timestamp))
   }
 
-  # Collect all log files for summary
-  all_log_files <- character()
+  logs_dir <- ia_logs_dir(main_path = getwd(), output_folder = file.path("ia", "output"))
+  available_cores <- max(1L, opts$cores - 1L)
+  max_concurrent <- max(1L, floor(available_cores / max(1L, opts$cores_per_model)))
 
-  # Process in batches
-  batch_num <- 1
+  cat("\n======================================================================\n")
+  cat("  IA SUPERVISED PARALLEL EXECUTION\n")
+  cat("======================================================================\n")
+  cat("  Total cores available: ", opts$cores, "\n", sep = "")
+  cat("  Cores per model:       ", opts$cores_per_model, "\n", sep = "")
+  cat("  Max concurrent models: ", max_concurrent, "\n", sep = "")
+  cat("  MCMC draws:            ", opts$ndraws, "\n", sep = "")
+  cat("======================================================================\n")
 
-  for (i in seq(1, length(configs), by = max_concurrent)) {
-    batch_end <- min(i + max_concurrent - 1, length(configs))
-    batch_configs <- configs[i:batch_end]
+  all_validations <- list()
+  batch_num <- 1L
 
-    cat("\n")
-    cat("*", rep("*", 70), "\n", sep = "")
-    cat(sprintf("  BATCH %d: Running %d model(s) in parallel\n",
-                batch_num, length(batch_configs)))
-    cat(sprintf("  Models: %s\n", paste(sapply(batch_configs, function(x) x$name), collapse = ", ")))
-    cat("*", rep("*", 70), "\n", sep = "")
+  for (i in seq(1L, length(models), by = max_concurrent)) {
+    batch_models <- models[i:min(i + max_concurrent - 1L, length(models))]
+    launched_at <- Sys.time()
 
-    # Generate scripts and launch processes
-    temp_scripts <- character()
-    log_files <- character()
+    cat("\nLaunching IA batch ", batch_num, ": ", paste(vapply(batch_models, `[[`, character(1), "name"), collapse = ", "), "\n", sep = "")
 
-    for (cfg in batch_configs) {
-      # Generate script - write to project root like main script does
-      script_content <- generate_model_script(cfg, main_path, cores_per_model, ndraws)
-      temp_script <- file.path(main_path, sprintf(".temp_ia_model_%d_%s.R", cfg$id, cfg$name))
-      log_file <- get_log_path(cfg, main_path, timestamp)
+    proc_infos <- tryCatch({
+      lapply(batch_models, launch_model_process, opts = opts, run_timestamp = run_timestamp, logs_dir = logs_dir)
+    }, error = function(e) {
+      cat("Supervised child launch failed in this terminal.\n")
+      cat("Falling back to sequential IA execution for the remaining models.\n")
+      cat("Launch error: ", conditionMessage(e), "\n\n", sep = "")
+      return(NULL)
+    })
 
-      writeLines(script_content, temp_script)
-      temp_scripts <- c(temp_scripts, temp_script)
-      log_files <- c(log_files, log_file)
-      all_log_files <- c(all_log_files, log_file)
-
-      # Launch R process in background
-      intercept_str <- if (cfg$intercept) "YES" else "NO"
-      cat(sprintf("  Launching model %d (%s, intercept=%s)...\n", cfg$id, cfg$name, intercept_str))
-      cat(sprintf("    Log: %s\n", basename(log_file)))
-      launch_background_process(temp_script, log_file, is_windows, working_dir = main_path)
-
-      # Small delay to avoid race conditions
-      Sys.sleep(1)
+    if (is.null(proc_infos)) {
+      remaining <- models[i:length(models)]
+      sequential_results <- run_sequential_models(remaining, opts, run_timestamp)
+      all_validations <- c(all_validations, lapply(sequential_results, `[[`, "validation"))
+      break
     }
 
-    cat("\n  Waiting for batch to complete...\n")
+    repeat {
+      Sys.sleep(POLL_SECONDS)
+      elapsed_mins <- as.numeric(difftime(Sys.time(), launched_at, units = "mins"))
+      status_lines <- vapply(proc_infos, function(info) {
+        if (info$process$is_alive()) {
+          sprintf("%s=running", info$model$name)
+        } else {
+          sprintf("%s=exit(%s)", info$model$name, ia_value_or(info$process$get_exit_status(), NA_integer_))
+        }
+      }, character(1))
 
-    # Wait for all processes to complete by checking log files
-    all_done <- FALSE
-    start_time <- Sys.time()
+      cat(sprintf("\r  %s | elapsed %.1f min   ", paste(status_lines, collapse = " | "), elapsed_mins))
 
-    while (!all_done) {
-      Sys.sleep(10)  # Check every 10 seconds (faster for small ndraws)
+      if (all(!vapply(proc_infos, function(info) info$process$is_alive(), logical(1)))) {
+        break
+      }
 
-      done_count <- 0
-      for (j in seq_along(log_files)) {
-        if (file.exists(log_files[j])) {
-          log_content <- tryCatch(readLines(log_files[j], warn = FALSE), error = function(e) "")
-          log_text <- paste(log_content, collapse = "\n")
-          if (grepl("MODEL COMPLETE|Results saved|Error|error|ERROR", log_text, ignore.case = FALSE)) {
-            done_count <- done_count + 1
+      if (elapsed_mins > MAX_RUNTIME_MINS) {
+        cat("\n")
+        for (info in proc_infos) {
+          if (info$process$is_alive()) {
+            info$process$kill()
           }
         }
-      }
-
-      elapsed <- difftime(Sys.time(), start_time, units = "mins")
-      cat(sprintf("\r  Progress: %d/%d models complete (%.1f min elapsed)    ",
-                  done_count, length(batch_configs), as.numeric(elapsed)))
-
-      if (done_count >= length(batch_configs)) {
-        all_done <- TRUE
-      }
-
-      # Timeout after 2 hours per batch
-      if (as.numeric(elapsed) > 120) {
-        cat("\n  WARNING: Batch timeout reached (2 hours)\n")
-        all_done <- TRUE
+        stop("IA run exceeded the timeout of ", MAX_RUNTIME_MINS, " minutes and was terminated.", call. = FALSE)
       }
     }
 
-    cat(sprintf("\n  Batch %d complete!\n", batch_num))
+    cat("\n")
+    batch_validations <- lapply(proc_infos, validate_child_model_result, opts = opts, min_mtime = launched_at)
+    names(batch_validations) <- vapply(proc_infos, function(info) info$model$name, character(1))
+    all_validations <- c(all_validations, batch_validations)
+    batch_num <- batch_num + 1L
+  }
 
-    # Cleanup temp scripts
-    for (ts in temp_scripts) {
-      if (file.exists(ts)) unlink(ts)
+  invisible(all_validations)
+}
+
+main <- function(args = commandArgs(trailingOnly = TRUE)) {
+  opts <- parse_args(args)
+
+  if (isTRUE(opts$list_only)) {
+    print_model_list()
+    quit(save = "no", status = 0)
+  }
+
+  models <- lapply(opts$models, ia_model_by_id)
+  run_timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
+
+  cat("\n======================================================================\n")
+  cat("  INTERNET APPENDIX MODEL ESTIMATION\n")
+  cat("======================================================================\n")
+  cat("  Models:               ", paste(vapply(models, `[[`, integer(1), "id"), collapse = ", "), "\n", sep = "")
+  cat("  Draws:                ", opts$ndraws, "\n", sep = "")
+  cat("  Parallel:             ", if (opts$parallel) "YES" else "NO", "\n", sep = "")
+  cat("  Self-pricing engine:  ", opts$self_pricing_engine, "\n", sep = "")
+  cat("  Dry run:              ", if (opts$dry_run) "YES" else "NO", "\n", sep = "")
+  cat("======================================================================\n\n")
+
+  if (isTRUE(opts$dry_run)) {
+    for (model in models) {
+      expected_engine <- ia_expected_engine(model, self_pricing_engine = opts$self_pricing_engine)
+      cat(sprintf(
+        "[DRY RUN] Model %d (%s): output=%s | engine=%s\n",
+        model$id,
+        model$name,
+        ia_results_path(model, main_path = main_path, output_folder = file.path("ia", "output")),
+        expected_engine$function_name
+      ))
     }
-
-    batch_num <- batch_num + 1
+    quit(save = "no", status = 0)
   }
 
-  cat("\n")
-  cat("=", rep("=", 70), "\n", sep = "")
-  cat("  ALL BATCHES COMPLETE\n")
-  cat("=", rep("=", 70), "\n", sep = "")
-  cat("\n  Log files:\n")
-  for (lf in all_log_files) {
-    cat(sprintf("    %s\n", lf))
-  }
-}
-
-###############################################################################
-## SECTION 4: MAIN EXECUTION
-###############################################################################
-
-# Parse arguments
-opts <- parse_args()
-
-# Handle --list
-if (opts$list_only) {
-  print_model_list()
-  quit(save = "no", status = 0)
-}
-
-# Filter to requested models
-selected_configs <- MODEL_CONFIGS[opts$models]
-
-# Print header
-cat("\n")
-cat("=", rep("=", 70), "\n", sep = "")
-cat("  INTERNET APPENDIX MODEL ESTIMATION\n")
-cat("=", rep("=", 70), "\n", sep = "")
-cat("\n")
-cat(sprintf("  Models to run: %s\n", paste(opts$models, collapse = ", ")))
-cat(sprintf("  MCMC draws:    %d\n", opts$ndraws))
-cat(sprintf("  Parallel:      %s\n", if (opts$parallel) "YES" else "NO"))
-cat(sprintf("  Dry run:       %s\n", if (opts$dry_run) "YES" else "NO"))
-cat("\n")
-
-# Create output directories
-ia_output <- file.path(main_path, "ia", "output")
-if (!dir.exists(ia_output)) {
-  dir.create(ia_output, recursive = TRUE)
-  cat("  Created: ", ia_output, "\n")
-}
-
-# Run models
-if (opts$parallel && length(selected_configs) > 1) {
-  run_parallel_models(selected_configs, main_path, opts$cores, opts$cores_per_model,
-                      opts$ndraws, RUN_TIMESTAMP, opts$dry_run)
-} else {
-  # Sequential execution
-  results <- list()
-  for (cfg in selected_configs) {
-    results[[cfg$name]] <- run_single_model(cfg, main_path, opts$cores_per_model,
-                                             opts$ndraws, RUN_TIMESTAMP, opts$dry_run)
+  validations <- if (isTRUE(opts$parallel) && length(models) > 1) {
+    run_parallel_models(models, opts, run_timestamp)
+  } else {
+    lapply(run_sequential_models(models, opts, run_timestamp), `[[`, "validation")
   }
 
-  # Summary
-  cat("\n")
-  cat("=", rep("=", 70), "\n", sep = "")
-  cat("  ESTIMATION SUMMARY\n")
-  cat("=", rep("=", 70), "\n", sep = "")
-  cat("\n")
-
-  for (name in names(results)) {
-    r <- results[[name]]
-    status <- if (r$success) "SUCCESS" else "FAILED"
-    time_str <- if (!is.na(r$time)) sprintf("%.1f min", r$time) else "N/A"
-    cat(sprintf("  %-25s %s (%s)\n", name, status, time_str))
+  cat("\n======================================================================\n")
+  cat("  IA ESTIMATION SUMMARY\n")
+  cat("======================================================================\n")
+  for (validation in validations) {
+    model_name <- if (!is.null(validation$status$model_name)) validation$status$model_name else basename(validation$results_file)
+    cat(sprintf(
+      "  %-25s OK  engine=%s  output=%s\n",
+      model_name,
+      ia_value_or(validation$engine_used, "missing"),
+      validation$results_file
+    ))
   }
-  cat("\n")
+  cat("======================================================================\n")
+  cat("Done.\n")
 }
 
-cat("Done.\n")
+if (sys.nframe() == 0) {
+  tryCatch(
+    main(),
+    error = function(e) {
+      message(conditionMessage(e))
+      quit(save = "no", status = 1)
+    }
+  )
+}

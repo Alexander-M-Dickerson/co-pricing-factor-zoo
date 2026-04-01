@@ -53,12 +53,12 @@ TOP includes the top five factors with an average posterior probability greater 
 CAPM is the standard single-factor model using MKTS, and CAPMB is the bond version using MKTB. 
 FF5 is the five-factor model of \cite{FamaFrench_1993}, HKM is the two-factor model of \citet{HeKellyManela_2017}. 
 KNS stands for the SDF estimation of \citet{KozakNagelSantosh_2020} and RPPCA is the  risk premia PCA of \cite{LettauPelger_2020}. 
-Estimation details for the benchmark models are given in Appendix \ref{sec:benchmark_models}.
+Benchmark model definitions follow the standard CAPM, CAPMB, FF5, HKM, KNS, and RP-PCA specifications implemented in this replication.
 Bond returns are computed in excess of a duration matched portfolio of U.S. Treasury bonds.
 In Panels A and B the models are estimated with the respective factor zoos and test assets.  The resulting SDF is then used to price (with no additional parameter estimation) the two sets of the OS assets in Panels C and D.    
 IS test assets are the 83 bond and stock portfolios and the 40 tradable bond and stock factors (Panel A), and the 50 bond portfolios and  16 tradable bond factors (Panel B), respectively. 
 OS test assets are the combined 154 bond and stock portfolios (Panel C), as well as the 77 bond portfolios only (Panel D). 
-All are described in Section \ref{sec:data}. 
+These panels use the duration-adjusted bond and joint test-asset sets included in this replication. 
 All data is standardized, that is, pricing errors are in Sharpe ratio units. The sample period is 1986:01 to 2022:12 ($T=444$).
 }
 

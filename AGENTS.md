@@ -60,6 +60,8 @@ High-value shared docs under `docs/agent-context/`:
 
 - `replication-onboarding.md`
 - `replication-pipeline.md`
+- `prompt-recipes.md`
+- `exhibits/`
 - `paper-reading-guide.md`
 - `paper-method.md`
 - `paper-results-main.md`
@@ -72,10 +74,18 @@ Canonical full-paper source:
 
 - `docs/paper/co-pricing-factor-zoo.ai-optimized.md`
 
+Machine-readable manifests:
+
+- `docs/manifests/data-files.csv`
+- `docs/manifests/data-sources.csv`
+- `docs/manifests/exhibits.csv`
+- `docs/manifests/manuscript_exhibits.csv`
+- `docs/manifests/paper_claims.csv`
+
 ## High-Value File Map
 
 - Root runner scripts:
-  - `_run_full_replication.R`: main five-step replication entrypoint
+  - `_run_full_replication.R`: main five-step replication entrypoint ending in LaTeX source assembly
   - `_run_all_unconditional.R`: batch unconditional estimation across model specs
   - `_run_all_conditional.R`: batch time-varying estimation
   - `_run_paper_results.R`: unconditional tables and figures
@@ -89,10 +99,15 @@ Canonical full-paper source:
 - `ia/`: Internet Appendix estimation and output pipeline.
 - `testing/`: targeted validation and harness scripts.
 - `tools/bootstrap_packages.R`: canonical installable R package set
+- `tools/bootstrap_data.R`: canonical public data bootstrap entrypoint
 - `tools/doctor.R`: public readiness check for packages, data, toolchain, and fast backends
+- `tools/run_figure1_simulation.R`: explicit regeneration path for the paper Figure 1 simulation outputs
+- `tools/*.ps1`, `tools/*.cmd`, `tools/*.sh`: public platform wrappers for setup, smoke runs, full replication, and paper build
 - `tools/validate_repo_docs.R`: doc and context drift check
 - `docs/manifests/`: source-of-truth CSV manifests for inputs and exhibits
 - `data/`: input data and cached intermediate data. Files here are gitignored.
+- `ia/data/w_all.rds`: required tracked IA input for the weighted treasury branch
+- `misc/figure1_simulation/`: tracked Figure 1 paper-calibration fixtures used by the default build
 - `output/` and `logs/`: generated results and runtime logs. These are gitignored.
 - `README.md`, `QUICKSTART.md`, `README_PAPER_PIPELINE.md`: human-facing usage and
   pipeline documentation.
@@ -124,6 +139,8 @@ estimation behavior and the root `_run_*.R` scripts for orchestration.
 
 For execution guidance, also read `docs/agent-context/replication-pipeline.md`.
 For exact equation and appendix references, use `docs/paper/co-pricing-factor-zoo.ai-optimized.md`.
+For exhibit explanation tasks, start with `docs/agent-context/exhibits/` and
+the manifests before loading the full paper.
 
 ## Domain Invariants You Must Preserve
 
@@ -163,6 +180,12 @@ There are two distinct decisions in the current code:
   - otherwise: use the baseline package sampler path
     (`BayesianFactorZoo::continuous_ss_sdf_v2` or
     `BayesianFactorZoo::continuous_ss_sdf`), with fast wrappers when enabled
+- Treasury nuance:
+  - `model_type = "treasury"` is treated as a no-self-pricing branch inside
+    `run_bayesian_mcmc()`
+  - the traded-bond file named in treasury configs is merged into the factor
+    block and `f2` becomes `NULL` before sampler dispatch
+  - do not classify treasury models as fast self-pricing `v2` runs
 
 Most baseline runner scripts still pass `kappa = 0`, so the sampler remains on
 the package path even though prior calibration may flow through the local helper
@@ -230,11 +253,51 @@ Prefer one of these levels of verification:
 Useful commands from the repo root:
 
 ```bash
+Rscript tools/bootstrap_data.R --help
 Rscript tools/validate_repo_docs.R
 Rscript _run_full_replication.R --help
 Rscript _run_all_unconditional.R --ndraws=5000
-Rscript _run_all_conditional.R --ndraws=5000
+Rscript _run_all_conditional.R --direction=both --ndraws=500
+Rscript _run_all_conditional.R --direction=forward --ndraws=500
+Rscript ia/_run_ia_results.R --help
+Rscript ia/_create_ia_latex.R --help
+Rscript ia/_run_ia_full.R --help
 ```
+
+Validated Windows host commands as of March 31, 2026:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\run_conditional_smoke.ps1 -Draws 5000
+powershell -ExecutionPolicy Bypass -File tools\run_full_replication.ps1 -Draws 5000
+powershell -ExecutionPolicy Bypass -File tools\build_paper.ps1
+```
+
+Important nuance from that validated run:
+
+- the full wrapper completed end-to-end on the maintainer Windows host
+- if packages or bundle-managed main data are missing in a fresh clone, use
+  `tools/bootstrap_packages.*`, then `tools/bootstrap_data.*`, then
+  `tools/doctor.*` before running estimation
+- `tools/build_paper.*` is the public wrapper for final PDF compilation
+- strict unconditional freshness now exists in `_run_paper_results.R`; for
+  publication-grade reruns, prefer the top-level wrapper or
+  `_run_paper_results.R --strict-freshness`
+
+Validated IA Windows host commands as of April 1, 2026:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\run_ia_smoke.ps1 -Draws 500
+powershell -ExecutionPolicy Bypass -File tools\run_ia_full.ps1 -Draws 5000
+powershell -ExecutionPolicy Bypass -File tools\build_ia_paper.ps1
+```
+
+Important IA nuance from that validated host path:
+
+- the 500-draw smoke boundary completed all nine IA models
+- the 5,000-draw full IA wrapper completed estimation, outputs, LaTeX assembly,
+  and IA PDF compilation
+- eligible fast IA models (`1-5`, `8`, `9`) ran on `continuous_ss_sdf_v2_fast`
+- treasury IA models remained on their intended no-self-pricing paths
 
 If a validation run is too expensive or blocked by missing data, say that plainly.
 

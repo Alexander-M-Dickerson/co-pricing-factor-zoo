@@ -420,7 +420,7 @@ generate_table_5 <- function(res_tbl_top,
                    "\\end{center}",
                    "\\begin{spacing}{1}",
                    "\t{\\footnotesize",
-                   "The table reports posterior means of number of factors (along with the $90\\%$ confidence intervals), implied Sharpe ratios $\\mathbb{E}[SR_f|\\text{data}]$, and the ratio of $SR_f^2$ to the total SDF-implied squared Sharpe ratio $\\mathbb{E}\\big[SR^2_f/SR^2_m|\\text{data}\\big]$ for discount rate and cash-flow news driven tradable factors, respectively. The discount rate vs. cash-flow news  decomposition follows \\cite{Vuolteenaho_2002} and is detailed in Internet Appendix \\ref{app:cf_dr}. Panels A, B and C report, respectively, results for the co-pricing, bond-only, and stock-only BMA-SDFs, using the corresponding factor zoos.",
+                   "The table reports posterior means of number of factors (along with the $90\\%$ confidence intervals), implied Sharpe ratios $\\mathbb{E}[SR_f|\\text{data}]$, and the ratio of $SR_f^2$ to the total SDF-implied squared Sharpe ratio $\\mathbb{E}\\big[SR^2_f/SR^2_m|\\text{data}\\big]$ for discount rate and cash-flow news driven tradable factors, respectively. The discount rate vs. cash-flow news decomposition follows \\cite{Vuolteenaho_2002} and uses the repo's DR/CF factor classification. Panels A, B and C report, respectively, results for the co-pricing, bond-only, and stock-only BMA-SDFs, using the corresponding factor zoos.",
                    "}",
                    "\\end{spacing}",
                    "\\vspace{-4mm}",
@@ -571,8 +571,8 @@ generate_table_treasury_sr <- function(sr_decomp_data,
   # Footnote text
   footnote <- sprintf(
     "The table reports posterior means of number of factors (along with the $90\\%%$ confidence intervals), implied Sharpe ratios $\\mathbb{E}[SR_f|\\text{data}]$, and the ratio of $SR_f^2$ to the total SDF-implied squared Sharpe ratio $\\mathbb{E}\\big[SR^2_f/SR^2_m|\\text{data}\\big]$,
-of the %d nontradable and %d tradable bond factors described in Appendix \\ref{sec:factor_zoo}.
-Test assets are the Treasury components of the 50 corporate bond portfolios described in Section \\ref{sec:data}. The sample period is 1986:01 to 2022:12 ($T = 444$).",
+of the %d nontradable and %d tradable bond factors used in the treasury replication.
+Test assets are the Treasury components of the 50 corporate bond portfolios in the repo's bond test-asset set. The sample period is 1986:01 to 2022:12 ($T = 444$).",
     n_nontraded, n_traded
   )
 

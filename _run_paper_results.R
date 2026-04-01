@@ -8,7 +8,7 @@
 ##
 ## Paper role: Main-text and Appendix output generator from saved unconditional
 ##   estimation results.
-## Paper refs: Tables 1-6 Panel A; Figures 2-5, 9; Appendix A/B tables and
+## Paper refs: Tables 1-6 Panel A; Figures 1-5, 9; Appendix A/B tables and
 ##   figures; IA.6 Treasury-component follow-on outputs
 ## Outputs: output/paper/tables/, output/paper/figures/, cached intermediates
 ##   under data/
@@ -24,6 +24,52 @@
 ##   Example: excess_bond_stock_with_sp_alpha.w=1_beta.w=1_kappa=0_baseline.Rdata
 ##
 ###############################################################################
+
+parse_paper_results_args <- function() {
+  args <- commandArgs(trailingOnly = TRUE)
+  opts <- list(
+    strict_freshness = FALSE,
+    expected_ndraws = NULL,
+    min_results_mtime = NULL,
+    show_help = FALSE
+  )
+
+  for (arg in args) {
+    if (identical(arg, "--strict-freshness")) {
+      opts$strict_freshness <- TRUE
+    } else if (grepl("^--expected-ndraws=", arg)) {
+      opts$expected_ndraws <- as.integer(sub("^--expected-ndraws=", "", arg))
+    } else if (grepl("^--min-results-mtime=", arg)) {
+      opts$min_results_mtime <- as.numeric(sub("^--min-results-mtime=", "", arg))
+    } else if (identical(arg, "--help") || identical(arg, "-h")) {
+      opts$show_help <- TRUE
+    } else {
+      stop("Unknown argument: ", arg, call. = FALSE)
+    }
+  }
+
+  opts
+}
+
+paper_results_opts <- parse_paper_results_args()
+
+if (isTRUE(paper_results_opts$show_help)) {
+  cat(
+    "Usage: Rscript _run_paper_results.R [options]\n\n",
+    "Options:\n",
+    "  --strict-freshness         Force regeneration of cached unconditional outputs\n",
+    "  --expected-ndraws=N        Require unconditional workspaces to report metadata$ndraws = N\n",
+    "  --min-results-mtime=UNIX   Require unconditional workspaces to be newer than this Unix timestamp\n",
+    "  --help, -h                 Show this help message\n",
+    sep = ""
+  )
+  quit(save = "no", status = 0)
+}
+
+strict_freshness <- isTRUE(paper_results_opts$strict_freshness)
+expected_ndraws <- paper_results_opts$expected_ndraws
+min_results_mtime <- paper_results_opts$min_results_mtime
+paper_results_started_at <- Sys.time()
 
 gc()
 
@@ -49,6 +95,12 @@ code_folder    <- "code_base"
 
 # Data folder (for intermediate results like variance decomposition)
 data_folder    <- "data"
+
+unconditional_helper_path <- file.path(project_root, code_folder, "unconditional_run_helpers.R")
+if (!file.exists(unconditional_helper_path)) {
+  stop("Required helper file not found: ", unconditional_helper_path)
+}
+source(unconditional_helper_path)
 
 #### 1.2 Model Configuration --------------------------------------------------
 # These parameters determine which .Rdata file to load
@@ -95,6 +147,7 @@ if (verbose) message("Sourcing helper functions...")
 # Figures 2-5/9 from saved BMA-SDF estimation objects.
 # Add new helper sources here as needed
 helper_files <- c(
+  "figure1_simulation.R",
   "pp_figure_table.R",
   "plot_nfac_sr.R",
   "pp_bar_plots.R",
@@ -120,6 +173,27 @@ for (helper in helper_files) {
     if (verbose) message("  Sourced: ", helper)
   } else {
     warning("Helper file not found: ", helper_path)
+  }
+}
+
+if (isTRUE(strict_freshness) || !is.null(expected_ndraws) || !is.null(min_results_mtime)) {
+  if (verbose) {
+    message("Validating unconditional workspaces before generating paper outputs...")
+  }
+
+  unconditional_validation <- validate_expected_unconditional_workspaces(
+    main_path = project_root,
+    output_folder = "output",
+    expected_ndraws = expected_ndraws,
+    min_mtime = min_results_mtime
+  )
+
+  if (!isTRUE(unconditional_validation$ok)) {
+    stop(
+      "Unconditional input validation failed before paper-output generation.\n",
+      format_unconditional_validation_issues(unconditional_validation),
+      call. = FALSE
+    )
   }
 }
 
@@ -238,6 +312,9 @@ if (verbose) {
   message("\n", strrep("=", 60))
   message("GENERATING INTERMEDIATE DATA")
   message(strrep("=", 60), "\n")
+  if (strict_freshness) {
+    message("Strict freshness mode: forcing regeneration of cached unconditional intermediates and figures.")
+  }
 }
 
 #### SR Decomposition (for Tables 1, 4, 5) ------------------------------------
@@ -328,7 +405,7 @@ if (verbose) message("\nThousands OOS Tests: Running subset combinations...")
 
 # Check if cached results exist
 thousands_oos_file <- file.path(data_folder, "thousands_oos_results.rds")
-regenerate_thousands_oos <- FALSE  # Set to TRUE to force re-computation
+regenerate_thousands_oos <- strict_freshness
 
 if (file.exists(thousands_oos_file) && !regenerate_thousands_oos) {
   if (verbose) message("  Loading cached results from ", thousands_oos_file)
@@ -372,7 +449,7 @@ if (verbose) message("\nThousands OOS Tests (Duration): Running subset combinati
 
 # Check if cached results exist
 thousands_oos_dur_file <- file.path(data_folder, "thousands_oos_results_duration.rds")
-regenerate_thousands_oos_dur <- FALSE  # Set to TRUE to force re-computation
+regenerate_thousands_oos_dur <- strict_freshness
 
 if (file.exists(thousands_oos_dur_file) && !regenerate_thousands_oos_dur) {
   if (verbose) message("  Loading cached results from ", thousands_oos_dur_file)
@@ -635,11 +712,28 @@ if (verbose) {
   message(strrep("=", 60), "\n")
 }
 
-#### Figure 1: [Description] --------------------------------------------------
-# TODO: Add Figure 1 generation code
-# Source: code_base/[figure_script].R or inline
+#### Figure 1: Simulation Evidence With Noisy Proxies -------------------------
+# Generates: Figure 1 panel assets plus output/paper/latex/fig1_simulation.tex
+# Source: code_base/figure1_simulation.R
 
-if (verbose) message("Figure 1: [Not yet implemented]")
+if (verbose) {
+  message("\nFigure 1: Simulation Evidence With Noisy Proxies")
+  message("  Source mode = tracked paper-calibration fixtures")
+}
+
+fig1_result <- publish_figure1_assets(
+  source_mode = "fixed",
+  project_root = project_root,
+  type = "OLS",
+  prior_pct = 60L,
+  left_t = 400L,
+  right_t = 1600L
+)
+
+if (verbose) {
+  message("  Figure assets saved: ", fig1_result$figures_dir)
+  message("  LaTeX snippet saved: ", fig1_result$latex_path)
+}
 
 
 #### Figure 2 + Table A.2: Posterior Probabilities ----------------------------
@@ -858,7 +952,7 @@ if (verbose) message("Figure 9: Mean vs Covariance Diagnostic Plots (Treasury Mo
 fig9_1_path <- file.path(figures_dir, "fig9_1_bond_is.pdf")
 fig9_2_path <- file.path(figures_dir, "fig9_2_bond_os.pdf")
 
-if (file.exists(fig9_1_path) && file.exists(fig9_2_path)) {
+if (!strict_freshness && file.exists(fig9_1_path) && file.exists(fig9_2_path)) {
   if (verbose) message("  Skipping Figure 9.1-9.2: files already exist")
 } else {
   bond_treasury_file <- file.path(
@@ -898,7 +992,7 @@ if (file.exists(fig9_1_path) && file.exists(fig9_2_path)) {
 fig9_3_path <- file.path(figures_dir, "fig9_3_stock_is.pdf")
 fig9_4_path <- file.path(figures_dir, "fig9_4_stock_os.pdf")
 
-if (file.exists(fig9_3_path) && file.exists(fig9_4_path)) {
+if (!strict_freshness && file.exists(fig9_3_path) && file.exists(fig9_4_path)) {
   if (verbose) message("  Skipping Figure 9.3-9.4: files already exist")
 } else {
   stock_treasury_file <- file.path(
@@ -951,7 +1045,7 @@ expanding_rds_path <- file.path(
 
 fig6a_output_path <- file.path(figures_dir, "fig6a_top5_prob_psi80.pdf")
 
-if (file.exists(fig6a_output_path)) {
+if (!strict_freshness && file.exists(fig6a_output_path)) {
   if (verbose) message("  Skipping Figure 6a: file already exists")
 } else if (!file.exists(expanding_rds_path)) {
   warning("Expanding window .rds not found. Skipping Figure 6a.\n  ", expanding_rds_path)
@@ -981,7 +1075,7 @@ if (verbose) message("Figure IA.17a: Top Factors by Lambda Over Time (Expanding 
 
 fig_ia17a_output_path <- file.path(figures_dir, "fig_ia_17a_top5_lambda_psi80.pdf")
 
-if (file.exists(fig_ia17a_output_path)) {
+if (!strict_freshness && file.exists(fig_ia17a_output_path)) {
   if (verbose) message("  Skipping Figure IA.17a: file already exists")
 } else if (!file.exists(expanding_rds_path)) {
   warning("Expanding window .rds not found. Skipping Figure IA.17a.\n  ", expanding_rds_path)
@@ -1017,7 +1111,7 @@ backward_rds_path <- file.path(
 
 fig6b_output_path <- file.path(figures_dir, "fig6b_top5_prob_psi80.pdf")
 
-if (file.exists(fig6b_output_path)) {
+if (!strict_freshness && file.exists(fig6b_output_path)) {
   if (verbose) message("  Skipping Figure 6b: file already exists")
 } else if (!file.exists(backward_rds_path)) {
   warning("Backward expanding window .rds not found. Skipping Figure 6b.\n  ", backward_rds_path)
@@ -1047,7 +1141,7 @@ if (verbose) message("Figure IA.17b: Top Factors by Lambda (Backward Expanding)"
 
 fig_ia17b_output_path <- file.path(figures_dir, "fig_ia_17b_top5_lambda_psi80.pdf")
 
-if (file.exists(fig_ia17b_output_path)) {
+if (!strict_freshness && file.exists(fig_ia17b_output_path)) {
   if (verbose) message("  Skipping Figure IA.17b: file already exists")
 } else if (!file.exists(backward_rds_path)) {
   warning("Backward expanding window .rds not found. Skipping Figure IA.17b.\n  ", backward_rds_path)
@@ -1083,7 +1177,7 @@ fig11_path <- file.path(figures_dir, "fig11_sdf_volatility_bma_capmb_ff5.pdf")
 fig12a_path <- file.path(figures_dir, "fig12a_predictability1m_bma.pdf")
 fig12b_path <- file.path(figures_dir, "fig12b_predictability12m_bma.pdf")
 
-if (file.exists(fig10_path) && file.exists(fig11_path) &&
+if (!strict_freshness && file.exists(fig10_path) && file.exists(fig11_path) &&
     file.exists(fig12a_path) && file.exists(fig12b_path)) {
   if (verbose) message("  Skipping Figures 10-12: files already exist")
 } else {
@@ -1199,7 +1293,7 @@ if (verbose) message("Figure 13: Cumulative SDF-implied Sharpe Ratio")
 
 fig13_path <- file.path(figures_dir, "fig13_cum_sr_80pct.pdf")
 
-if (file.exists(fig13_path)) {
+if (!strict_freshness && file.exists(fig13_path)) {
   if (verbose) message("  Skipping Figure 13: file already exists")
 } else {
   source(file.path(code_folder, "plot_cumulative_sr.R"))
@@ -1227,6 +1321,76 @@ if (file.exists(fig13_path)) {
   )
 
   if (verbose) message("  Generated: fig13_cum_sr_80pct.pdf")
+}
+
+if (strict_freshness) {
+  if (verbose) {
+    message("\nValidating strict-freshness artifacts...")
+  }
+
+  strict_output_paths <- c(
+    file.path(data_folder, "sr_decomposition_results.rds"),
+    file.path(data_folder, "pricing_results.rds"),
+    file.path(data_folder, "thousands_oos_results.rds"),
+    file.path(data_folder, "thousands_oos_results_duration.rds"),
+    file.path(tables_dir, "table_1_top5_factors.tex"),
+    file.path(tables_dir, "table_2_is_pricing.tex"),
+    file.path(tables_dir, "table_3_os_pricing.tex"),
+    file.path(tables_dir, "table_4_sr_by_factor_type.tex"),
+    file.path(tables_dir, "table_5_dr_vs_cf.tex"),
+    file.path(tables_dir, "table_6_panel_a_trading.csv"),
+    file.path(tables_dir, "table_6_panel_a_trading.tex"),
+    file.path(
+      tables_dir,
+      sprintf("table_a1_posterior_probs_%s_%s_%s.tex", cfg_return_type, bswsp_model_type, cfg_tag)
+    ),
+    file.path(
+      figures_dir,
+      sprintf("figure_2_posterior_probs_%s_%s_%s.pdf", cfg_return_type, bswsp_model_type, cfg_tag)
+    ),
+    file.path(
+      figures_dir,
+      sprintf("figure_3_nfac_sr_%s_%s_%s.pdf", cfg_return_type, bswsp_model_type, cfg_tag)
+    ),
+    file.path(
+      figures_dir,
+      sprintf("figure_4_posterior_bars_%s_%s_%s.pdf", cfg_return_type, bswsp_model_type, cfg_tag)
+    ),
+    file.path(figures_dir, "fig5_1_gls.pdf"),
+    file.path(figures_dir, "fig5_2_ols.pdf"),
+    file.path(figures_dir, "fig5_3_rmse.pdf"),
+    file.path(figures_dir, "fig5_4_mape.pdf"),
+    file.path(figures_dir, "fig6a_top5_prob_psi80.pdf"),
+    file.path(figures_dir, "fig_ia_17a_top5_lambda_psi80.pdf"),
+    file.path(figures_dir, "fig6b_top5_prob_psi80.pdf"),
+    file.path(figures_dir, "fig_ia_17b_top5_lambda_psi80.pdf"),
+    file.path(figures_dir, "fig8_1_gls.pdf"),
+    file.path(figures_dir, "fig8_2_ols.pdf"),
+    file.path(figures_dir, "fig8_3_rmse.pdf"),
+    file.path(figures_dir, "fig8_4_mape.pdf"),
+    file.path(figures_dir, "fig9_1_bond_is.pdf"),
+    file.path(figures_dir, "fig9_2_bond_os.pdf"),
+    file.path(figures_dir, "fig9_3_stock_is.pdf"),
+    file.path(figures_dir, "fig9_4_stock_os.pdf"),
+    file.path(figures_dir, "fig10_sdf_time_series_bma.pdf"),
+    file.path(figures_dir, "fig11_sdf_volatility_bma_capmb_ff5.pdf"),
+    file.path(figures_dir, "fig12a_predictability1m_bma.pdf"),
+    file.path(figures_dir, "fig12b_predictability12m_bma.pdf"),
+    file.path(figures_dir, "fig13_cum_sr_80pct.pdf")
+  )
+
+  strict_validation <- validate_replication_files(
+    paths = strict_output_paths,
+    min_mtime = paper_results_started_at
+  )
+
+  if (!isTRUE(strict_validation$ok)) {
+    stop(
+      "Strict unconditional output validation failed.\n",
+      format_replication_file_issues(strict_validation),
+      call. = FALSE
+    )
+  }
 }
 
 

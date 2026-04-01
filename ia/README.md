@@ -20,20 +20,44 @@ The executable source of truth is `ia/_run_ia_estimation.R`. The current IA esti
 
 All IA models use `return_type = "excess"`.
 
+Engine notes:
+
+- Models `1-5`, `8`, and `9` are self-pricing IA runs and should use the fast
+  C++ backend by default (`continuous_ss_sdf_v2_fast`).
+- Models `6` and `7` are treasury runs. Even though their raw configs point to a
+  traded-bond file, `run_bayesian_mcmc()` merges those bond factors into the
+  no-self-pricing branch for `model_type = "treasury"`.
+- `treasury_base` therefore uses `BayesianFactorZoo::continuous_ss_sdf`.
+- `treasury_weighted` uses `continuous_ss_sdf_multi_asset_no_sp`.
+
 ## Quick Start
 
 From the repo root:
 
 ```bash
-# Full IA pipeline
-Rscript ia/_run_ia_full.R
+# IA smoke boundary
+Rscript ia/_run_ia_full.R --ndraws=500
 
-# Quick test with fewer draws
+# Full IA pipeline
 Rscript ia/_run_ia_full.R --ndraws=5000
 
-# Skip estimation if IA results already exist
-Rscript ia/_run_ia_full.R --skip-estim
+# Compile the IA PDF after assembly
+bash tools/build_ia_paper.sh
 ```
+
+Public wrappers:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\run_ia_smoke.ps1 -Draws 500
+powershell -ExecutionPolicy Bypass -File tools\run_ia_full.ps1 -Draws 5000
+powershell -ExecutionPolicy Bypass -File tools\build_ia_paper.ps1
+```
+
+Validated Windows host path as of April 1, 2026:
+
+- the 500-draw smoke wrapper completed all nine IA models fresh
+- the 5,000-draw full wrapper completed estimation, results generation, and LaTeX assembly fresh
+- the IA PDF wrapper compiled `ia/output/paper/latex/ia_main.pdf`
 
 ## Step-By-Step
 
@@ -65,6 +89,12 @@ Rscript ia/_run_ia_results.R
 Rscript ia/_create_ia_latex.R
 ```
 
+To compile the PDF, use the public wrapper:
+
+```bash
+bash tools/build_ia_paper.sh
+```
+
 ## Output Structure
 
 IA outputs are written under `ia/output/`:
@@ -73,7 +103,7 @@ IA outputs are written under `ia/output/`:
 - `logs/` for IA estimation logs
 - `paper/tables/` for generated tables
 - `paper/figures/` for generated figures
-- `paper/latex/` for assembled LaTeX outputs
+- `paper/latex/` for assembled LaTeX outputs and the IA PDF after running the build wrapper
 
 ## Maintenance Note
 

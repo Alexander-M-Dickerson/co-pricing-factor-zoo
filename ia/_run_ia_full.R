@@ -3,125 +3,156 @@
 ## _run_ia_full.R - Complete Internet Appendix Replication
 ## ---------------------------------------------------------------------------
 ##
-## This script runs the complete IA pipeline:
+## This script runs the complete implemented IA pipeline:
 ##   1. Estimate the 9 IA-related models defined in ia/_run_ia_estimation.R
-##   2. Generate the currently implemented IA tables and figures
-##   3. Compile LaTeX document
+##   2. Generate the implemented IA tables and figures
+##   3. Assemble the IA LaTeX tree
 ##
-## Paper role: Convenience wrapper around the implemented IA subset.
-## Paper refs: IA.6, IA.7, IA.9, IA.10; docs/paper/co-pricing-factor-zoo.ai-optimized.md
-## Outputs: ia/output/unconditional/, ia/output/paper/, compiled IA LaTeX
-##
-## USAGE:
-##   Rscript ia/_run_ia_full.R [options]
-##
-## OPTIONS:
-##   --ndraws=N     Number of MCMC draws (default: 50000, use 5000 for quick test)
-##   --sequential   Run models sequentially instead of parallel
-##   --skip-estim   Skip estimation (use existing .Rdata files)
-##   --help         Show this help message
-##
+## PDF compilation is a separate public step via tools/build_ia_paper.*.
 ###############################################################################
 
-# Ensure we're in project root
+parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
+  opts <- list(
+    ndraws = 50000L,
+    sequential = FALSE,
+    skip_estim = FALSE,
+    skip_results = FALSE,
+    skip_assembly = FALSE,
+    cores = NULL,
+    cores_per_model = 4L,
+    self_pricing_engine = "fast"
+  )
+
+  for (arg in args) {
+    if (grepl("^--ndraws=", arg)) {
+      opts$ndraws <- as.integer(sub("^--ndraws=", "", arg))
+    } else if (identical(arg, "--sequential")) {
+      opts$sequential <- TRUE
+    } else if (identical(arg, "--skip-estim")) {
+      opts$skip_estim <- TRUE
+    } else if (identical(arg, "--skip-results")) {
+      opts$skip_results <- TRUE
+    } else if (identical(arg, "--skip-assembly")) {
+      opts$skip_assembly <- TRUE
+    } else if (grepl("^--cores=", arg)) {
+      opts$cores <- as.integer(sub("^--cores=", "", arg))
+    } else if (grepl("^--cores-per-model=", arg)) {
+      opts$cores_per_model <- as.integer(sub("^--cores-per-model=", "", arg))
+    } else if (grepl("^--self-pricing-engine=", arg)) {
+      opts$self_pricing_engine <- sub("^--self-pricing-engine=", "", arg)
+    } else if (identical(arg, "--help") || identical(arg, "-h")) {
+      cat(
+        "Usage: Rscript ia/_run_ia_full.R [options]\n\n",
+        "Options:\n",
+        "  --ndraws=N                  Number of MCMC draws (default: 50000)\n",
+        "  --sequential                Run IA estimation sequentially instead of supervised parallel\n",
+        "  --skip-estim                Skip IA estimation and use existing IA results\n",
+        "  --skip-results              Skip IA tables/figures generation\n",
+        "  --skip-assembly             Skip IA LaTeX assembly\n",
+        "  --cores=N                   Total available cores for IA estimation\n",
+        "  --cores-per-model=N         Cores per IA model (default: 4)\n",
+        "  --self-pricing-engine=NAME  fast or reference (default: fast)\n",
+        "  --help, -h                  Show this help message\n",
+        sep = ""
+      )
+      quit(save = "no", status = 0)
+    } else {
+      stop("Unknown argument: ", arg, call. = FALSE)
+    }
+  }
+
+  opts$self_pricing_engine <- match.arg(opts$self_pricing_engine, c("fast", "reference"))
+  opts
+}
+
+resolve_rscript <- function() {
+  if (.Platform$OS.type == "windows") {
+    file.path(R.home("bin"), "Rscript.exe")
+  } else {
+    file.path(R.home("bin"), "Rscript")
+  }
+}
+
+run_step <- function(rscript, script, args = character()) {
+  status <- system2(rscript, args = c(script, args))
+  if (!identical(status, 0L)) {
+    stop("Step failed: ", script, call. = FALSE)
+  }
+}
+
 if (basename(getwd()) == "ia") {
   setwd("..")
 }
-main_path <- getwd()
+main_path <- normalizePath(getwd(), winslash = "/", mustWork = TRUE)
+opts <- parse_args()
+rscript <- resolve_rscript()
 
-# Parse arguments
-args <- commandArgs(trailingOnly = TRUE)
-skip_estimation <- "--skip-estim" %in% args
-ndraws_arg <- args[grepl("^--ndraws=", args)]
-use_sequential <- "--sequential" %in% args  # Parallel is default
-
-if ("--help" %in% args || "-h" %in% args) {
-  cat("\n")
-  cat("Usage: Rscript ia/_run_ia_full.R [options]\n\n")
-  cat("Options:\n")
-  cat("  --ndraws=N     MCMC draws (default: 50000, use 5000 for testing)\n")
-  cat("  --sequential   Run models sequentially instead of parallel\n")
-  cat("  --skip-estim   Skip estimation, use existing results\n")
-  cat("  --help         Show this message\n\n")
-  quit(save = "no", status = 0)
-}
-
-cat("\n")
-cat("========================================\n")
+cat("\n========================================\n")
 cat("INTERNET APPENDIX FULL REPLICATION\n")
 cat("========================================\n\n")
 
-start_time <- Sys.time()
+cat("Repo root: ", main_path, "\n", sep = "")
+cat("Rscript:   ", normalizePath(rscript, winslash = "/", mustWork = FALSE), "\n", sep = "")
+cat("Draws:     ", opts$ndraws, "\n\n", sep = "")
 
-###############################################################################
-## STEP 1: ESTIMATION
-###############################################################################
+started_at <- Sys.time()
 
-if (!skip_estimation) {
-  cat("STEP 1: Model Estimation\n")
-  cat("------------------------\n")
-
-  estim_args <- character()
-  if (length(ndraws_arg) > 0) {
-    estim_args <- c(estim_args, ndraws_arg)
+if (!opts$skip_estim) {
+  cat("STEP 1: IA Estimation\n")
+  cat("---------------------\n")
+  estim_args <- c(
+    "ia/_run_ia_estimation.R",
+    paste0("--ndraws=", opts$ndraws),
+    paste0("--cores-per-model=", opts$cores_per_model),
+    paste0("--self-pricing-engine=", opts$self_pricing_engine)
+  )
+  if (!is.null(opts$cores) && !is.na(opts$cores)) {
+    estim_args <- c(estim_args, paste0("--cores=", opts$cores))
   }
-  # Parallel is default; only add --sequential if explicitly requested
-  if (use_sequential) {
+  if (isTRUE(opts$sequential)) {
     estim_args <- c(estim_args, "--sequential")
   }
-
-  # Build command
-  estim_script <- file.path(main_path, "ia", "_run_ia_estimation.R")
-  rscript <- normalizePath(file.path(R.home("bin"), "Rscript"), winslash = "/", mustWork = FALSE)
-  if (.Platform$OS.type == "windows") rscript <- paste0(rscript, ".exe")
-  estim_cmd <- paste(shQuote(rscript), shQuote(estim_script), paste(estim_args, collapse = " "))
-
-  cat("Running:", estim_cmd, "\n\n")
-
-  # Run estimation (waits for completion - parallel mode handles batching internally)
-  system(estim_cmd)
-
+  run_step(rscript, estim_args[[1]], estim_args[-1])
+  cat("\n")
 } else {
   cat("STEP 1: Skipped (--skip-estim)\n\n")
 }
 
-###############################################################################
-## STEP 2: GENERATE RESULTS
-###############################################################################
+if (!opts$skip_results) {
+  cat("STEP 2: IA Tables And Figures\n")
+  cat("-----------------------------\n")
+  results_args <- c(
+    "ia/_run_ia_results.R",
+    paste0("--expected-ndraws=", opts$ndraws),
+    paste0("--self-pricing-engine=", opts$self_pricing_engine)
+  )
+  if (!opts$skip_estim) {
+    results_args <- c(results_args, paste0("--min-results-mtime=", as.numeric(started_at)))
+  }
+  run_step(rscript, results_args[[1]], results_args[-1])
+  cat("\n")
+} else {
+  cat("STEP 2: Skipped (--skip-results)\n\n")
+}
 
-cat("STEP 2: Generate Tables and Figures\n")
-cat("------------------------------------\n")
+if (!opts$skip_assembly) {
+  cat("STEP 3: IA LaTeX Assembly\n")
+  cat("-------------------------\n")
+  run_step(rscript, "ia/_create_ia_latex.R")
+  cat("\n")
+} else {
+  cat("STEP 3: Skipped (--skip-assembly)\n\n")
+}
 
-results_script <- file.path(main_path, "ia", "_run_ia_results.R")
-source(results_script)
-
-###############################################################################
-## STEP 3: COMPILE LATEX
-###############################################################################
-
-cat("\n")
-cat("STEP 3: Compile LaTeX Document\n")
-cat("-------------------------------\n")
-
-latex_script <- file.path(main_path, "ia", "_create_ia_latex.R")
-source(latex_script)
-
-###############################################################################
-## SUMMARY
-###############################################################################
-
-end_time <- Sys.time()
-elapsed <- difftime(end_time, start_time, units = "mins")
-
-cat("\n")
+elapsed <- difftime(Sys.time(), started_at, units = "mins")
 cat("========================================\n")
-cat("INTERNET APPENDIX REPLICATION COMPLETE\n")
+cat("INTERNET APPENDIX PIPELINE COMPLETE\n")
 cat("========================================\n")
-cat("\n")
 cat(sprintf("Total time: %.1f minutes\n", as.numeric(elapsed)))
-cat("\n")
-cat("Outputs:\n")
-cat("  Tables:  ia/output/paper/tables/\n")
-cat("  Figures: ia/output/paper/figures/\n")
-cat("  LaTeX:   ia/output/paper/latex/\n")
-cat("\n")
+cat("\nOutputs:\n")
+cat("  Estimation: ia/output/unconditional/\n")
+cat("  Tables:     ia/output/paper/tables/\n")
+cat("  Figures:    ia/output/paper/figures/\n")
+cat("  LaTeX:      ia/output/paper/latex/\n")
+cat("\nNext step for PDF compilation:\n")
+cat("  tools/build_ia_paper.*\n")

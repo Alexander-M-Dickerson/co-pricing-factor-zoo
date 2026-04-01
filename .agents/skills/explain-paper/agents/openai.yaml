@@ -1,4 +1,4 @@
 interface:
   display_name: "Explain Paper"
-  short_description: "Answer paper, method, factor, table, and figure questions for this repo."
-  default_prompt: "Use $explain-paper to explain the paper or trace a result back to code and saved outputs."
+  short_description: "Explain exhibits, claims, equations, and code paths for this paper."
+  default_prompt: "Use $explain-paper to fully explain an exhibit or trace a paper claim back to code and saved outputs."

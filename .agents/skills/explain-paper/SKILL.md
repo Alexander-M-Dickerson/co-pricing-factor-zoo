@@ -8,7 +8,12 @@ description: "Explain the paper, methods, factors, tables, figures, and code pat
 Read only the docs needed for the question:
 
 - `AGENTS.md`
+- `docs/agent-context/exhibits/README.md`
+- `docs/agent-context/exhibits/`
 - `docs/manifests/exhibits.csv`
+- `docs/manifests/manuscript_exhibits.csv`
+- `docs/manifests/paper_claims.csv`
+- `docs/agent-context/prompt-recipes.md`
 - `docs/paper/co-pricing-factor-zoo.ai-optimized.md`
 - `docs/agent-context/paper-reading-guide.md`
 - `docs/agent-context/paper-method.md`
@@ -17,6 +22,7 @@ Read only the docs needed for the question:
 - `docs/agent-context/tables-guide.md`
 - `docs/agent-context/figures-guide.md`
 - `docs/agent-context/factors-reference.md`
+- `references/exhibit-routing.md`
 
 ## Use When
 
@@ -46,12 +52,15 @@ Read only the docs needed for the question:
 ## Workflow
 
 1. Start from the empirical question or exhibit, not from sampler internals.
-2. Use `docs/manifests/exhibits.csv` to locate the entry script and helper before reading source deeply.
-3. Load the full paper only when exact equation, appendix, table, or figure references matter.
-4. Prefer stored saved-object metadata such as `nontraded_names`, `bond_names`, and `stock_names` over reconstruction.
+2. Use the relevant file in `docs/agent-context/exhibits/` first when a dossier exists for that exhibit.
+3. Use `docs/manifests/exhibits.csv` to locate the entry script and helper before reading source deeply.
+4. Use `docs/manifests/manuscript_exhibits.csv` for repo coverage questions and `docs/manifests/paper_claims.csv` for headline manuscript claims.
+5. Load the full paper only when exact equation, appendix, table, or figure references matter.
+6. Prefer stored saved-object metadata such as `nontraded_names`, `bond_names`, and `stock_names` over reconstruction.
 
 ## Example Prompts
 
+- "Fully explain Table 1."
 - "Explain Table 5 and show the code path."
 - "Why does the paper say the SDF is dense?"
 - "Which equation is the treasury decomposition using?"
@@ -60,4 +69,5 @@ Read only the docs needed for the question:
 
 - do not invent factor classifications or unsupported model configurations
 - do not treat stale prose as authoritative when code and docs disagree
+- do not describe paper-only IA exhibits as executable repo outputs
 - do not bulk-load the full paper when a smaller shared doc answers the question

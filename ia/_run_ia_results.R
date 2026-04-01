@@ -48,10 +48,53 @@
 ##
 ###############################################################################
 
+parse_ia_results_args <- function() {
+  args <- commandArgs(trailingOnly = TRUE)
+  opts <- list(
+    expected_ndraws = NULL,
+    min_results_mtime = NULL,
+    self_pricing_engine = "fast",
+    show_help = FALSE
+  )
+
+  for (arg in args) {
+    if (grepl("^--expected-ndraws=", arg)) {
+      opts$expected_ndraws <- as.integer(sub("^--expected-ndraws=", "", arg))
+    } else if (grepl("^--min-results-mtime=", arg)) {
+      opts$min_results_mtime <- as.numeric(sub("^--min-results-mtime=", "", arg))
+    } else if (grepl("^--self-pricing-engine=", arg)) {
+      opts$self_pricing_engine <- sub("^--self-pricing-engine=", "", arg)
+    } else if (identical(arg, "--help") || identical(arg, "-h")) {
+      opts$show_help <- TRUE
+    } else {
+      stop("Unknown argument: ", arg, call. = FALSE)
+    }
+  }
+
+  opts$self_pricing_engine <- match.arg(opts$self_pricing_engine, c("fast", "reference"))
+  opts
+}
+
+ia_results_opts <- parse_ia_results_args()
+
+if (isTRUE(ia_results_opts$show_help)) {
+  cat(
+    "Usage: Rscript ia/_run_ia_results.R [options]\n\n",
+    "Options:\n",
+    "  --expected-ndraws=N        Require IA workspaces to report metadata$ndraws = N\n",
+    "  --min-results-mtime=UNIX   Require IA workspaces to be newer than this Unix timestamp\n",
+    "  --self-pricing-engine=NAME fast or reference (default: fast)\n",
+    "  --help, -h                 Show this help message\n",
+    sep = ""
+  )
+  quit(save = "no", status = 0)
+}
+
 gc()
 
 # Close any stray graphics devices
 if (length(dev.list()) > 0) graphics.off()
+ia_results_started_at <- Sys.time()
 
 ###############################################################################
 ## SECTION 1: CONFIGURATION
@@ -85,6 +128,9 @@ for (d in c(tables_dir, figures_dir)) {
 # Settings
 verbose        <- TRUE
 return_type    <- "excess"
+expected_ndraws <- ia_results_opts$expected_ndraws
+min_results_mtime <- ia_results_opts$min_results_mtime
+self_pricing_engine <- ia_results_opts$self_pricing_engine
 
 # Prior parameters (for prob_thresh calculation)
 alpha.w        <- 1
@@ -161,6 +207,7 @@ IA_MODELS <- list(
 
 if (verbose) message("\nLoading helper functions...")
 
+source(file.path(code_folder, "ia_run_helpers.R"))
 source(file.path(code_folder, "pp_figure_table.R"))
 source(file.path(code_folder, "pricing_tables.R"))  # provides build_pricing_panel_rows()
 source(file.path(code_folder, "validate_and_align_dates.R"))  # required by os_asset_pricing()
@@ -175,6 +222,27 @@ source(file.path(code_folder, "sr_tables.R"))  # provides generate_table_treasur
 # Load additional helpers as needed
 if (file.exists(file.path(code_folder, "oos_pricing_helpers.R"))) {
   source(file.path(code_folder, "oos_pricing_helpers.R"))
+}
+
+if (verbose) {
+  message("Validating required IA estimation workspaces before generating IA outputs...")
+}
+
+ia_input_validation <- validate_expected_ia_workspaces(
+  main_path = main_path,
+  output_folder = ia_output,
+  expected_ndraws = expected_ndraws,
+  min_mtime = min_results_mtime,
+  model_ids = ia_model_ids(),
+  self_pricing_engine = self_pricing_engine
+)
+
+if (!isTRUE(ia_input_validation$ok)) {
+  stop(
+    "IA input validation failed before results generation.\n",
+    format_ia_validation_issues(ia_input_validation),
+    call. = FALSE
+  )
 }
 
 ###############################################################################
@@ -422,7 +490,7 @@ if (length(is_pricing_results) > 0) {
                    "\t{\\footnotesize",
                    "The table presents the cross-sectional in-sample asset pricing performance of different models estimated \\textbf{without an intercept}, pricing bonds and stocks jointly (Panel A), bonds only (Panel B) and stocks only (Panel C), respectively.",
                    "For the BMA-SDF, we provide results for prior Sharpe ratio values set to 20\\%, 40\\%, 60\\% and 80\\% of the ex post maximum Sharpe ratio of the test assets. TOP includes the top five factors with an average posterior probability greater than 50\\%.",
-                   "CAPM is the standard single-factor model using MKTS, and CAPMB is the bond version using MKTB. FF5 is the five-factor model of \\cite{FamaFrench_1993}, HKM is the two-factor model of \\citet{HeKellyManela_2017}. KNS stands for the SDF estimation of \\citet{KozakNagelSantosh_2020} and RPPCA is the risk premia PCA of \\cite{LettauPelger_2020}.",
+                   "CAPM is the standard single-factor model using MKTS, and CAPMB is the bond version using MKTB. FF5 follows Fama and French (1993), HKM follows He, Kelly, and Manela (2017), KNS follows Kozak, Nagel, and Santosh (2020), and RPPCA follows Lettau and Pelger (2020).",
                    "Bond returns are computed in excess of the one-month risk-free rate of return.",
                    "All data are standardized, that is, pricing errors are in Sharpe ratio units. The sample period is 1986:01 to 2022:12 ($T=444$).",
                    "}",
@@ -1104,14 +1172,14 @@ if (!has_dur_results) {
                        "For the BMA-SDF, we provide results for prior Sharpe ratio  values set to 20\\%, 40\\%, 60\\% and 80\\% of the ex post maximum Sharpe ratio of the test assets. ",
                        "TOP includes the top five factors with an average posterior probability greater than 50\\%. ",
                        "CAPM is the standard single-factor model using MKTS, and CAPMB is the bond version using MKTB. ",
-                       "FF5 is the five-factor model of \\cite{FamaFrench_1993}, HKM is the two-factor model of \\citet{HeKellyManela_2017}. ",
-                       "KNS stands for the SDF estimation of \\citet{KozakNagelSantosh_2020} and RPPCA is the  risk premia PCA of \\cite{LettauPelger_2020}. ",
-                       "Estimation details for the benchmark models are given in Appendix \\ref{sec:benchmark_models}.",
+                       "FF5 follows Fama and French (1993), HKM follows He, Kelly, and Manela (2017). ",
+                       "KNS follows Kozak, Nagel, and Santosh (2020) and RPPCA follows Lettau and Pelger (2020). ",
+                       "Benchmark model definitions follow the standard CAPM, CAPMB, FF5, HKM, KNS, and RP-PCA specifications implemented in this replication.",
                        "Bond returns are computed in excess of a duration matched portfolio of U.S. Treasury bonds.",
                        "In Panels A and B the models are estimated with the respective factor zoos and test assets.  The resulting SDF is then used to price (with no additional parameter estimation) the two sets of the OS assets in Panels C and D.    ",
                        "IS test assets are the 83 bond and stock portfolios and the 40 tradable bond and stock factors (Panel A), and the 50 bond portfolios and  16 tradable bond factors (Panel B), respectively. ",
                        "OS test assets are the combined 154 bond and stock portfolios (Panel C), as well as the 77 bond portfolios only (Panel D). ",
-                       "All are described in Section \\ref{sec:data}. ",
+                       "These panels use the duration-adjusted bond and joint test-asset sets included in this replication. ",
                        "All data is standardized, that is, pricing errors are in Sharpe ratio units. The sample period is 1986:01 to 2022:12 ($T=444$).",
                        "}",
                        "",
@@ -1758,6 +1826,13 @@ if (!file.exists(sparse_rdata_path)) {
           table_caption = "Posterior factor probabilities and risk prices -- imposing sparsity",
           table_label   = "tab:sparse-posterior-probs",
           table_name    = "table_sparse_posterior_probs",
+          table_note_lines = c(
+            "The table reports posterior probabilities, $\\mathbb{E}[\\gamma_j|\\text{data}]$, and posterior means of annualized market prices of risk, $\\mathbb{E}[\\lambda_j|\\text{data}]$, of the 54 bond and stock factors in the co-pricing factor zoo.",
+            "We encode sparsity by choosing the prior mean and variance of $\\omega_j$, $\\mathbb{E}[\\omega_j] = \\frac{a_{\\omega}}{a_{\\omega}+b_{\\omega}}$ and $\\operatorname{Var}(\\omega_j) = \\frac{a_{\\omega}b_{\\omega}}{(a_{\\omega}+b_{\\omega})^{2}(a_{\\omega}+b_{\\omega}+1)}$.",
+            "We set $a_{\\omega} \\approx 3.54$ and $b_{\\omega} \\approx 34.66$ so that the prior expectation of the number of active factors is close to five out of $K = 54$, and the prior two-standard-deviation credible interval spans roughly zero to ten factors.",
+            "The implied prior for each factor inclusion is Beta$(3.54, 34.66)$, yielding a prior expectation for $\\gamma_j$ of about 9.25\\%. Results are tabulated for different values of the prior Sharpe ratio, $\\sqrt{\\mathbb{E}_\\pi [SR^2_{\\bm{f}} \\mid \\sigma^2]}$, with values set to 20\\%, 40\\%, 60\\% and 80\\% of the ex post maximum Sharpe ratio of the test assets.",
+            "The factors are ordered by the average posterior probability across the four levels of shrinkage. Test assets are the 83 bond and stock portfolios and 40 tradable bond and stock factors used in this replication. The sample period is 1986:01 to 2022:12 ($T = 444$)."
+          ),
           verbose       = verbose
         )
 
@@ -1887,8 +1962,7 @@ if (!file.exists(sparse_rdata_path)) {
                                 "\\begin{spacing}{1}",
                                 "{\\footnotesize",
                                 "The table presents the cross-sectional in-sample (Panel A) and out-of-sample (Panel B) asset pricing performance of the co-pricing model estimated with a sparsity-inducing prior.",
-                                sprintf("The prior uses $\\\\alpha_w = %d$ and $\\\\beta_w = %d$, corresponding to an expected %d active factors out of %d total factors.",
-                                        sparse_alpha_w, sparse_beta_w, 5, 54),
+                                "The sparse prior uses $a_{\\omega} \\approx 3.54$ and $b_{\\omega} \\approx 34.66$, so the prior expectation is roughly five active factors out of 54 and the prior two-standard-deviation band spans roughly zero to ten factors.",
                                 "For the BMA-SDF, we provide results for prior Sharpe ratio values set to 20\\%, 40\\%, 60\\% and 80\\% of the ex post maximum Sharpe ratio of the test assets.",
                                 "TOP includes the top five factors with an average posterior probability greater than 50\\%.",
                                 "Out-of-sample test assets are the combined 154 bond and stock portfolios.",
@@ -2231,6 +2305,15 @@ if (isos_globals_assigned) {
 # Close any remaining graphics devices
 if (length(dev.list()) > 0) graphics.off()
 
+ia_output_validation <- validate_ia_manifest_outputs(main_path, min_mtime = ia_results_started_at)
+if (!isTRUE(ia_output_validation$ok)) {
+  stop(
+    "IA output validation failed after results generation.\n",
+    format_ia_output_issues(ia_output_validation),
+    call. = FALSE
+  )
+}
+
 if (verbose) {
   message("\n")
   message(strrep("=", 60))
@@ -2239,5 +2322,5 @@ if (verbose) {
   message("\nOutputs saved to:")
   message("  Tables:  ", tables_dir)
   message("  Figures: ", figures_dir)
-  message("\nNext step: Run ia/_create_ia_latex.R to compile LaTeX document")
+  message("\nNext step: Run ia/_create_ia_latex.R to assemble the IA LaTeX tree, then tools/build_ia_paper.* to compile ia_main.pdf")
 }

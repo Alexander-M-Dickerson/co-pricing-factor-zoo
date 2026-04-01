@@ -17,7 +17,7 @@
 ##   2. Conditional models (2 models, ~30-40 min)
 ##   3. Generate tables & figures (unconditional)
 ##   4. Generate tables & figures (conditional)
-##   5. Compile LaTeX document
+##   5. Assemble LaTeX source tree
 ##
 ## Coverage note: this repo replicates all main-text tables/figures, all main
 ## Appendix tables/figures, and a subset of Internet Appendix results.
@@ -29,7 +29,7 @@
 ##   --ndraws=N        Number of MCMC draws (default: 50000, use 5000 for quick test)
 ##   --quick           Shortcut for --ndraws=5000 (quick test mode)
 ##   --sequential      Run models sequentially instead of parallel (default: parallel)
-##   --skip-estimation Skip steps 1-2, only regenerate tables/figures
+##   --skip-estimation Skip steps 1-2, only regenerate tables/figures and LaTeX sources
 ##   --help            Show this help message
 ##
 ## EXAMPLES:
@@ -78,23 +78,32 @@ OPTIONS:
   --ndraws=N        Number of MCMC draws (default: 50000)
   --quick           Quick test mode (--ndraws=5000)
   --sequential      Run models sequentially (default: parallel)
-  --skip-estimation Skip estimation, only regenerate tables/figures
+  --skip-estimation Skip estimation, only regenerate tables/figures and LaTeX sources
   --help            Show this help message
 
 EXAMPLES:
   Rscript _run_full_replication.R                    # Full replication
   Rscript _run_full_replication.R --quick            # Quick test
-  Rscript _run_full_replication.R --skip-estimation  # Regenerate outputs only
+  Rscript _run_full_replication.R --skip-estimation  # Regenerate outputs and LaTeX sources only
 
 ")
   quit(status = 0)
 }
 
+source(file.path("code_base", "conditional_run_helpers.R"))
+source(file.path("code_base", "unconditional_run_helpers.R"))
+
 ###############################################################################
 ## HELPER FUNCTION
 ###############################################################################
 
-run_step <- function(step_num, total_steps, description, command) {
+repo_rscript <- if (.Platform$OS.type == "windows") {
+  file.path(R.home("bin"), "Rscript.exe")
+} else {
+  file.path(R.home("bin"), "Rscript")
+}
+
+run_step <- function(step_num, total_steps, description, script, args = character()) {
   cat("\n")
   cat(strrep("=", 70), "\n")
   cat(sprintf("STEP %d/%d: %s\n", step_num, total_steps, description))
@@ -103,7 +112,7 @@ run_step <- function(step_num, total_steps, description, command) {
   start_time <- Sys.time()
 
   # Run command and capture exit status
-  exit_status <- system(command)
+  exit_status <- system2(repo_rscript, args = c(script, args))
 
   end_time <- Sys.time()
   elapsed <- round(difftime(end_time, start_time, units = "mins"), 1)
@@ -119,7 +128,11 @@ run_step <- function(step_num, total_steps, description, command) {
 
   cat(sprintf("\nStep %d completed in %.1f minutes.\n", step_num, elapsed))
 
-  return(elapsed)
+  list(
+    elapsed = elapsed,
+    started_at = start_time,
+    completed_at = end_time
+  )
 }
 
 ###############################################################################
@@ -150,12 +163,81 @@ if (!skip_estimation) {
   total_steps <- 5
 
   # Step 1: Unconditional models
-  cmd1 <- sprintf("Rscript _run_all_unconditional.R --ndraws=%d %s", ndraws, parallel_flag)
-  step_times[1] <- run_step(1, total_steps, "Running unconditional models (7 models)", cmd1)
+  step1_args <- c(sprintf("--ndraws=%d", ndraws))
+  if (nzchar(parallel_flag)) {
+    step1_args <- c(step1_args, parallel_flag)
+  }
+  step1_info <- run_step(1, total_steps, "Running unconditional models (7 models)", "_run_all_unconditional.R", step1_args)
+  step_times[1] <- step1_info$elapsed
+
+  unconditional_validation <- validate_expected_unconditional_workspaces(
+    main_path = getwd(),
+    output_folder = "output",
+    expected_ndraws = ndraws,
+    min_mtime = step1_info$started_at
+  )
+  if (!isTRUE(unconditional_validation$ok)) {
+    stop(
+      "Step 1 completed but one or more unconditional result workspaces are stale, missing, or mismatched.\n",
+      format_unconditional_validation_issues(unconditional_validation),
+      call. = FALSE
+    )
+  }
 
   # Step 2: Conditional models
-  cmd2 <- sprintf("Rscript _run_all_conditional.R --ndraws=%d", ndraws)
-  step_times[2] <- run_step(2, total_steps, "Running conditional models (2 models)", cmd2)
+  step2_info <- run_step(
+    2,
+    total_steps,
+    "Running conditional models (2 models)",
+    "_run_all_conditional.R",
+    c(sprintf("--ndraws=%d", ndraws), "--direction=both")
+  )
+  step_times[2] <- step2_info$elapsed
+
+  conditional_paths <- list(
+    forward = conditional_results_rds_path(
+      main_path = getwd(),
+      output_folder = "output",
+      model_type = "bond_stock_with_sp",
+      return_type = "excess",
+      alpha.w = 1,
+      beta.w = 1,
+      tag = "ExpandingForward",
+      holding_period = 12,
+      f1_flag = TRUE,
+      reverse_time = FALSE
+    ),
+    backward = conditional_results_rds_path(
+      main_path = getwd(),
+      output_folder = "output",
+      model_type = "bond_stock_with_sp",
+      return_type = "excess",
+      alpha.w = 1,
+      beta.w = 1,
+      tag = "ExpandingBackward",
+      holding_period = 12,
+      f1_flag = TRUE,
+      reverse_time = TRUE
+    )
+  )
+
+  for (direction_name in names(conditional_paths)) {
+    validation <- validate_conditional_results_artifact(
+      results_file = conditional_paths[[direction_name]],
+      expected_ndraws = ndraws,
+      min_mtime = step2_info$started_at,
+      require_complete = TRUE
+    )
+    if (!isTRUE(validation$ok)) {
+      stop(
+        "Step 2 completed but the conditional ",
+        direction_name,
+        " artifact is stale or incomplete.\n",
+        format_conditional_validation_issues(validation),
+        call. = FALSE
+      )
+    }
+  }
 
   step_offset <- 2
 } else {
@@ -165,25 +247,44 @@ if (!skip_estimation) {
 }
 
 # Step 3: Generate tables & figures (unconditional)
+step3_args <- c(
+  "--strict-freshness",
+  sprintf("--expected-ndraws=%d", ndraws)
+)
+if (!skip_estimation) {
+  step3_args <- c(
+    step3_args,
+    sprintf("--min-results-mtime=%s", as.numeric(step1_info$started_at))
+  )
+}
 step_times[step_offset + 1] <- run_step(
   step_offset + 1, total_steps,
   "Generating tables and figures (unconditional)",
-  "Rscript _run_paper_results.R"
-)
+  "_run_paper_results.R",
+  step3_args
+)$elapsed
 
 # Step 4: Generate tables & figures (conditional)
+conditional_args <- c(sprintf("--expected-ndraws=%d", ndraws))
+if (!skip_estimation) {
+  conditional_args <- c(
+    conditional_args,
+    sprintf("--min-results-mtime=%s", as.numeric(step2_info$started_at))
+  )
+}
 step_times[step_offset + 2] <- run_step(
   step_offset + 2, total_steps,
   "Generating tables and figures (conditional)",
-  "Rscript _run_paper_conditional_results.R"
-)
+  "_run_paper_conditional_results.R",
+  conditional_args
+)$elapsed
 
-# Step 5: Compile LaTeX document
+# Step 5: Assemble LaTeX source tree
 step_times[step_offset + 3] <- run_step(
   step_offset + 3, total_steps,
-  "Compiling LaTeX document",
-  "Rscript _create_djm_tabs_figs.R"
-)
+  "Assembling LaTeX source tree",
+  "_create_djm_tabs_figs.R"
+)$elapsed
 
 ###############################################################################
 ## SUMMARY
@@ -209,9 +310,7 @@ cat("  Logs:     output/logs/\n")
 cat("\n")
 
 cat("To compile the PDF:\n")
-cat("  cd output/paper/latex\n")
-cat("  pdflatex djm_main.tex\n")
-cat("  bibtex djm_main\n")
-cat("  pdflatex djm_main.tex\n")
-cat("  pdflatex djm_main.tex\n")
+cat("  powershell -ExecutionPolicy Bypass -File tools\\build_paper.ps1\n")
+cat("  cmd /c tools\\build_paper.cmd\n")
+cat("  bash tools/build_paper.sh\n")
 cat("\n")

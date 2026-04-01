@@ -543,6 +543,40 @@ run_bayesian_mcmc_time_varying <- function(
     verbose = verbose
   )
 
+  use_kappa_no_sp <- is.null(f2) && !is.null(kappa) && any(kappa != 0)
+  use_multi_asset <- !is.null(f2) && !is.null(kappa) && any(kappa != 0)
+  requires_fast_self_pricing_backend <- !is.null(f2) &&
+    !use_multi_asset &&
+    identical(self_pricing_engine, "fast")
+
+  if (requires_fast_self_pricing_backend) {
+    if (verbose) {
+      message("Preparing fast self-pricing backend before worker launch...")
+    }
+
+    fast_backend_ready <- load_continuous_ss_sdf_v2_fast_cpp(force_rebuild = FALSE)
+    if (!isTRUE(fast_backend_ready)) {
+      error_msg <- continuous_ss_sdf_v2_fast_cpp_error()
+      if (is.null(error_msg) || !nzchar(error_msg)) {
+        error_msg <- "Unknown backend preparation error."
+      }
+      stop(
+        "Fast self-pricing backend could not be prepared before estimation: ",
+        error_msg,
+        "\nRefusing to launch workers that would compile the backend mid-run."
+      )
+    }
+
+    if (verbose) {
+      fast_backend_status <- continuous_ss_sdf_v2_fast_backend_status()
+      backend_source <- fast_backend_status$load_source
+      if (is.null(backend_source) || !nzchar(backend_source)) {
+        backend_source <- "session"
+      }
+      message("  Fast backend ready via ", backend_source, " load")
+    }
+  }
+
   # We will compile locally but send a plain function to workers (cmpfun on PSOCK can be brittle)
   make_CJ_ss <- function(use_multi_asset, use_kappa_no_sp, self_pricing_engine) {
     if (is.null(f2)) {
@@ -569,10 +603,10 @@ run_bayesian_mcmc_time_varying <- function(
   # self-pricing whenever the v2 path is selected.
   CJ_ss_plain <- if (is.null(f2)) {
     make_CJ_ss(use_multi_asset = FALSE,
-               use_kappa_no_sp = (!is.null(kappa) && any(kappa != 0)),
+               use_kappa_no_sp = use_kappa_no_sp,
                self_pricing_engine = self_pricing_engine)
   } else {
-    make_CJ_ss(use_multi_asset = (!is.null(kappa) && any(kappa != 0)),
+    make_CJ_ss(use_multi_asset = use_multi_asset,
                use_kappa_no_sp = FALSE,
                self_pricing_engine = self_pricing_engine)
   }
@@ -603,6 +637,32 @@ run_bayesian_mcmc_time_varying <- function(
       invisible(lapply(worker_r_files, source))
       NULL
     })
+
+    if (requires_fast_self_pricing_backend) {
+      worker_backend_status <- parallel::clusterEvalQ(cluster_info$cluster, {
+        backend_ok <- load_continuous_ss_sdf_v2_fast_cpp(force_rebuild = FALSE)
+        if (!isTRUE(backend_ok)) {
+          backend_error <- continuous_ss_sdf_v2_fast_cpp_error()
+          if (is.null(backend_error) || !nzchar(backend_error)) {
+            backend_error <- "Unknown backend preload error."
+          }
+          stop("Fast self-pricing backend failed to load on worker from cache: ", backend_error)
+        }
+        continuous_ss_sdf_v2_fast_backend_status()
+      })
+
+      if (verbose) {
+        worker_sources <- unique(vapply(worker_backend_status, function(status) {
+          source_name <- status$load_source
+          if (is.null(source_name) || !nzchar(source_name)) {
+            "session"
+          } else {
+            source_name
+          }
+        }, character(1)))
+        message("  Worker fast backend ready via ", paste(worker_sources, collapse = ", "), " load")
+      }
+    }
   }
 
   ## ---- 11. MCMC estimation --------------------------------------------------
@@ -612,7 +672,6 @@ run_bayesian_mcmc_time_varying <- function(
   if (is.null(f2)) {
     ## 
     f_all <- f1
-    use_kappa_no_sp <- !is.null(kappa) && any(kappa != 0)
     
     CJ_ss <- if (use_kappa_no_sp) {
       compiler::cmpfun(continuous_ss_sdf_multi_asset_no_sp)
@@ -664,8 +723,6 @@ run_bayesian_mcmc_time_varying <- function(
     
   } else {
     ##
-    use_multi_asset <- !is.null(kappa) && any(kappa != 0)
-    
     CJ_ss <- if (use_multi_asset) {
       compiler::cmpfun(continuous_ss_sdf_multi_asset)
     } else if (identical(self_pricing_engine, "fast")) {

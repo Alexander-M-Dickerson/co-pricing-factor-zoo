@@ -9,9 +9,20 @@ Canonical full paper:
 
 - `docs/paper/co-pricing-factor-zoo.ai-optimized.md`
 
-Machine-readable exhibit map:
+Machine-readable maps:
 
 - `docs/manifests/exhibits.csv`
+- `docs/manifests/manuscript_exhibits.csv`
+- `docs/manifests/paper_claims.csv`
+
+Exhibit dossiers:
+
+- `docs/agent-context/exhibits/README.md`
+- `docs/agent-context/exhibits/`
+
+Prompt recipes:
+
+- `docs/agent-context/prompt-recipes.md`
 
 ## If The User Wants Intuition
 
@@ -35,10 +46,14 @@ Machine-readable exhibit map:
 
 ## If The User Wants A Table, Figure, Or Factor Walkthrough
 
+- `docs/agent-context/exhibits/`
 - `docs/manifests/exhibits.csv`
+- `docs/manifests/manuscript_exhibits.csv`
 - `tables-guide.md`
 - `figures-guide.md`
 - `factors-reference.md`
 
 Prefer loading only the relevant shared doc instead of bulk-loading everything.
+Use the exhibit dossier first when one exists. Use the manuscript manifest when
+the user asks about paper-only or not-yet-implemented IA exhibits.
 Load the full paper when exact equation, appendix, table, or figure wording matters.

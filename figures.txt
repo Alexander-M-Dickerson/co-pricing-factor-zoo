@@ -1,3 +1,7 @@
+% Figure 1
+\input{fig1_simulation.tex}
+\clearpage
+
 % Figure 2
 \begin{figure}[tbh!]%p]
 \begin{center}
@@ -9,10 +13,9 @@
 \begin{justify}
 \begin{spacing}{1}
 \footnotesize{
-Posterior probabilities, $\mathbb{E}[\gamma_j|\text{data}]$, of the 54 bond and stock factors described in Appendix \nolinebreak\ref{sec:factor_zoo}.
+Posterior probabilities, $\mathbb{E}[\gamma_j|\text{data}]$, of the 54 bond and stock factors in the co-pricing factor zoo.
 The prior for each factor inclusion is a Beta(1, 1), yielding a prior expectation for $\gamma_j$ of 50\%. Results are shown for different values of the prior Sharpe ratio, $\sqrt{\mathbb{E}_\pi [SR^2_{\bm{f}} \mid \sigma^2]}$, with values set to 20\%, 40\%, 60\% and 80\% of the ex post maximum Sharpe ratio of the test assets. 
-Labels are ordered  by the average posterior probability across the four levels of shrinkage. Test assets are the 83 bond and stock portfolios and 40 tradable bond and stock factors % ($N = 123$) 
-described in Section \ref{sec:data}. 
+Labels are ordered  by the average posterior probability across the four levels of shrinkage. Test assets are the 83 bond and stock portfolios and 40 tradable bond and stock factors used in this replication. 
 The sample period is 1986:01 to 2022:12 ($T = 444$).
 }
 \end{spacing}
@@ -32,8 +35,8 @@ The sample period is 1986:01 to 2022:12 ($T = 444$).
 \begin{justify}
 \begin{spacing}{1}
 \footnotesize{
-Posterior distributions of the number of factors to be included in the co-pricing SDF (top panel) and of the SDF-implied Sharpe ratio (bottom panel), computed using the 54 bond and stock factors described in Appendix \ref{sec:factor_zoo}. 
-The prior distribution for the $j^{\text{th}}$ factor inclusion is a Beta(1, 1), yielding a flat prior for the SDF dimensionality depicted in the top panel. The prior Sharpe ratio is set to 80\% of the ex post maximum Sharpe ratio of the 83 bond and stock portfolios and 40 tradable factors described Section \ref{sec:data}. The sample period is 1986:01 to 2022:12 ($T = 444$). }
+Posterior distributions of the number of factors to be included in the co-pricing SDF (top panel) and of the SDF-implied Sharpe ratio (bottom panel), computed using the 54 bond and stock factors in the co-pricing factor zoo. 
+The prior distribution for the $j^{\text{th}}$ factor inclusion is a Beta(1, 1), yielding a flat prior for the SDF dimensionality depicted in the top panel. The prior Sharpe ratio is set to 80\% of the ex post maximum Sharpe ratio of the 83 bond and stock portfolios and 40 tradable factors used in this replication. The sample period is 1986:01 to 2022:12 ($T = 444$). }
 \end{spacing}
 \end{justify}
 \vspace{-12mm}
@@ -51,9 +54,9 @@ The prior distribution for the $j^{\text{th}}$ factor inclusion is a Beta(1, 1),
 \begin{justify}
 \begin{spacing}{1}
 \footnotesize{
-The figure reports posterior probabilities, $\mathbb{E}[\gamma_j|\text{data}]$, and posterior means of annualized market prices of risk, $\mathbb{E}[\lambda_j|\text{data}]$, of the 54 bond and stock factors described in Appendix \ref{sec:factor_zoo}. 
+The figure reports posterior probabilities, $\mathbb{E}[\gamma_j|\text{data}]$, and posterior means of annualized market prices of risk, $\mathbb{E}[\lambda_j|\text{data}]$, of the 54 bond and stock factors in the co-pricing factor zoo. 
 The prior for each factor inclusion is a Beta(1, 1), yielding a prior expectation for $\gamma_j$ of 50\%. 
-The prior Sharpe ratio is set to 80\% of the ex post maximum Sharpe ratio of the 83 stock and bond portfolios and the 40 tradable factors described in Section \ref{sec:data}. 
+The prior Sharpe ratio is set to 80\% of the ex post maximum Sharpe ratio of the 83 stock and bond portfolios and the 40 tradable factors used in this replication. 
 The sample period is 1986:01 to 2022:12 ($T = 444$).
 }
 \end{spacing}
@@ -151,7 +154,7 @@ The results are shown for prior level of Sharpe ratio shrinkage set to 80\% of t
     Thereafter, we re-estimate the models in an expanding fashion every year.
     For KNS, we re-conduct the two-fold cross-validation every estimation to pin down the optimal parameters.
     For RPPCA, we re-estimate the PCs every estimation.
-    The models are estimated to price the 83 bond and stock portfolios and the 40 tradable bond and stock factors ($N = 123$) as described in Section \ref{sec:data}. 
+    The models are estimated to price the 83 bond and stock portfolios and the 40 tradable bond and stock factors ($N = 123$). 
     The  out-of-sample evaluation period is 2004:07 to 2022:12 ($T=222$).
 }
 \end{spacing}
@@ -190,7 +193,7 @@ The results are shown for prior level of Sharpe ratio shrinkage set to 80\% of t
 \begin{spacing}{1}
 \footnotesize{
 This figure plots the distributions of $R^2_{GLS}$, $R^2_{OLS}$, RMSE and MAPE in Panels A, B, C and D respectively across 16,383 possible bond and stock cross-sections using the 14 sets of stock and bond test assets ($2^{14} -1 = 16,383$)  priced using the respective BMA-SDF (the empty set is excluded). 
-All bond test assets (IS and OS) and factors are formed with duration-adjusted returns defined in equation (\ref{eq:dur}).  
+All bond test assets (IS and OS) and factors use the duration-adjusted return construction applied in this replication.  
 The models are first estimated using the baseline set of IS test assets and then used to price (with no additional parameter estimation) each set of the 16,383 OS combinations of test assets.  
 The red distributions correspond to the pricing performance of the co-pricing BMA-SDF. The blue (yellow) distributions correspond to the pricing performance of the bond (stock) only BMA-SDF. The BMA-SDFs are computed with a prior Sharpe ratio value set to 80\% of the ex post maximum Sharpe ratio of the IS test assets. All data are standardized, that is, pricing errors are in Sharpe ratio units. The sample period is  1986:01 to 2022:12 ($T=444$).   
 }
@@ -227,10 +230,10 @@ The red distributions correspond to the pricing performance of the co-pricing BM
 \begin{spacing}{1}
  \footnotesize{
 Plots of sample averages of excess returns for Treasury portfolios, on the $y$-axis, against BMA-SDF-implied risk premia, computed as minus the covariance between portfolio returns and the (posterior mean of the) BMA-SDF, constructed using the nontradable factors plus only bond (Panels A and B) or stock (Panels C and D) factors, on the $x$-axis. 
-Panels A and C: excess returns are the Treasury component from  equation (\ref{eq:dur}), $R^{Treasury}_{dur \, bond \,i ,t}  - R_{f,t}$, using the 50 IS bond portfolio test assets.  
+Panels A and C: excess returns are the Treasury component of duration-adjusted corporate bond returns, $R^{Treasury}_{dur \, bond \,i ,t}  - R_{f,t}$, using the 50 IS bond portfolio test assets.  
 Panels B and D: 29 Treasury portfolios of excess returns on Treasury securities with maturities spanning 2 to 30 years. 
-All are  described in Section \ref{sec:data}.
-The Treasury component bond and stock BMA-SDFs are estimated using the 50 IS portfolios and the respective bond and stock factors in addition to the 14 nontradable factors described in Appendix \ref{sec:factor_zoo}. 
+Panels B and D use the 29 Treasury return portfolios included in the replication data.
+The Treasury component bond and stock BMA-SDFs are estimated using the 50 IS portfolios and the respective bond and stock factors in addition to the 14 nontradable factors in the co-pricing factor zoo. 
 For either estimation we do not impose self-pricing for the stock and bond factors.
 OLS $R^2$s are from a constrained regression that sets the slope coefficient to one. 
 The sample period is 1986:01 to 2022:12 ($T=444$).
@@ -288,7 +291,7 @@ The GARCH quasi-maximum likelihood coefficient estimates are:
 \end{tabular}
 }
 \end{center}
-CAPMB is the bond single-factor model using MKTB, and FF5 is the five-factor model of \cite{FamaFrench_1993}. Estimation details for the benchmark models are given in Appendix \ref{sec:benchmark_models}. The volatilities of the SDFs are also computed using a GARCH(1,1) model after selecting an ARMA mean process using the AIC and the BIC.
+CAPMB is the bond single-factor model using MKTB, and FF5 is the five-factor model of \cite{FamaFrench_1993}. The benchmark SDF volatilities are also computed using a GARCH(1,1) model after selecting an ARMA mean process using the AIC and the BIC.
 Shaded areas denote NBER recession periods. 
 The sample period is 1986:01 to 2022:12 ($T=444$).
 }
@@ -322,7 +325,7 @@ The sample period is 1986:01 to 2022:12 ($T=444$).
 \footnotesize{
 The figure shows the $R^2$s of predictive regressions of factor returns on the previous month estimates of the co-pricing BMA-SDF conditional variance and conditional variance interacted with the conditional mean. Panel A shows $R^2$s for one-month ahead predictions while Panel B shows $R^2$s for one-year ahead predictions.  
 The volatility of the BMA-SDF is obtained by fitting an ARMA(3,1)-GARCH(1,1) to the posterior mean of the co-pricing BMA-SDF whereby the specification is selected via the AIC and the BIC. 
-To account for the overlapping nature of the observations in Panel B, we construct robust standard errors by (i) using a Bartlett kernel (\cite{NeweyWest_1987}) with 15 lags, (ii) constructing a sandwich estimate of the covariance matrix, and (iii) applying a degrees of freedom correction. The 40 predicted tradable factors are described in Appendix \ref{sec:factor_zoo}.
+To account for the overlapping nature of the observations in Panel B, we construct robust standard errors by (i) using a Bartlett kernel (\cite{NeweyWest_1987}) with 15 lags, (ii) constructing a sandwich estimate of the covariance matrix, and (iii) applying a degrees of freedom correction. The 40 predicted tradable factors are the 16 bond and 24 stock tradable factors used in this replication.
 }
 \end{spacing}
 \end{justify}
@@ -346,8 +349,8 @@ The vertical red dashed line denotes the posterior median number of factors that
 The light blue squares (red triangles) represent tradable bond (stock) factors.
 The dark blue circles represent nontradable factors.
 The light blue dashed lines and shaded area denote the centred 90\% confidence interval.
-The 54 factors that comprise the co-pricing factor zoo are described in Appendix \ref{sec:factor_zoo}.
-The prior Sharpe ratio is set to 80\% of the ex post maximum Sharpe ratio of the 83 bond and stock portfolios and the 40 tradable factors described in Section \ref{sec:data}.
+The 54 factors that comprise the co-pricing factor zoo are the 14 nontradable, 16 bond, and 24 stock factors used in this replication.
+The prior Sharpe ratio is set to 80\% of the ex post maximum Sharpe ratio of the 83 bond and stock portfolios and the 40 tradable factors used in this replication.
 The sample period is 1986:01 to 2022:12 ($T = 444$).
 }
 \end{spacing}

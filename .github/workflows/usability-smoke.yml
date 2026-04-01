@@ -15,6 +15,7 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
+          - macos-latest
           - windows-latest
 
     steps:
@@ -31,7 +32,60 @@ jobs:
 
       - name: Smoke main entrypoints
         run: |
+          Rscript tools/bootstrap_data.R --help
+          Rscript tools/run_figure1_simulation.R --help
           Rscript _run_full_replication.R --help
           Rscript _run_all_unconditional.R --list
           Rscript _run_all_conditional.R --help
           Rscript ia/_run_ia_estimation.R --list
+          Rscript ia/_run_ia_results.R --help
+          Rscript ia/_create_ia_latex.R --help
+          Rscript ia/_run_ia_full.R --help
+
+      - name: Smoke Unix wrapper entrypoints
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          bash tools/bootstrap_packages.sh --help
+          bash tools/bootstrap_data.sh --help
+          bash tools/doctor.sh --help
+          bash tools/rebuild_fast_backends.sh --help
+          bash tools/run_conditional_smoke.sh --help
+          bash tools/run_full_replication.sh --help
+          bash tools/run_figure1_simulation.sh --help
+          bash tools/build_paper.sh --help
+          bash tools/run_ia_smoke.sh --help
+          bash tools/run_ia_full.sh --help
+          bash tools/build_ia_paper.sh --help
+
+      - name: Smoke Windows PowerShell wrappers
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          powershell -ExecutionPolicy Bypass -File tools\bootstrap_packages.ps1 --help
+          powershell -ExecutionPolicy Bypass -File tools\bootstrap_data.ps1 --help
+          powershell -ExecutionPolicy Bypass -File tools\doctor.ps1 --help
+          powershell -ExecutionPolicy Bypass -File tools\rebuild_fast_backends.ps1 -Help
+          powershell -ExecutionPolicy Bypass -File tools\run_conditional_smoke.ps1 -Help
+          powershell -ExecutionPolicy Bypass -File tools\run_full_replication.ps1 -Help
+          powershell -ExecutionPolicy Bypass -File tools\run_figure1_simulation.ps1 -Help
+          powershell -ExecutionPolicy Bypass -File tools\build_paper.ps1 -Help
+          powershell -ExecutionPolicy Bypass -File tools\run_ia_smoke.ps1 -Help
+          powershell -ExecutionPolicy Bypass -File tools\run_ia_full.ps1 -Help
+          powershell -ExecutionPolicy Bypass -File tools\build_ia_paper.ps1 -Help
+
+      - name: Smoke Windows Command Prompt wrappers
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          cmd /c tools\bootstrap_packages.cmd --help
+          cmd /c tools\bootstrap_data.cmd --help
+          cmd /c tools\doctor.cmd --help
+          cmd /c tools\rebuild_fast_backends.cmd -Help
+          cmd /c tools\run_conditional_smoke.cmd -Help
+          cmd /c tools\run_full_replication.cmd -Help
+          cmd /c tools\run_figure1_simulation.cmd -Help
+          cmd /c tools\build_paper.cmd -Help
+          cmd /c tools\run_ia_smoke.cmd -Help
+          cmd /c tools\run_ia_full.cmd -Help
+          cmd /c tools\build_ia_paper.cmd -Help

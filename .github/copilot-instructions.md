@@ -8,7 +8,12 @@ Shared references:
 
 - `AGENTS.md`
 - `docs/manifests/data-files.csv`
+- `docs/manifests/data-sources.csv`
 - `docs/manifests/exhibits.csv`
+- `docs/manifests/manuscript_exhibits.csv`
+- `docs/manifests/paper_claims.csv`
+- `docs/agent-context/prompt-recipes.md`
+- `docs/agent-context/exhibits/README.md`
 - `docs/agent-context/replication-pipeline.md`
 - `docs/agent-context/paper-reading-guide.md`
 - `docs/agent-context/tables-guide.md`
@@ -22,9 +27,11 @@ High-signal summary:
 - The upstream BHJ package copy lives in `BayesianFactorZoo/`; prefer extending
   behavior in `code_base/` unless you are intentionally changing package internals.
 - Public repo setup and drift checks live under `tools/`.
-- Input CSVs belong in `data/` and should default to `data_folder = "data"`.
+- Bundle-managed main inputs belong in `data/` and should default to `data_folder = "data"`.
+- Use `tools/bootstrap_data.*` rather than telling users to place main paper data manually when the canonical bundle can supply it.
 - Generated results belong in `output/` and `logs/`; do not treat them as source.
 - Use `docs/manifests/exhibits.csv` before reverse-engineering an output path from source.
+- Use `docs/manifests/manuscript_exhibits.csv` when the question is about the full paper inventory rather than just the executable subset.
 - Valid `model_type` values are `"bond"`, `"stock"`, `"bond_stock_with_sp"`, and
   `"treasury"`.
 - Preserve BHJ function argument ordering:

@@ -20,7 +20,48 @@ cat("========================================\n\n")
 gc()
 
 ###############################################################################
-## 1. CONFIGURATION
+## 1. PARSE COMMAND-LINE ARGUMENTS
+###############################################################################
+
+parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
+  opts <- list(
+    results_file = NULL,
+    expected_ndraws = NULL,
+    min_results_mtime = NULL
+  )
+
+  for (arg in args) {
+    if (grepl("^--results-file=", arg)) {
+      opts$results_file <- sub("^--results-file=", "", arg)
+    } else if (grepl("^--expected-ndraws=", arg)) {
+      opts$expected_ndraws <- as.integer(sub("^--expected-ndraws=", "", arg))
+    } else if (grepl("^--min-results-mtime=", arg)) {
+      opts$min_results_mtime <- as.numeric(sub("^--min-results-mtime=", "", arg))
+    } else if (identical(arg, "--help") || identical(arg, "-h")) {
+      cat(
+        "Usage: Rscript _run_paper_conditional_results.R [options]\n\n",
+        "Options:\n",
+        "  --results-file=PATH       Optional explicit ALL_RESULTS.rds path\n",
+        "  --expected-ndraws=N       Require the loaded results to match ndraws\n",
+        "  --min-results-mtime=EPOCH Require results to be newer than this Unix timestamp\n",
+        "  --help, -h               Show this help message\n",
+        sep = ""
+      )
+      quit(save = "no", status = 0)
+    } else {
+      stop("Unknown argument: ", arg, call. = FALSE)
+    }
+  }
+
+  opts
+}
+
+cmd_args <- parse_args()
+
+source(file.path("code_base", "conditional_run_helpers.R"))
+
+###############################################################################
+## 2. CONFIGURATION
 ###############################################################################
 
 #### 1.1 Results Location -----------------------------------------------------
@@ -74,7 +115,7 @@ fig_width      <- 12
 fig_height     <- 7
 
 ###############################################################################
-## 2. BUILD RESULTS FILE PATH
+## 3. BUILD RESULTS FILE PATH
 ###############################################################################
 
 # Construct filename
@@ -90,28 +131,44 @@ results_filename <- sprintf(
 )
 
 # Full path: output_root / model_type / filename
-results_file <- file.path(output_root, model_type, results_filename)
+results_file <- if (!is.null(cmd_args$results_file)) {
+  normalizePath(cmd_args$results_file, winslash = "/", mustWork = FALSE)
+} else {
+  file.path(output_root, model_type, results_filename)
+}
 
 cat("Looking for results file:\n")
 cat("  ", results_file, "\n\n")
 
 ###############################################################################
-## 3. LOAD COMBINED RESULTS
+## 4. VALIDATE AND LOAD COMBINED RESULTS
 ###############################################################################
 
-cat("Loading combined results...\n")
+cat("Validating combined results...\n")
 
-if (!file.exists(results_file)) {
-  stop("Combined results file not found: ", results_file, "\n",
-       "Please check your configuration parameters.")
+validation <- validate_conditional_results_artifact(
+  results_file = results_file,
+  expected_ndraws = cmd_args$expected_ndraws,
+  min_mtime = cmd_args$min_results_mtime,
+  require_complete = TRUE
+)
+
+if (!isTRUE(validation$ok)) {
+  stop(
+    "Conditional paper step refused to use the selected ALL_RESULTS.rds.\n",
+    format_conditional_validation_issues(validation),
+    call. = FALSE
+  )
 }
 
 combined_results <- readRDS(results_file)
 
-cat("Combined results loaded successfully.\n\n")
+cat("Combined results loaded successfully.\n")
+cat("  ndraws:            ", validation$ndraws, "\n", sep = "")
+cat("  windows complete:  ", validation$n_windows_success, "/", validation$n_windows_total, "\n\n", sep = "")
 
 ###############################################################################
-## 4. EXTRACT CONFIGURATION FROM METADATA
+## 5. EXTRACT CONFIGURATION FROM METADATA
 ###############################################################################
 
 cat("Extracting configuration from metadata...\n")
@@ -150,7 +207,7 @@ cat("  Date range:   ", metadata$date_start, " to ", metadata$date_end, "\n")
 cat("  Number of windows: ", metadata$n_windows_success, "\n\n")
 
 ###############################################################################
-## 5. LOAD DEPENDENCIES
+## 6. LOAD DEPENDENCIES
 ###############################################################################
 
 cat("Loading dependencies...\n")
@@ -172,7 +229,7 @@ source(file.path(code_folder, "plot_portfolio_analytics.R"))
 cat("Dependencies loaded.\n\n")
 
 ###############################################################################
-## 6. RUN EVALUATE PERFORMANCE (PAPER VERSION)
+## 7. RUN EVALUATE PERFORMANCE (PAPER VERSION)
 ###############################################################################
 
 cat("Running evaluate_performance_paper()...\n\n")
@@ -206,7 +263,7 @@ cat("========================================\n\n")
 cat("Computation time: ", round(difftime(t_end, t_start, units = "secs"), 2), " seconds\n\n")
 
 ###############################################################################
-## 7. SUMMARY
+## 8. SUMMARY
 ###############################################################################
 
 cat("========================================\n")

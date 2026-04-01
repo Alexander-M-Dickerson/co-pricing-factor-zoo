@@ -1,366 +1,282 @@
 #!/usr/bin/env Rscript
 ###############################################################################
-## _create_ia_latex.R - Compile Internet Appendix LaTeX Document
+## _create_ia_latex.R - Assemble Internet Appendix LaTeX Document
 ## ---------------------------------------------------------------------------
 ##
-## This script assembles all IA tables and figures into a compilable LaTeX
-## document structure. Run this after _run_ia_results.R.
-##
-## OUTPUTS:
+## Paper role: Assemble the IA LaTeX tree from generated IA tables and figures.
+## Paper refs: IA.6, IA.7, IA.9, IA.10; docs/paper/co-pricing-factor-zoo.ai-optimized.md
+## Outputs:
 ##   ia/output/paper/latex/
-##     ia_tables.tex    - All tables combined
-##     ia_figures.tex   - All figures combined
-##     ia_main.tex      - Main document (includes tables and figures)
+##     ia_tables.tex
+##     ia_figures.tex
+##     ia_main.tex
 ##
-## USAGE:
-##   Rscript ia/_create_ia_latex.R
-##
+## PDF compilation is a separate public step via tools/build_ia_paper.*.
 ###############################################################################
 
-###############################################################################
-## SECTION 1: SETUP
-###############################################################################
+parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
+  opts <- list(show_help = FALSE)
 
-# Ensure we're in project root
+  for (arg in args) {
+    if (identical(arg, "--help") || identical(arg, "-h")) {
+      opts$show_help <- TRUE
+    } else {
+      stop("Unknown argument: ", arg, call. = FALSE)
+    }
+  }
+
+  opts
+}
+
+opts <- parse_args()
+if (isTRUE(opts$show_help)) {
+  cat(
+    "Usage: Rscript ia/_create_ia_latex.R [options]\n\n",
+    "Options:\n",
+    "  --help, -h   Show this help message\n\n",
+    "This script assembles ia/output/paper/latex/ia_main.tex. Use tools/build_ia_paper.* to compile the PDF.\n",
+    sep = ""
+  )
+  quit(save = "no", status = 0)
+}
+
 if (basename(getwd()) == "ia") {
   setwd("..")
 }
-main_path <- getwd()
+main_path <- normalizePath(getwd(), winslash = "/", mustWork = TRUE)
+source(file.path("code_base", "ia_run_helpers.R"))
 
-# Paths
-ia_output   <- file.path(main_path, "ia", "output", "paper")
-tables_dir  <- file.path(ia_output, "tables")
+ia_output <- file.path(main_path, "ia", "output", "paper")
+tables_dir <- file.path(ia_output, "tables")
 figures_dir <- file.path(ia_output, "figures")
-latex_dir   <- file.path(ia_output, "latex")
+latex_dir <- file.path(ia_output, "latex")
+dir.create(latex_dir, recursive = TRUE, showWarnings = FALSE)
 
-# Create latex directory
-if (!dir.exists(latex_dir)) {
-  dir.create(latex_dir, recursive = TRUE)
-}
+resolve_manifest_matches <- function(repo_root = getwd()) {
+  manifest <- implemented_ia_manifest_outputs(repo_root)
+  resolved <- vector("list", nrow(manifest))
 
-verbose <- TRUE
-
-###############################################################################
-## SECTION 2: TABLE ORDERING
-###############################################################################
-
-# Define table order (main tables first, then appendix)
-main_table_order <- c(
-  "table_ia_is_pricing.tex",
-  "table_ia_os_pricing.tex"
-)
-
-# Pattern for probability tables (generated per model)
-prob_table_pattern <- "^table_a1_posterior_probs_"
-
-# Treasury tables (appear after probability tables)
-treasury_table_order <- c(
-  "table_treasury_posterior_probs.tex",
-  "table_treasury_sr_decomp.tex"
-)
-
-# Tables that should appear LAST (in order)
-last_table_order <- c(
-  "table_duration_pricing.tex"
-)
-
-###############################################################################
-## SECTION 3: SCAN FOR FILES
-###############################################################################
-
-cat("\n")
-cat("========================================\n")
-cat("CREATING IA LATEX DOCUMENT\n")
-cat("========================================\n\n")
-
-# Scan tables
-if (dir.exists(tables_dir)) {
-  all_tables <- list.files(tables_dir, pattern = "\\.tex$", full.names = FALSE)
-  cat("Found", length(all_tables), "table files in:", tables_dir, "\n")
-} else {
-  all_tables <- character(0)
-  warning("Tables directory does not exist: ", tables_dir)
-}
-
-# Scan figures
-if (dir.exists(figures_dir)) {
-  all_figures <- list.files(figures_dir, pattern = "\\.pdf$", full.names = FALSE)
-  cat("Found", length(all_figures), "figure files in:", figures_dir, "\n")
-} else {
-  all_figures <- character(0)
-  warning("Figures directory does not exist: ", figures_dir)
-}
-
-cat("\n")
-
-###############################################################################
-## SECTION 4: CREATE ia_tables.tex
-###############################################################################
-
-cat("Creating ia_tables.tex...\n")
-
-# Separate main tables from probability tables, treasury, and last tables
-main_tables <- intersect(main_table_order, all_tables)
-prob_tables <- all_tables[grepl(prob_table_pattern, all_tables)]
-treasury_tables <- intersect(treasury_table_order, all_tables)
-last_tables <- intersect(last_table_order, all_tables)
-other_tables <- setdiff(all_tables, c(main_tables, prob_tables, treasury_tables, last_tables))
-
-# Build tables.tex content
-tables_tex <- character()
-tables_tex <- c(tables_tex, "% ia_tables.tex - Auto-generated by _create_ia_latex.R")
-tables_tex <- c(tables_tex, "% Internet Appendix Tables")
-tables_tex <- c(tables_tex, "")
-
-# Main pricing tables
-if (length(main_tables) > 0) {
-  tables_tex <- c(tables_tex, "% Pricing Tables")
-  tables_tex <- c(tables_tex, "% ==============")
-  for (tbl in main_tables) {
-    tables_tex <- c(tables_tex, paste0("\\input{../tables/", tbl, "}"))
-    tables_tex <- c(tables_tex, "\\clearpage")
-    tables_tex <- c(tables_tex, "")
+  for (idx in seq_len(nrow(manifest))) {
+    pattern <- file.path(repo_root, manifest$output_path[[idx]])
+    matches <- Sys.glob(pattern)
+    resolved[[idx]] <- data.frame(
+      exhibit_id = manifest$exhibit_id[[idx]],
+      output_path = manifest$output_path[[idx]],
+      file = matches,
+      stringsAsFactors = FALSE
+    )
   }
-}
 
-# Probability tables (one per model)
-if (length(prob_tables) > 0) {
-  tables_tex <- c(tables_tex, "% Posterior Probability Tables")
-  tables_tex <- c(tables_tex, "% ============================")
-  for (tbl in sort(prob_tables)) {
-    tables_tex <- c(tables_tex, paste0("\\input{../tables/", tbl, "}"))
-    tables_tex <- c(tables_tex, "\\clearpage")
-    tables_tex <- c(tables_tex, "")
+  resolved <- Filter(function(x) nrow(x) > 0, resolved)
+  if (length(resolved) == 0) {
+    return(data.frame(exhibit_id = character(), output_path = character(), file = character(), stringsAsFactors = FALSE))
   }
+
+  do.call(rbind, resolved)
 }
 
-# Treasury tables (treasury component analysis)
-if (length(treasury_tables) > 0) {
-  tables_tex <- c(tables_tex, "% Treasury Component Tables")
-  tables_tex <- c(tables_tex, "% =========================")
-  for (tbl in treasury_tables) {
-    tables_tex <- c(tables_tex, paste0("\\input{../tables/", tbl, "}"))
-    tables_tex <- c(tables_tex, "\\clearpage")
-    tables_tex <- c(tables_tex, "")
-  }
-}
-
-# Other tables
-if (length(other_tables) > 0) {
-  tables_tex <- c(tables_tex, "% Additional Tables")
-  tables_tex <- c(tables_tex, "% =================")
-  for (tbl in other_tables) {
-    tables_tex <- c(tables_tex, paste0("\\input{../tables/", tbl, "}"))
-    tables_tex <- c(tables_tex, "\\clearpage")
-    tables_tex <- c(tables_tex, "")
-  }
-}
-
-# Last tables (e.g., duration pricing - should appear at the very end)
-if (length(last_tables) > 0) {
-  tables_tex <- c(tables_tex, "% Final Tables (Duration Pricing)")
-  tables_tex <- c(tables_tex, "% ================================")
-  for (tbl in last_tables) {
-    tables_tex <- c(tables_tex, paste0("\\input{../tables/", tbl, "}"))
-    tables_tex <- c(tables_tex, "\\clearpage")
-    tables_tex <- c(tables_tex, "")
-  }
-}
-
-# Write tables.tex
-tables_tex_file <- file.path(latex_dir, "ia_tables.tex")
-writeLines(tables_tex, tables_tex_file)
-cat("  Written:", tables_tex_file, "\n")
-cat("  Included", length(all_tables), "tables\n")
-
-###############################################################################
-## SECTION 5: CREATE ia_figures.tex
-###############################################################################
-
-cat("\nCreating ia_figures.tex...\n")
-
-figures_tex <- character()
-figures_tex <- c(figures_tex, "% ia_figures.tex - Auto-generated by _create_ia_latex.R")
-figures_tex <- c(figures_tex, "% Internet Appendix Figures")
-figures_tex <- c(figures_tex, "")
-
-# Sort figures by name
-sorted_figures <- sort(all_figures)
-
-for (fig in sorted_figures) {
-  fig_name <- tools::file_path_sans_ext(fig)
-
-  figures_tex <- c(figures_tex, "\\begin{figure}[htbp]")
-  figures_tex <- c(figures_tex, "\\centering")
-  figures_tex <- c(figures_tex, paste0("\\includegraphics[width=\\textwidth]{../figures/", fig, "}"))
-  figures_tex <- c(figures_tex, paste0("\\caption{", gsub("_", "\\\\_", fig_name), "}"))
-  figures_tex <- c(figures_tex, paste0("\\label{fig:", fig_name, "}"))
-  figures_tex <- c(figures_tex, "\\end{figure}")
-  figures_tex <- c(figures_tex, "\\clearpage")
-  figures_tex <- c(figures_tex, "")
-}
-
-figures_tex_file <- file.path(latex_dir, "ia_figures.tex")
-writeLines(figures_tex, figures_tex_file)
-cat("  Written:", figures_tex_file, "\n")
-cat("  Included", length(all_figures), "figures\n")
-
-###############################################################################
-## SECTION 6: CREATE ia_main.tex (based on base_document.txt)
-###############################################################################
-
-cat("\nCreating ia_main.tex...\n")
-
-# Read the base document template
-base_doc_path <- file.path(main_path, "base_document.txt")
-
-if (!file.exists(base_doc_path)) {
-  warning("base_document.txt not found. Creating simple ia_main.tex instead.")
-
-  main_tex <- c(
-    "% ia_main.tex - Internet Appendix Main Document",
-    "% Auto-generated by _create_ia_latex.R",
-    "%",
-    "% Compile with: pdflatex ia_main.tex",
-    "",
-    "\\documentclass[11pt]{article}",
-    "\\usepackage[margin=1in]{geometry}",
-    "\\usepackage{graphicx}",
-    "\\usepackage{booktabs}",
-    "\\usepackage{amsmath}",
-    "\\usepackage{amssymb}",
-    "\\usepackage{setspace}",
-    "\\usepackage{hyperref}",
-    "",
-    "\\title{Internet Appendix for:\\\\The Co-Pricing Factor Zoo}",
-    "\\author{Dickerson, Julliard, Mueller}",
-    "\\date{\\today}",
-    "",
-    "\\begin{document}",
-    "\\maketitle",
-    "",
-    "\\input{ia_tables}",
-    "\\input{ia_figures}",
-    "",
-    "\\end{document}"
+ia_output_validation <- validate_ia_manifest_outputs(main_path)
+if (!isTRUE(ia_output_validation$ok)) {
+  stop(
+    "IA LaTeX assembly cannot proceed because required IA outputs are missing.\n",
+    format_ia_output_issues(ia_output_validation),
+    call. = FALSE
   )
+}
 
-} else {
-  # Read base document
-  base_lines <- readLines(base_doc_path)
+resolved_outputs <- resolve_manifest_matches(main_path)
+table_rows <- resolved_outputs[grepl("/tables/", resolved_outputs$output_path, fixed = TRUE), , drop = FALSE]
+figure_rows <- resolved_outputs[grepl("/figures/", resolved_outputs$output_path, fixed = TRUE), , drop = FALSE]
 
-  # Modify for Internet Appendix
-  main_tex <- base_lines
+cat("\n========================================\n")
+cat("ASSEMBLING IA LATEX TREE\n")
+cat("========================================\n")
+cat("Tables matched:  ", nrow(table_rows), "\n", sep = "")
+cat("Figures matched: ", nrow(figure_rows), "\n\n", sep = "")
 
-  # 1. Change title
-  title_idx <- grep("\\\\title\\{", main_tex)
-  if (length(title_idx) > 0) {
-    main_tex[title_idx] <- "\\title{"
-    main_tex[title_idx + 1] <- "\t{\\textbf{Internet Appendix for The Co-Pricing Factor Zoo}}}"
-  }
+tables_tex <- c(
+  "% ia_tables.tex - Auto-generated by ia/_create_ia_latex.R",
+  "% Internet Appendix tables",
+  ""
+)
 
-  # 2. Change abstract
-  abstract_start <- grep("\\\\begin\\{abstract\\}", main_tex)
-  abstract_end <- grep("\\\\end\\{abstract\\}", main_tex)
-
-  if (length(abstract_start) > 0 && length(abstract_end) > 0) {
-    new_abstract <- c(
-      "\\begin{abstract}",
-      "\\singlespacing",
-      "\\noindent",
-      "{",
-      "This Internet Appendix provides additional results for ``The Co-Pricing Factor Zoo.''",
-      "We present robustness analyses examining models with and without an intercept (constant) term.",
-      "Tables report posterior factor probabilities and market prices of risk for bond-only, stock-only, and joint bond-stock models.",
-      "Figures display the posterior probability distributions across different prior Sharpe ratio shrinkage levels.",
-      "} ",
-      "\\end{abstract}"
-    )
-
-    # Replace abstract section
-    main_tex <- c(
-      main_tex[1:(abstract_start - 1)],
-      new_abstract,
-      main_tex[(abstract_end + 1):length(main_tex)]
-    )
-  }
-
-  # 3. Remove keywords and JEL codes (find and remove those lines)
-  keywords_idx <- grep("emph\\{Keywords\\}", main_tex)
-  jel_idx <- grep("JEL Classification", main_tex)
-
-  if (length(keywords_idx) > 0) {
-    main_tex[keywords_idx] <- "% Keywords removed for Internet Appendix"
-  }
-  if (length(jel_idx) > 0) {
-    main_tex[jel_idx] <- "% JEL codes removed for Internet Appendix"
-  }
-
-  # 4. Replace input files with IA versions
-  # Find \input{tables.tex} and replace
-  tables_input_idx <- grep("\\\\input\\{tables\\.tex\\}", main_tex)
-  if (length(tables_input_idx) > 0) {
-    main_tex[tables_input_idx] <- "\\input{ia_tables.tex}"
-  }
-
-  # Find \input{figures.tex} and replace
-  figures_input_idx <- grep("\\\\input\\{figures\\.tex\\}", main_tex)
-  if (length(figures_input_idx) > 0) {
-    main_tex[figures_input_idx] <- "\\input{ia_figures.tex}"
-  }
-
-  # 5. Remove bibliography section (find and comment out)
-  bib_start <- grep("%%%%.*References", main_tex)
-  bib_style_idx <- grep("\\\\bibliographystyle", main_tex)
-  bib_idx <- grep("\\\\bibliography\\{", main_tex)
-
-  if (length(bib_style_idx) > 0) {
-    main_tex[bib_style_idx] <- "% \\bibliographystyle{apalike}  % Removed for IA"
-  }
-  if (length(bib_idx) > 0) {
-    main_tex[bib_idx] <- "% \\bibliography{bibliography}  % Removed for IA"
-  }
-
-  # 6. Remove or simplify appendix section at the end
-  appendix_header_idx <- grep("%%%%%%%% Main Appendix", main_tex)
-  app_tables_idx <- grep("\\\\input\\{app_tables\\.tex\\}", main_tex)
-
-  if (length(app_tables_idx) > 0) {
-    main_tex[app_tables_idx] <- "% \\input{app_tables.tex}  % Not needed for IA"
-  }
-
-  # Remove the "Appendix" center header since this IS the appendix
-  appendix_center_idx <- grep("LARGE.*textbf\\{Appendix\\}", main_tex)
-  if (length(appendix_center_idx) > 0) {
-    # Comment out the appendix header block
-    for (i in (appendix_center_idx - 2):(appendix_center_idx + 1)) {
-      if (i > 0 && i <= length(main_tex)) {
-        main_tex[i] <- paste0("% ", main_tex[i])
-      }
-    }
+if (nrow(table_rows) > 0) {
+  for (idx in seq_len(nrow(table_rows))) {
+    rel_path <- normalizePath(table_rows$file[[idx]], winslash = "/", mustWork = TRUE)
+    rel_path <- sub(paste0("^", gsub("([\\^\\$\\.\\|\\(\\)\\[\\]\\*\\+\\?\\\\])", "\\\\\\1", normalizePath(latex_dir, winslash = "/", mustWork = TRUE)), "/?"), "", rel_path)
+    rel_path <- file.path("..", "tables", basename(table_rows$file[[idx]]))
+    tables_tex <- c(tables_tex, paste0("\\input{", rel_path, "}"), "\\clearpage", "")
   }
 }
 
-main_tex_file <- file.path(latex_dir, "ia_main.tex")
-writeLines(main_tex, main_tex_file)
-cat("  Written:", main_tex_file, "\n")
-cat("  Based on: base_document.txt\n")
+writeLines(tables_tex, file.path(latex_dir, "ia_tables.tex"))
+cat("Written: ", file.path(latex_dir, "ia_tables.tex"), "\n", sep = "")
 
-###############################################################################
-## SECTION 7: SUMMARY
-###############################################################################
+figure_caption <- function(exhibit_id, file_name, duplicates) {
+  # Keep captions human-readable and avoid leaking raw underscore-heavy basenames
+  # into LaTeX text when a manifest pattern matches multiple files.
+  exhibit_id
+}
 
-cat("\n")
+ia_figure_metadata <- function(exhibit_id) {
+  switch(
+    exhibit_id,
+    "ISOS Switch Posterior Probability Figure" = list(
+      title = "Posterior probabilities: IS/OS switch.",
+      note_lines = c(
+        "Posterior probabilities, $\\mathbb{E}[\\gamma_j|\\text{data}]$, of the 54 bond and stock factors in the co-pricing factor zoo.",
+        "The prior for each factor inclusion is a Beta(1, 1), yielding a prior expectation for $\\gamma_j$ of 50\\%. Results are shown for different values of the prior Sharpe ratio, $\\sqrt{\\mathbb{E}_\\pi [SR^2_{\\bm{f}} \\mid \\sigma^2]}$, with values set to 20\\%, 40\\%, 60\\% and 80\\% of the ex post maximum Sharpe ratio of the test assets.",
+        "Labels are ordered by the average posterior probability across the four levels of shrinkage. Test assets are the 154 out-of-sample bond and stock portfolios and 40 tradable bond and stock factors used in this replication. The sample period is 1986:01 to 2022:12 ($T = 444$)."
+      )
+    ),
+    "Sparse Posterior Probability Figure" = list(
+      title = "Posterior probabilities: imposing sparsity.",
+      note_lines = c(
+        "Posterior probabilities, $\\mathbb{E}[\\gamma_j|\\text{data}]$, of the 54 bond and stock factors in the co-pricing factor zoo.",
+        "We encode sparsity by choosing the prior mean and variance of $\\omega_j$, $\\mathbb{E}[\\omega_j] = \\frac{a_{\\omega}}{a_{\\omega}+b_{\\omega}}$ and $\\operatorname{Var}(\\omega_j) = \\frac{a_{\\omega}b_{\\omega}}{(a_{\\omega}+b_{\\omega})^{2}(a_{\\omega}+b_{\\omega}+1)}$.",
+        "We set $a_{\\omega} \\approx 3.54$ and $b_{\\omega} \\approx 34.66$ so that the prior expectation of the number of active factors is close to five out of $K = 54$, and the prior two-standard-deviation credible interval spans roughly zero to ten factors.",
+        "The implied prior for each factor inclusion is Beta$(3.54, 34.66)$, yielding a prior expectation for $\\gamma_j$ of about 9.25\\%. Results are shown for different values of the prior Sharpe ratio, $\\sqrt{\\mathbb{E}_\\pi [SR^2_{\\bm{f}} \\mid \\sigma^2]}$, with values set to 20\\%, 40\\%, 60\\% and 80\\% of the ex post maximum Sharpe ratio of the test assets.",
+        "Labels are ordered by the average posterior probability across the four levels of shrinkage. Test assets are the 83 bond and stock portfolios and 40 tradable bond and stock factors used in this replication. The sample period is 1986:01 to 2022:12 ($T = 444$)."
+      )
+    ),
+    "Treasury NFac SR Figure" = list(
+      title = "Posterior SDF dimensionality and Sharpe ratios: Treasury component.",
+      note_lines = c(
+        "Posterior distributions of the number of factors to be included in the bond SDF (top panel) and of the SDF-implied Sharpe ratio (bottom panel), computed using the 14 non-tradable and 16 tradable bond factors in the treasury-component specification.",
+        "The prior distribution for the $j^{\\text{th}}$ factor inclusion is a Beta(1, 1), yielding a flat prior for the SDF dimensionality depicted in the top panel. The prior Sharpe ratio is set to 80\\% of the ex post maximum Sharpe ratio of the Treasury component of the 50 corporate bond portfolios and 16 bond tradable factors used in this replication.",
+        "The sample period is 1986:01 to 2022:12 ($T = 444$)."
+      )
+    ),
+    "Treasury Posterior Bars Figure" = list(
+      title = "Posterior factor probabilities and risk prices: Treasury component.",
+      note_lines = c(
+        "The figure reports posterior probabilities, $\\mathbb{E}[\\gamma_j|\\text{data}]$, and posterior means of annualized market prices of risk, $\\mathbb{E}[\\lambda_j|\\text{data}]$, of the 14 non-tradable and 16 tradable bond factors in the treasury-component specification.",
+        "The prior for each factor inclusion is a Beta(1, 1), yielding a prior expectation for $\\gamma_j$ of 50\\%. The prior Sharpe ratio is set to 80\\% of the ex post maximum Sharpe ratio of the Treasury component of the 50 corporate bond portfolios used in this replication.",
+        "The sample period is 1986:01 to 2022:12 ($T = 444$)."
+      )
+    ),
+    "Treasury Posterior Probability Figure" = list(
+      title = "Posterior probabilities: Treasury component.",
+      note_lines = c(
+        "Posterior probabilities, $\\mathbb{E}[\\gamma_j|\\text{data}]$, of the 14 non-tradable and 16 tradable bond factors in the treasury-component specification.",
+        "The prior for each factor inclusion is a Beta(1, 1), yielding a prior expectation for $\\gamma_j$ of 50\\%. Results are shown for different values of the prior Sharpe ratio, $\\sqrt{\\mathbb{E}_\\pi [SR^2_{\\bm{f}} \\mid \\sigma^2]}$, with values set to 20\\%, 40\\%, 60\\% and 80\\% of the ex post maximum Sharpe ratio of the test assets.",
+        "Labels are ordered by the average posterior probability across the four levels of shrinkage. Test assets are the Treasury component of the 50 corporate bond portfolios and the 16 tradable bond factors used in this replication. The sample period is 1986:01 to 2022:12 ($T = 444$)."
+      )
+    ),
+    "Treasury Weighted DR-Tilt Figure" = list(
+      title = "Posterior factor probabilities and risk prices: Treasury component with DR tilt.",
+      note_lines = c(
+        "The figure reports posterior probabilities, $\\mathbb{E}[\\gamma_j|\\text{data}]$, and posterior means of annualized market prices of risk, $\\mathbb{E}[\\lambda_j|\\text{data}]$, of the 14 non-tradable and 16 tradable bond factors in the treasury-component specification.",
+        "We tilt the prior for each factor inclusion through the $\\kappa$ vector using weights informed by the cash-flow and discount-rate news decomposition in the Internet Appendix analysis, so discount-rate-classified factors receive positive weights and cash-flow-classified factors receive negative weights.",
+        "The prior Sharpe ratio is set to 80\\% of the ex post maximum Sharpe ratio of the Treasury component of the 50 corporate bond portfolios used in this replication. The sample period is 1986:01 to 2022:12 ($T = 444$)."
+      )
+    ),
+    list(
+      title = exhibit_id,
+      note_lines = NULL
+    )
+  )
+}
+
+figure_groups <- split(figure_rows, figure_rows$exhibit_id)
+figures_tex <- c(
+  "% ia_figures.tex - Auto-generated by ia/_create_ia_latex.R",
+  "% Internet Appendix figures",
+  ""
+)
+
+for (group_name in names(figure_groups)) {
+  group_rows <- figure_groups[[group_name]]
+  duplicates <- nrow(group_rows)
+  for (idx in seq_len(duplicates)) {
+    file_name <- basename(group_rows$file[[idx]])
+    figure_meta <- ia_figure_metadata(group_name)
+    caption <- ia_value_or(figure_meta$title, figure_caption(group_name, file_name, duplicates))
+    label <- paste0(
+      "fig:",
+      gsub("[^a-z0-9]+", "-", tolower(tools::file_path_sans_ext(file_name)))
+    )
+    figures_tex <- c(
+      figures_tex,
+      "\\begin{figure}[htbp]",
+      "\\centering",
+      paste0("\\includegraphics[width=\\textwidth]{../figures/", file_name, "}"),
+      paste0("\\caption{", caption, "}"),
+      paste0("\\label{", label, "}"),
+      if (is.null(figure_meta$note_lines)) NULL else c(
+        "\\begin{justify}",
+        "\\vspace{-2mm}",
+        "\\begin{spacing}{1}",
+        "{\\footnotesize",
+        figure_meta$note_lines,
+        "}",
+        "\\end{spacing}",
+        "\\end{justify}"
+      ),
+      "\\end{figure}",
+      "\\clearpage",
+      ""
+    )
+  }
+}
+
+writeLines(figures_tex, file.path(latex_dir, "ia_figures.tex"))
+cat("Written: ", file.path(latex_dir, "ia_figures.tex"), "\n", sep = "")
+
+main_tex <- c(
+  "% ia_main.tex - Internet Appendix Main Document",
+  "% Auto-generated by ia/_create_ia_latex.R",
+  "\\documentclass[11pt]{article}",
+  "\\usepackage[margin=1in]{geometry}",
+  "\\usepackage{graphicx}",
+  "\\usepackage{booktabs}",
+  "\\usepackage{amsmath,amssymb}",
+  "\\usepackage{bm}",
+  "\\usepackage{setspace}",
+  "\\usepackage{caption}",
+  "\\usepackage{subcaption}",
+  "\\usepackage{float}",
+  "\\usepackage{placeins}",
+  "\\usepackage{multirow}",
+  "\\usepackage{makecell}",
+  "\\usepackage{array}",
+  "\\usepackage[table]{xcolor}",
+  "\\usepackage{ragged2e}",
+  "\\usepackage[hidelinks]{hyperref}",
+  "",
+  "\\title{Internet Appendix for The Co-Pricing Factor Zoo}",
+  "\\author{Replication Package}",
+  "\\date{\\today}",
+  "",
+  "\\begin{document}",
+  "\\maketitle",
+  "\\begin{abstract}",
+  "\\noindent This Internet Appendix document assembles the implemented robustness outputs generated by the replication package. The generated tables and figures below reflect the executable IA subset currently supported in the repository.",
+  "\\end{abstract}",
+  "\\tableofcontents",
+  "\\clearpage",
+  "\\section*{Tables}",
+  "\\addcontentsline{toc}{section}{Tables}",
+  "\\clearpage",
+  "\\FloatBarrier",
+  "\\input{ia_tables.tex}",
+  "\\FloatBarrier",
+  "\\clearpage",
+  "\\section*{Figures}",
+  "\\addcontentsline{toc}{section}{Figures}",
+  "\\FloatBarrier",
+  "\\input{ia_figures.tex}",
+  "\\FloatBarrier",
+  "\\end{document}"
+)
+
+writeLines(main_tex, file.path(latex_dir, "ia_main.tex"))
+cat("Written: ", file.path(latex_dir, "ia_main.tex"), "\n", sep = "")
+
+cat("\n========================================\n")
+cat("IA LATEX TREE READY\n")
 cat("========================================\n")
-cat("IA LATEX DOCUMENT CREATED\n")
-cat("========================================\n")
-cat("\n")
-cat("Files created in:", latex_dir, "\n")
-cat("  - ia_main.tex     (main document)\n")
-cat("  - ia_tables.tex   (all tables)\n")
-cat("  - ia_figures.tex  (all figures)\n")
-cat("\n")
-cat("To compile:\n")
-cat("  cd", latex_dir, "\n")
-cat("  pdflatex ia_main.tex\n")
-cat("\n")
+cat("Next step:\n")
+cat("  powershell -ExecutionPolicy Bypass -File tools\\build_ia_paper.ps1\n")
+cat("  cmd /c tools\\build_ia_paper.cmd\n")
+cat("  bash tools/build_ia_paper.sh\n")

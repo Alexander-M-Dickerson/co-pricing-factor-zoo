@@ -6,6 +6,9 @@
 *.csv
 *.parquet
 !docs/manifests/*.csv
+!ia/data/w_all.rds
+!misc/figure1_simulation/*.RData
+!misc/figure1_simulation/*.csv
 
 # R session files
 .Rhistory

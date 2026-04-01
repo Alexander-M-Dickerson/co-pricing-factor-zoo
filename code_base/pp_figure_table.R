@@ -60,6 +60,7 @@ pp_figure_table <- function(results,
                             table_caption = NULL,
                             table_label   = NULL,
                             table_name    = NULL,
+                            table_note_lines = NULL,
                             verbose       = TRUE) {
 
   ## ---- 0a. Compute prob_thresh from alpha.w/beta.w if not provided --------
@@ -248,6 +249,14 @@ pp_figure_table <- function(results,
     caption_line <- paste0(caption_line, "\\label{tab:table-app-probs}")
   }
 
+  default_note_lines <- c(
+    "The table reports posterior probabilities, $\\mathbb{E}[\\gamma_j|\\text{data}]$, and posterior means of annualized market prices of risk, $\\mathbb{E}[\\lambda_j|\\text{data}]$, of the 54 bond and stock factors in the co-pricing factor zoo.",
+    "The prior for each factor inclusion is a Beta(1, 1), yielding a prior expectation for $\\gamma_j$ of 50\\%. Results are tabulated for different values of the prior Sharpe ratio, $\\sqrt{\\mathbb{E}_\\pi [SR^2_{\\bm{f}} \\mid \\sigma^2]}$, with values set to 20\\%, 40\\%, 60\\% and 80\\% of the ex post maximum Sharpe ratio of the test assets.",
+    "The factors are ordered by the average posterior probability across the four levels of shrinkage.",
+    "Test assets are the 83 bond and stock portfolios and 40 tradable bond and stock factors used in this replication. The sample period is 1986:01 to 2022:12 ($T = 444$)."
+  )
+  note_lines <- if (is.null(table_note_lines)) default_note_lines else table_note_lines
+
   latex_lines <- c(
     "\\begin{table}[tbp!]",
     caption_line,
@@ -268,10 +277,7 @@ pp_figure_table <- function(results,
     "\\vspace{-0.2cm}",
     "\\begin{spacing}{0.8}",
     "{\\footnotesize",
-    "The table reports posterior probabilities, $\\mathbb{E}[\\gamma_j|\\text{data}]$, and posterior means of annualized market prices of risk, $\\mathbb{E}[\\lambda_j|\\text{data}]$, of the 54 bond and stock factors described in Appendix \\ref{sec:factor_zoo}.",
-    "The prior for each factor inclusion is a Beta(1, 1), yielding a prior expectation for $\\gamma_j$ of 50\\%. Results are tabulated for different values of the prior Sharpe ratio, $\\sqrt{\\mathbb{E}_\\pi [SR^2_{\\bm{f}} \\mid \\sigma^2]}$, with values set to 20\\%, 40\\%, 60\\% and 80\\% of the ex post maximum Sharpe ratio of the test assets.",
-    "The factors are ordered by the average posterior probability across the four levels of shrinkage.",
-    "Test assets are the 83 bond and stock portfolios and 40 tradable bond and stock factors described in Section \\ref{sec:data}. The sample period is 1986:01 to 2022:12 ($T = 444$).",
+    note_lines,
     "}",
     "\\end{spacing}",
     "\\end{table}"

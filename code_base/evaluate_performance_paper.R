@@ -574,7 +574,7 @@ evaluate_performance_paper <- function(
   latex <- c(latex, "    The Sharpe ratio and Information ratio are annualized.")
   latex <- c(latex, "    The benchmark factor to compute the IR is the EW factor.")
   latex <- c(latex, "    Skew and Kurt are skewness and kurtosis, respectively.")
-  latex <- c(latex, "    The models are estimated with the 83 bond and stock portfolios and the 40 tradable bond and stock factors as described in Section \\ref{sec:data}.")
+  latex <- c(latex, "    The models are estimated with the 83 bond and stock portfolios and the 40 tradable bond and stock factors ($N = 123$).")
   latex <- c(latex, "    For the BMA-SDFs, we report results for a range of prior Sharpe ratio values that are set as 20\\%, 40\\%, 60\\% and 80\\% of the ex post maximum Sharpe ratio of the relevant portfolios and factors. In Panel B, this ratio changes with the expanding window.")
   latex <- c(latex, "    The IS period is 1986:01 to 2022:12 ($T=444$) and the OS period is 2004:07 to 2022:12 ($T=222$).")
   latex <- c(latex, "    }")

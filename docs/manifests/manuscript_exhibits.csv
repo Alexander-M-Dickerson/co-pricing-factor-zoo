@@ -1,0 +1,50 @@
+manuscript_exhibit_id,exhibit_type,repo_coverage_status,repo_exhibit_id,primary_refs,equation_refs,notes
+Table 1,main-table,implemented,Table 1,Table 1; Sec. 3.1.1,,Top-five factor contribution table for the main co-pricing result
+Table 2,main-table,implemented,Table 2,Table 2; Sec. 3.2,,Main in-sample pricing comparison
+Table 3,main-table,implemented,Table 3,Table 3; Sec. 3.2,,Main out-of-sample pricing comparison
+Table 4,main-table,implemented,Table 4,Table 4; Sec. 3.1,,Sharpe-ratio decomposition by factor type
+Table 5,main-table,implemented,Table 5,Table 5; Sec. 3.1.1,IA.1,Discount-rate versus cash-flow decomposition summary
+Table 6 Panel A,main-table,implemented,Table 6 Panel A,Table 6 Panel A; Sec. 3.4,,In-sample trading summary
+Table 6 Panel B,main-table,implemented,Table 6 Panel B,Table 6 Panel B; Sec. 3.4,,Conditional out-of-sample trading summary
+Table A.1,appendix-table,implemented,Table A.1 Posterior Probabilities,Appendix table linked to Figure 2,,Posterior probability appendix table; manuscript numbering may differ across drafts
+Figure 1,main-figure,implemented,Figure 1,Figure 1; Sec. 2.4,,Simulation figure generated from tracked paper-calibration fixtures with an optional explicit regeneration path
+Figure 2,main-figure,implemented,Figure 2,Figure 2; Sec. 3.1,,Posterior factor inclusion probabilities
+Figure 3,main-figure,implemented,Figure 3,Figure 3; Sec. 3.1,,Posterior dimensionality and SDF Sharpe-ratio distribution
+Figure 4,main-figure,implemented,Figure 4,Figure 4; Sec. 3.1,,Posterior probabilities and market prices of risk
+Figure 5,main-figure,implemented,Figure 5,Figure 5; Sec. 3.2,,Excess-return thousands-of-tests pricing density plots
+Figure 6 Panel A,main-figure,implemented,Figure 6 Panel A,Figure 6 Panel A; Sec. 3.4,,Forward expanding-window top-factor heatmap
+Figure 6 Panel B,main-figure,implemented,Figure 6 Panel B,Figure 6 Panel B; Sec. 3.4,,Backward expanding-window top-factor heatmap
+Figure 7,main-figure,implemented,Figure 7,Figure 7; Sec. 3.4,,Out-of-sample cumulative returns for trading comparison
+Figure 8,main-figure,implemented,Figure 8,Figure 8; Sec. 3.3,Eq. (10),Duration-adjusted pricing density plots
+Figure 9,main-figure,implemented,Figure 9,Figure 9; Sec. 3.3,Eq. (10),Treasury-component mean-versus-covariance diagnostics
+Figure 10,main-figure,implemented,Figure 10,Figure 10; Sec. 3.4,Eq. (7),BMA-SDF time-series dynamics
+Figure 11,main-figure,implemented,Figure 11,Figure 11; Sec. 3.4,Eq. (7),Conditional volatility comparison for the BMA-SDF
+Figure 12 Panel A,main-figure,implemented,Figure 12 Panel A,Figure 12 Panel A; Sec. 3.4,Eq. (7),One-month predictability
+Figure 12 Panel B,main-figure,implemented,Figure 12 Panel B,Figure 12 Panel B; Sec. 3.4,Eq. (7),Twelve-month predictability
+Figure 13,main-figure,implemented,Figure 13,Figure 13; Sec. 3.4,Eq. (7),Cumulative SDF-implied Sharpe ratio
+Figure IA.17a,appendix-figure,implemented,Figure IA.17a,Figure IA.17a,,Forward expanding-window top factors by lambda
+Figure IA.17b,appendix-figure,implemented,Figure IA.17b,Figure IA.17b,,Backward expanding-window top factors by lambda
+Table IA.1,ia-table,implemented-subset,Table IA.1,IA posterior probability appendix subset,,Bond-with-intercept IA posterior probabilities
+Table IA.2,ia-table,implemented-subset,Table IA.2,IA posterior probability appendix subset,,Stock-with-intercept IA posterior probabilities
+Table IA.3,ia-table,implemented-subset,Table IA.3,IA posterior probability appendix subset,,Bond no-intercept IA posterior probabilities
+Table IA.4,ia-table,implemented-subset,Table IA.4,IA posterior probability appendix subset,,Stock no-intercept IA posterior probabilities
+Table IA.5,ia-table,implemented-subset,Table IA.5,IA posterior probability appendix subset,,Joint no-intercept IA posterior probabilities
+Table IA.6,ia-table,implemented-subset,Table IA.6,Table IA.6,,IA in-sample pricing for no-intercept models
+Table IA.7,ia-table,implemented-subset,Table IA.7,Table IA.7,,IA out-of-sample pricing for no-intercept models
+Table IA.XV,ia-table,paper-only,,IA.5,IA.1,Supporting DR-versus-CF decomposition table discussed in the manuscript but not emitted as a named repo artifact
+Figure IA.21,ia-figure,paper-only,,IA.5,IA.1,Supporting DR-versus-CF decomposition figure not emitted by the current repo
+Table IA.XVI,ia-table,paper-only,,IA.6,Eq. (10),Treasury-component appendix table not currently emitted as a named repo output
+Table IA.XXI,ia-table,paper-only,,IA.8,Eq. (7),Appendix dynamics table supporting Figures 10 and 11
+Table IA.XXII,ia-table,paper-only,,IA.9.1,Eq. (6),Kappa-tilt pricing robustness table not currently in the repo output surface
+Table IA.XXIII,ia-table,paper-only,,IA.9.1,Eq. (6),Kappa-tilt out-of-sample table not currently in the repo output surface
+Figure IA.32,ia-figure,paper-only,,Figure IA.32; IA.9.1,Eq. (6),Posterior factor probabilities across kappa tilts
+Figure IA.39,ia-figure,paper-only,,Figure IA.39; IA.10.1,,Posterior probabilities across alternative corporate-bond datasets
+Table IA.XXVII,ia-table,paper-only,,Table IA.XXVII,,Sharpe ratios by corporate-bond data source
+Table IA.XXVIII,ia-table,paper-only,,Table IA.XXVIII,,Switching in-sample and out-of-sample test assets
+Table IA.XXIX,ia-table,paper-only,,Table IA.XXIX,,Millions of out-of-sample asset-pricing tests
+Table IA.XXX,ia-table,paper-only,,Table IA.XXX,,Robustness across factor-zoos and sample periods: in-sample
+Table IA.XXXI,ia-table,paper-only,,Table IA.XXXI,,Robustness across factor-zoos and sample periods: out-of-sample
+Table IA.XXXII,ia-table,paper-only,,Table IA.XXXII,,Sample-split in-sample pricing robustness
+Table IA.XXXIII,ia-table,paper-only,,Table IA.XXXIII,,Sample-split out-of-sample pricing robustness
+Table IA.XXXIV,ia-table,paper-only,,Table IA.XXXIV,,CREDIT-factor robustness appendix table
+Figure IA.50,ia-figure,paper-only,,Figure IA.50,,CREDIT-factor robustness appendix figure

@@ -1,0 +1,2 @@
+source_id,canonical,bundle_url,archive_type,extract_to,last_verified_utc,notes
+djm_main_bundle,yes,https://openbondassetpricing.com/wp-content/uploads/2025/12/djm_data.zip,zip,data,2026-03-31T06:32:02Z,"Canonical public bundle for the main paper and shared replication inputs. Archive entries are flat files and should be extracted into data/. Required repo-tracked IA data such as ia/data/w_all.rds ship with the clone rather than the bundle."

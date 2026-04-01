@@ -6,7 +6,11 @@ For a machine-readable exhibit map, use `docs/manifests/exhibits.csv`.
 
 ## Figure 1
 
-Conceptual simulation figure about noisy proxies and Bayesian model averaging. This is presentation context rather than a core pipeline-generated empirical figure.
+Simulation evidence about noisy proxies and Bayesian model averaging.
+
+- helper path: `code_base/figure1_simulation.R`
+- default build: tracked paper-calibration fixtures under `misc/figure1_simulation/`
+- regeneration entrypoint: `tools/run_figure1_simulation.R`
 
 ## Figure 2
 

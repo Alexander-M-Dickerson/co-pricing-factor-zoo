@@ -22,6 +22,8 @@ The detailed shared docs live in `docs/agent-context/`:
 
 - `replication-onboarding.md`
 - `replication-pipeline.md`
+- `prompt-recipes.md`
+- `exhibits/`
 - `paper-reading-guide.md`
 - `paper-method.md`
 - `paper-results-main.md`
@@ -37,7 +39,10 @@ The canonical full paper lives at:
 The machine-readable repo maps live at:
 
 - `docs/manifests/data-files.csv`
+- `docs/manifests/data-sources.csv`
 - `docs/manifests/exhibits.csv`
+- `docs/manifests/manuscript_exhibits.csv`
+- `docs/manifests/paper_claims.csv`
 
 Load the full paper only when exact equation, appendix, table, or figure wording matters.
 
@@ -50,6 +55,8 @@ Load the full paper only when exact equation, appendix, table, or figure wording
 ## Repo Notes For Claude
 
 - The main paper pipeline is the five-step root workflow under the repo root.
+- On a fresh clone, Claude should bootstrap packages and the canonical public data bundle before telling the user to place files manually.
+- `ia/data/w_all.rds` is tracked required clone data for the weighted treasury IA branch and should not be treated as optional.
 - The Internet Appendix pipeline is separate and the source of truth for IA model
   coverage is `ia/_run_ia_estimation.R`, which currently defines nine IA models.
 - The repo currently reproduces all main paper tables and figures, all main

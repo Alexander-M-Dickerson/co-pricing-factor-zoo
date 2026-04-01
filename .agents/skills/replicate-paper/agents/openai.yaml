@@ -1,4 +1,4 @@
 interface:
   display_name: "Replicate Paper"
-  short_description: "Run the main paper or IA pipeline with correct step boundaries."
-  default_prompt: "Use $replicate-paper to run, resume, or debug this repository's replication pipeline."
+  short_description: "Run, resume, or debug the main text and IA pipelines with the right boundaries."
+  default_prompt: "Use $replicate-paper to bootstrap what is missing, then run or resume this repository's replication pipeline."
