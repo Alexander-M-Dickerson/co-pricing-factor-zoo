@@ -1,0 +1,23 @@
+\documentclass{article}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{hyperref}
+
+\title{Main Paper Smoke}
+\author{Co-Pricing Factor Zoo}
+\date{}
+
+\begin{document}
+\maketitle
+
+This is a lightweight CI smoke document for the public main-paper build wrapper.
+It cites \cite{Smoke2026} and includes the same auxiliary file pattern as the
+real paper assembly.
+
+\input{tables.tex}
+\input{figures.tex}
+\input{app_tables.tex}
+
+\bibliographystyle{apalike}
+\bibliography{smoke_refs}
+\end{document}

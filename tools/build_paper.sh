@@ -5,10 +5,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 SKIP_ASSEMBLY=0
 SKIP_BIBTEX=0
+FIXTURE_DIR=""
 
 usage() {
   cat <<'EOF'
-Usage: tools/build_paper.sh [--skip-assembly] [--skip-bibtex]
+Usage: tools/build_paper.sh [--skip-assembly] [--skip-bibtex] [--fixture-dir PATH]
 
 Assemble the paper LaTeX tree and compile djm_main.pdf.
 EOF
@@ -42,6 +43,9 @@ for arg in "$@"; do
     --skip-bibtex)
       SKIP_BIBTEX=1
       ;;
+    --fixture-dir=*)
+      FIXTURE_DIR="${arg#*=}"
+      ;;
     --help|-h)
       usage
       exit 0
@@ -64,14 +68,22 @@ if [[ "$SKIP_BIBTEX" -eq 0 ]] && ! command -v bibtex >/dev/null 2>&1; then
   exit 1
 fi
 
-RSCRIPT="$(resolve_rscript)"
-
-cd "$REPO_ROOT"
-if [[ "$SKIP_ASSEMBLY" -eq 0 ]]; then
-  "$RSCRIPT" "${REPO_ROOT}/_create_djm_tabs_figs.R"
+if [[ -n "$FIXTURE_DIR" ]]; then
+  LATEX_ROOT="${REPO_ROOT}/${FIXTURE_DIR}"
+  if [[ ! -f "${LATEX_ROOT}/djm_main.tex" ]]; then
+    printf 'Fixture directory does not contain djm_main.tex: %s\n' "$LATEX_ROOT" >&2
+    exit 1
+  fi
+else
+  RSCRIPT="$(resolve_rscript)"
+  cd "$REPO_ROOT"
+  if [[ "$SKIP_ASSEMBLY" -eq 0 ]]; then
+    "$RSCRIPT" "${REPO_ROOT}/_create_djm_tabs_figs.R"
+  fi
+  LATEX_ROOT="${REPO_ROOT}/output/paper/latex"
 fi
 
-cd "${REPO_ROOT}/output/paper/latex"
+cd "$LATEX_ROOT"
 pdflatex -interaction=nonstopmode djm_main.tex
 if [[ "$SKIP_BIBTEX" -eq 0 ]]; then
   bibtex djm_main

@@ -1,13 +1,14 @@
 param(
   [switch] $SkipAssembly,
   [switch] $SkipBibtex,
+  [string] $FixtureDir,
   [switch] $Help
 )
 
 $ErrorActionPreference = "Stop"
 
 if ($Help) {
-  Write-Host "Usage: tools/build_paper.ps1 [-SkipAssembly] [-SkipBibtex] [-Help]"
+  Write-Host "Usage: tools/build_paper.ps1 [-SkipAssembly] [-SkipBibtex] [-FixtureDir PATH] [-Help]"
   Write-Host ""
   Write-Host "Assemble the LaTeX tree if requested and compile output/paper/latex/djm_main.pdf."
   exit 0
@@ -62,8 +63,6 @@ function Resolve-CommandPath {
 }
 
 $repoRoot = Split-Path $PSScriptRoot -Parent
-$latexRoot = Join-Path $repoRoot "output\\paper\\latex"
-$rscript = Resolve-Rscript
 $pdflatex = Resolve-CommandPath -Name "pdflatex.exe"
 $bibtex = $null
 
@@ -71,16 +70,25 @@ if (-not $SkipBibtex) {
   $bibtex = Resolve-CommandPath -Name "bibtex.exe"
 }
 
-if (-not $SkipAssembly) {
-  $assemblyScript = Join-Path $repoRoot "_create_djm_tabs_figs.R"
-  Push-Location $repoRoot
-  try {
-    & $rscript $assemblyScript
-    if ($LASTEXITCODE -ne 0) {
-      exit $LASTEXITCODE
+if ($FixtureDir) {
+  $latexRoot = Join-Path $repoRoot $FixtureDir
+  if (-not (Test-Path (Join-Path $latexRoot "djm_main.tex"))) {
+    throw "Fixture directory does not contain djm_main.tex: $latexRoot"
+  }
+} else {
+  $rscript = Resolve-Rscript
+  $latexRoot = Join-Path $repoRoot "output\\paper\\latex"
+  if (-not $SkipAssembly) {
+    $assemblyScript = Join-Path $repoRoot "_create_djm_tabs_figs.R"
+    Push-Location $repoRoot
+    try {
+      & $rscript $assemblyScript
+      if ($LASTEXITCODE -ne 0) {
+        exit $LASTEXITCODE
+      }
+    } finally {
+      Pop-Location
     }
-  } finally {
-    Pop-Location
   }
 }
 

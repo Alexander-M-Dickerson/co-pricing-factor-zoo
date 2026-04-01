@@ -1,0 +1,31 @@
+name: LaTeX Smoke
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  latex-smoke:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up TinyTeX
+        uses: r-lib/actions/setup-tinytex@v2
+
+      - name: Build main LaTeX smoke fixture
+        shell: bash
+        run: |
+          bash tools/build_paper.sh --fixture-dir=testing/latex_smoke/main
+          test -f testing/latex_smoke/main/djm_main.pdf
+
+      - name: Build IA LaTeX smoke fixture
+        shell: bash
+        run: |
+          bash tools/build_ia_paper.sh --fixture-dir=testing/latex_smoke/ia
+          test -f testing/latex_smoke/ia/ia_main.pdf

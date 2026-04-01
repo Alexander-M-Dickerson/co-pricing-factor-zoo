@@ -14,6 +14,7 @@ Read only the docs needed for the question:
 - `docs/manifests/exhibits.csv`
 - `docs/manifests/manuscript_exhibits.csv`
 - `docs/manifests/paper_claims.csv`
+- `docs/acceptance/prompt_harness.csv`
 - `.claude/paper-context.md`
 - `docs/paper/co-pricing-factor-zoo.ai-optimized.md`
 - `docs/agent-context/paper-reading-guide.md`
@@ -59,6 +60,7 @@ Read only the docs needed for the question:
 4. Use `docs/manifests/manuscript_exhibits.csv` for repo coverage questions and `docs/manifests/paper_claims.csv` for headline manuscript claims.
 5. Load the full paper only when exact equation, appendix, table, or figure references matter.
 6. Prefer stored saved-object metadata such as `nontraded_names`, `bond_names`, and `stock_names` over reconstruction.
+7. When the question matches a canonical explanation prompt, use `docs/acceptance/prompt_harness.csv` as the minimum answer contract before you elaborate.
 
 ## Example Prompts
 

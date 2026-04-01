@@ -28,6 +28,8 @@ Shared core:
 
 - `AGENTS.md`: canonical repo rules, invariants, and routing
 - `docs/agent-context/`: shared paper, pipeline, and output context
+- `docs/acceptance/`: prompt acceptance rubric and manual agent acceptance templates
+- `docs/validation/`: validated runtime/build ledgers and fresh-thread agent acceptance logs
 - `docs/manifests/`: machine-readable data and exhibit maps
 - `docs/paper/`: canonical full-paper source for deep equation and appendix lookup
 - `code_review.md`: repo-specific review checklist for correctness and replication risks
@@ -83,6 +85,9 @@ Machine-readable manifests:
 - `docs/manifests/exhibits.csv`
 - `docs/manifests/manuscript_exhibits.csv`
 - `docs/manifests/paper_claims.csv`
+- `docs/acceptance/prompt_harness.csv`
+- `docs/validation/validated_runs.csv`
+- `docs/validation/agent_acceptance_log.csv`
 
 ## High-Value File Map
 

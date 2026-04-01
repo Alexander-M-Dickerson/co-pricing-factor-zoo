@@ -35,6 +35,7 @@ bash tools/bootstrap_data.sh
 
 - Use [docs/manifests/data-files.csv](./docs/manifests/data-files.csv) as the exact checklist.
 - Use [docs/manifests/data-sources.csv](./docs/manifests/data-sources.csv) as the source of truth for the canonical bundle URL and extraction target.
+- Use [docs/validation/validated_runs.csv](./docs/validation/validated_runs.csv) as the source of truth for which runtime boundaries are actually validated.
 - `ia/data/w_all.rds` is a required tracked IA input and should already be present in the clone.
 - Do not guess filenames from old docs. The manifests are the source of truth.
 
@@ -244,6 +245,7 @@ bash tools/build_ia_paper.sh
 Use [docs/manifests/exhibits.csv](./docs/manifests/exhibits.csv) to map an exhibit back to its generating script and saved inputs.
 
 Canonical agent prompts live in [docs/agent-context/prompt-recipes.md](./docs/agent-context/prompt-recipes.md). For exhibit explanation tasks, the deep context lives in [docs/agent-context/exhibits](./docs/agent-context/exhibits/README.md).
+Canonical prompt acceptance expectations live in [docs/acceptance/prompt_harness.csv](./docs/acceptance/prompt_harness.csv), and manual fresh-thread acceptance runs should be logged in [docs/validation/agent_acceptance_log.csv](./docs/validation/agent_acceptance_log.csv).
 
 ## Troubleshooting
 

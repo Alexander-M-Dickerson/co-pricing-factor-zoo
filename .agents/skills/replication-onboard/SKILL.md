@@ -11,10 +11,11 @@ Read these sources in order:
 2. `docs/agent-context/replication-onboarding.md`
 3. `docs/manifests/data-files.csv`
 4. `docs/manifests/data-sources.csv`
-5. `tools/bootstrap_packages.R`
-6. `tools/bootstrap_data.R`
-7. `tools/doctor.R`
-8. `references/bootstrap-sequence.md`
+5. `docs/validation/validated_runs.csv`
+6. `tools/bootstrap_packages.R`
+7. `tools/bootstrap_data.R`
+8. `tools/doctor.R`
+9. `references/bootstrap-sequence.md`
 
 ## Use When
 
@@ -53,7 +54,8 @@ Read these sources in order:
 5. Treat `ia/data/w_all.rds` as required tracked clone data; if it is missing, report an incomplete checkout rather than optional external data.
 6. Run `tools/doctor.R` or `tools/doctor.ps1` to verify packages, data, toolchain visibility, and fast backend readiness.
 7. Rebuild the fast backends when the doctor reports a backend problem or when this is the first setup on a new machine.
-8. Summarize whether the repo is ready for the main paper pipeline, the IA smoke boundary, and final PDF builds.
+8. Use `docs/validation/validated_runs.csv` to distinguish maintainer-validated boundaries from commands that are merely documented.
+9. Summarize whether the repo is ready for the main paper pipeline, the IA smoke boundary, and final PDF builds.
 
 ## Example Prompts
 

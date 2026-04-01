@@ -6,6 +6,8 @@
 *.csv
 *.parquet
 !docs/manifests/*.csv
+!docs/acceptance/*.csv
+!docs/validation/*.csv
 !ia/data/w_all.rds
 !misc/figure1_simulation/*.RData
 !misc/figure1_simulation/*.csv

@@ -233,6 +233,62 @@ expect_true(
   "docs/agent-context/prompt-recipes.md exists.",
   "docs/agent-context/prompt-recipes.md is missing."
 )
+expect_true(
+  file.exists(file.path(repo_root, "docs", "acceptance", "README.md")) &&
+    file.exists(file.path(repo_root, "docs", "acceptance", "agent_acceptance_template.md")) &&
+    file.exists(file.path(repo_root, "docs", "acceptance", "prompt_harness.csv")),
+  "Acceptance harness docs exist.",
+  "One or more acceptance harness docs are missing under docs/acceptance/."
+)
+expect_true(
+  file.exists(file.path(repo_root, "docs", "validation", "README.md")) &&
+    file.exists(file.path(repo_root, "docs", "validation", "validated_runs.csv")) &&
+    file.exists(file.path(repo_root, "docs", "validation", "agent_acceptance_log.csv")),
+  "Validation ledger docs exist.",
+  "One or more validation ledger docs are missing under docs/validation/."
+)
+latex_smoke_files <- c(
+  "testing/latex_smoke/README.md",
+  "testing/latex_smoke/main/djm_main.tex",
+  "testing/latex_smoke/main/tables.tex",
+  "testing/latex_smoke/main/figures.tex",
+  "testing/latex_smoke/main/app_tables.tex",
+  "testing/latex_smoke/main/smoke_refs.bib",
+  "testing/latex_smoke/ia/ia_main.tex",
+  "testing/latex_smoke/ia/ia_tables.tex",
+  "testing/latex_smoke/ia/ia_figures.tex"
+)
+expect_true(
+  all(file.exists(file.path(repo_root, latex_smoke_files))),
+  "Tracked LaTeX smoke fixtures exist for main and IA builds.",
+  "One or more tracked LaTeX smoke fixture files are missing."
+)
+latex_smoke_workflow_path <- file.path(repo_root, ".github", "workflows", "latex-smoke.yml")
+expect_true(
+  file.exists(latex_smoke_workflow_path),
+  "GitHub Actions latex-smoke workflow exists.",
+  ".github/workflows/latex-smoke.yml is missing."
+)
+if (file.exists(latex_smoke_workflow_path)) {
+  latex_smoke_workflow_text <- read_text(latex_smoke_workflow_path)
+  expect_true(
+    grepl("r-lib/actions/setup-tinytex@v2", latex_smoke_workflow_text, fixed = TRUE),
+    "LaTeX smoke workflow installs TinyTeX.",
+    "LaTeX smoke workflow does not install TinyTeX."
+  )
+  expect_true(
+    grepl("bash tools/build_paper.sh --fixture-dir=testing/latex_smoke/main", latex_smoke_workflow_text, fixed = TRUE) &&
+      grepl("bash tools/build_ia_paper.sh --fixture-dir=testing/latex_smoke/ia", latex_smoke_workflow_text, fixed = TRUE),
+    "LaTeX smoke workflow exercises the fixture-based build wrappers.",
+    "LaTeX smoke workflow is missing the fixture-based build wrapper calls."
+  )
+  expect_true(
+    grepl("testing/latex_smoke/main/djm_main.pdf", latex_smoke_workflow_text, fixed = TRUE) &&
+      grepl("testing/latex_smoke/ia/ia_main.pdf", latex_smoke_workflow_text, fixed = TRUE),
+    "LaTeX smoke workflow checks the expected PDF artifacts.",
+    "LaTeX smoke workflow does not check the expected fixture PDF artifacts."
+  )
+}
 
 expect_true(
   !grepl("co-pricing-factor-zoo-jfe", combined_docs, fixed = TRUE),
@@ -289,6 +345,7 @@ expect_true(
 readme_text <- read_text(file.path(repo_root, "README.md"))
 quickstart_text <- read_text(file.path(repo_root, "QUICKSTART.md"))
 agents_text <- read_text(file.path(repo_root, "AGENTS.md"))
+claude_text <- read_text(file.path(repo_root, "CLAUDE.md"))
 expect_true(
   grepl("tools/bootstrap_packages.R", readme_text, fixed = TRUE) &&
     grepl("tools/bootstrap_data.R", readme_text, fixed = TRUE) &&
@@ -297,6 +354,22 @@ expect_true(
     grepl("docs/agent-context/prompt-recipes.md", readme_text, fixed = TRUE),
   "README points to the new tooling and manifest surfaces.",
   "README does not point to the new tooling and manifest surfaces."
+)
+expect_true(
+  grepl("docs/acceptance/prompt_harness.csv", readme_text, fixed = TRUE) &&
+    grepl("docs/validation/validated_runs.csv", readme_text, fixed = TRUE) &&
+    grepl("docs/validation/agent_acceptance_log.csv", readme_text, fixed = TRUE) &&
+    grepl("docs/acceptance/prompt_harness.csv", quickstart_text, fixed = TRUE) &&
+    grepl("docs/validation/validated_runs.csv", quickstart_text, fixed = TRUE) &&
+    grepl("docs/validation/agent_acceptance_log.csv", quickstart_text, fixed = TRUE) &&
+    grepl("docs/acceptance/prompt_harness.csv", agents_text, fixed = TRUE) &&
+    grepl("docs/validation/validated_runs.csv", agents_text, fixed = TRUE) &&
+    grepl("docs/validation/agent_acceptance_log.csv", agents_text, fixed = TRUE) &&
+    grepl("docs/acceptance/prompt_harness.csv", claude_text, fixed = TRUE) &&
+    grepl("docs/validation/validated_runs.csv", claude_text, fixed = TRUE) &&
+    grepl("docs/validation/agent_acceptance_log.csv", claude_text, fixed = TRUE),
+  "Primary human and agent docs point at the acceptance harness and validation ledgers.",
+  "One or more primary docs are missing the acceptance harness or validation ledger surfaces."
 )
 expect_true(
   grepl("tools/bootstrap_packages.R", quickstart_text, fixed = TRUE) &&
@@ -484,6 +557,126 @@ expect_true(
   "Prompt recipes are missing the factor-interpretation or PEAD robustness prompts."
 )
 
+prompt_harness <- utils::read.csv(
+  file.path(repo_root, "docs", "acceptance", "prompt_harness.csv"),
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+required_prompt_harness_columns <- c(
+  "prompt_id",
+  "category",
+  "canonical_prompt",
+  "success_mode",
+  "required_routes",
+  "required_refs",
+  "required_outputs_or_commands",
+  "required_statements",
+  "forbidden_statements",
+  "coverage_expectation",
+  "validated_boundary",
+  "notes"
+)
+expect_true(
+  all(required_prompt_harness_columns %in% names(prompt_harness)),
+  "Prompt harness exposes the required acceptance columns.",
+  "Prompt harness is missing one or more required acceptance columns."
+)
+required_prompt_ids <- c(
+  "fresh_clone_setup",
+  "replicate_main_text",
+  "replicate_internet_appendix",
+  "explain_table_1",
+  "explain_figure_1",
+  "explain_factor_inclusion",
+  "explain_gamma_vs_mpr",
+  "explain_pead",
+  "pead_microcap",
+  "implemented_ia_coverage"
+)
+expect_true(
+  all(required_prompt_ids %in% prompt_harness$prompt_id),
+  "Prompt harness includes the required onboarding, execution, and explanation prompts.",
+  "Prompt harness is missing one or more required prompt ids."
+)
+pead_microcap_row <- subset(prompt_harness, prompt_id == "pead_microcap")
+expect_true(
+  nrow(pead_microcap_row) == 1 &&
+    identical(pead_microcap_row$coverage_expectation[[1]], "paper-only") &&
+    grepl("ia-pead-robustness.md", pead_microcap_row$required_routes[[1]], fixed = TRUE),
+  "Prompt harness routes the PEAD micro-cap prompt through the paper-only appendix dossier.",
+  "Prompt harness misroutes the PEAD micro-cap prompt or no longer marks it paper-only."
+)
+replicate_main_text_row <- subset(prompt_harness, prompt_id == "replicate_main_text")
+expect_true(
+  nrow(replicate_main_text_row) == 1 &&
+    !identical(replicate_main_text_row$coverage_expectation[[1]], "paper-only"),
+  "Prompt harness does not mislabel the main replication prompt as paper-only.",
+  "Prompt harness incorrectly marks the main replication prompt as paper-only."
+)
+factor_inclusion_row <- subset(prompt_harness, prompt_id == "explain_factor_inclusion")
+expect_true(
+  nrow(factor_inclusion_row) == 1 &&
+    grepl("factor-interpretation.md", factor_inclusion_row$required_routes[[1]], fixed = TRUE),
+  "Prompt harness routes factor-inclusion questions through the factor interpretation guide.",
+  "Prompt harness is missing the factor interpretation route for factor-inclusion questions."
+)
+
+validated_runs <- utils::read.csv(
+  file.path(repo_root, "docs", "validation", "validated_runs.csv"),
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+required_validated_runs_columns <- c(
+  "validation_id",
+  "surface",
+  "platform",
+  "validated_at_utc",
+  "boundary",
+  "command_or_wrapper",
+  "status",
+  "evidence_path",
+  "notes"
+)
+expect_true(
+  all(required_validated_runs_columns %in% names(validated_runs)),
+  "Validated-runs ledger exposes the required columns.",
+  "Validated-runs ledger is missing one or more required columns."
+)
+required_validation_ids <- c(
+  "main_conditional_5000",
+  "main_full_replication_5000",
+  "main_build_paper",
+  "ia_smoke_500",
+  "ia_full_5000",
+  "ia_build_paper"
+)
+expect_true(
+  all(required_validation_ids %in% validated_runs$validation_id),
+  "Validated-runs ledger includes the seeded main and IA boundaries.",
+  "Validated-runs ledger is missing one or more seeded validation ids."
+)
+
+agent_acceptance_log <- utils::read.csv(
+  file.path(repo_root, "docs", "validation", "agent_acceptance_log.csv"),
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+required_agent_acceptance_columns <- c(
+  "run_id",
+  "agent",
+  "prompt_id",
+  "clone_state",
+  "data_state",
+  "result",
+  "transcript_or_notes",
+  "validated_at_utc"
+)
+expect_true(
+  all(required_agent_acceptance_columns %in% names(agent_acceptance_log)),
+  "Agent acceptance log exposes the required columns.",
+  "Agent acceptance log is missing one or more required columns."
+)
+
 skill_files <- c(
   list.files(file.path(repo_root, ".agents", "skills"), pattern = "SKILL\\.md$", recursive = TRUE, full.names = TRUE),
   list.files(file.path(repo_root, ".claude", "skills"), pattern = "SKILL\\.md$", recursive = TRUE, full.names = TRUE)
@@ -513,27 +706,27 @@ expect_true(
 skill_expectations <- list(
   list(
     path = file.path(repo_root, ".agents", "skills", "replication-onboard", "SKILL.md"),
-    needles = c("tools/bootstrap_data.R", "docs/manifests/data-sources.csv")
+    needles = c("tools/bootstrap_data.R", "docs/manifests/data-sources.csv", "docs/validation/validated_runs.csv")
   ),
   list(
     path = file.path(repo_root, ".agents", "skills", "replicate-paper", "SKILL.md"),
-    needles = c("docs/manifests/manuscript_exhibits.csv", "docs/agent-context/prompt-recipes.md")
+    needles = c("docs/manifests/manuscript_exhibits.csv", "docs/agent-context/prompt-recipes.md", "docs/validation/validated_runs.csv")
   ),
   list(
     path = file.path(repo_root, ".agents", "skills", "explain-paper", "SKILL.md"),
-    needles = c("docs/manifests/manuscript_exhibits.csv", "docs/manifests/paper_claims.csv", "docs/agent-context/exhibits/README.md", "docs/agent-context/factor-interpretation.md", "docs/agent-context/factors/")
+    needles = c("docs/manifests/manuscript_exhibits.csv", "docs/manifests/paper_claims.csv", "docs/agent-context/exhibits/README.md", "docs/agent-context/factor-interpretation.md", "docs/agent-context/factors/", "docs/acceptance/prompt_harness.csv")
   ),
   list(
     path = file.path(repo_root, ".claude", "skills", "onboard", "SKILL.md"),
-    needles = c("tools/bootstrap_data.R", "docs/manifests/data-sources.csv")
+    needles = c("tools/bootstrap_data.R", "docs/manifests/data-sources.csv", "docs/validation/validated_runs.csv")
   ),
   list(
     path = file.path(repo_root, ".claude", "skills", "replicate-paper", "SKILL.md"),
-    needles = c("docs/manifests/manuscript_exhibits.csv", "docs/agent-context/prompt-recipes.md")
+    needles = c("docs/manifests/manuscript_exhibits.csv", "docs/agent-context/prompt-recipes.md", "docs/validation/validated_runs.csv")
   ),
   list(
     path = file.path(repo_root, ".claude", "skills", "explain-paper", "SKILL.md"),
-    needles = c("docs/manifests/manuscript_exhibits.csv", "docs/manifests/paper_claims.csv", "docs/agent-context/exhibits/README.md", "docs/agent-context/factor-interpretation.md", "docs/agent-context/factors/")
+    needles = c("docs/manifests/manuscript_exhibits.csv", "docs/manifests/paper_claims.csv", "docs/agent-context/exhibits/README.md", "docs/agent-context/factor-interpretation.md", "docs/agent-context/factors/", "docs/acceptance/prompt_harness.csv")
   )
 )
 skill_routing_ok <- vapply(

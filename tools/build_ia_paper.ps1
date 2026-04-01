@@ -1,12 +1,13 @@
 param(
   [switch] $SkipAssembly,
+  [string] $FixtureDir,
   [switch] $Help
 )
 
 $ErrorActionPreference = "Stop"
 
 if ($Help) {
-  Write-Host "Usage: tools/build_ia_paper.ps1 [-SkipAssembly] [-Help]"
+  Write-Host "Usage: tools/build_ia_paper.ps1 [-SkipAssembly] [-FixtureDir PATH] [-Help]"
   Write-Host ""
   Write-Host "Assemble the IA LaTeX tree if requested and compile ia/output/paper/latex/ia_main.pdf."
   exit 0
@@ -61,20 +62,27 @@ function Resolve-CommandPath {
 }
 
 $repoRoot = Split-Path $PSScriptRoot -Parent
-$latexRoot = Join-Path $repoRoot "ia\\output\\paper\\latex"
-$rscript = Resolve-Rscript
 $pdflatex = Resolve-CommandPath -Name "pdflatex.exe"
 
-if (-not $SkipAssembly) {
-  $assemblyScript = Join-Path $repoRoot "ia\\_create_ia_latex.R"
-  Push-Location $repoRoot
-  try {
-    & $rscript $assemblyScript
-    if ($LASTEXITCODE -ne 0) {
-      exit $LASTEXITCODE
+if ($FixtureDir) {
+  $latexRoot = Join-Path $repoRoot $FixtureDir
+  if (-not (Test-Path (Join-Path $latexRoot "ia_main.tex"))) {
+    throw "Fixture directory does not contain ia_main.tex: $latexRoot"
+  }
+} else {
+  $rscript = Resolve-Rscript
+  $latexRoot = Join-Path $repoRoot "ia\\output\\paper\\latex"
+  if (-not $SkipAssembly) {
+    $assemblyScript = Join-Path $repoRoot "ia\\_create_ia_latex.R"
+    Push-Location $repoRoot
+    try {
+      & $rscript $assemblyScript
+      if ($LASTEXITCODE -ne 0) {
+        exit $LASTEXITCODE
+      }
+    } finally {
+      Pop-Location
     }
-  } finally {
-    Pop-Location
   }
 }
 

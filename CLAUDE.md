@@ -15,6 +15,8 @@ loading unnecessary material.
 - `.claude/skills/replicate-paper/`: replication pipeline execution and resume
 - `.claude/skills/explain-paper/`: paper, method, table, figure, and factor explanation
 - `docs/manifests/`: machine-readable data and exhibit maps shared with Codex
+- `docs/acceptance/`: prompt acceptance rubric and manual fresh-thread templates
+- `docs/validation/`: validated runtime/build ledgers and agent acceptance logs
 
 ## Shared Context
 
@@ -45,6 +47,9 @@ The machine-readable repo maps live at:
 - `docs/manifests/exhibits.csv`
 - `docs/manifests/manuscript_exhibits.csv`
 - `docs/manifests/paper_claims.csv`
+- `docs/acceptance/prompt_harness.csv`
+- `docs/validation/validated_runs.csv`
+- `docs/validation/agent_acceptance_log.csv`
 
 Load the full paper only when exact equation, appendix, table, or figure wording matters.
 

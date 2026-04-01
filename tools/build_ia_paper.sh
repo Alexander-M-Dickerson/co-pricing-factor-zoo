@@ -4,10 +4,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 SKIP_ASSEMBLY=0
+FIXTURE_DIR=""
 
 usage() {
   cat <<'EOF'
-Usage: tools/build_ia_paper.sh [--skip-assembly]
+Usage: tools/build_ia_paper.sh [--skip-assembly] [--fixture-dir PATH]
 
 Assemble the IA LaTeX tree and compile ia_main.pdf.
 EOF
@@ -38,6 +39,9 @@ for arg in "$@"; do
     --skip-assembly)
       SKIP_ASSEMBLY=1
       ;;
+    --fixture-dir=*)
+      FIXTURE_DIR="${arg#*=}"
+      ;;
     --help|-h)
       usage
       exit 0
@@ -55,13 +59,21 @@ if ! command -v pdflatex >/dev/null 2>&1; then
   exit 1
 fi
 
-RSCRIPT="$(resolve_rscript)"
-
-cd "$REPO_ROOT"
-if [[ "$SKIP_ASSEMBLY" -eq 0 ]]; then
-  "$RSCRIPT" "${REPO_ROOT}/ia/_create_ia_latex.R"
+if [[ -n "$FIXTURE_DIR" ]]; then
+  LATEX_ROOT="${REPO_ROOT}/${FIXTURE_DIR}"
+  if [[ ! -f "${LATEX_ROOT}/ia_main.tex" ]]; then
+    printf 'Fixture directory does not contain ia_main.tex: %s\n' "$LATEX_ROOT" >&2
+    exit 1
+  fi
+else
+  RSCRIPT="$(resolve_rscript)"
+  cd "$REPO_ROOT"
+  if [[ "$SKIP_ASSEMBLY" -eq 0 ]]; then
+    "$RSCRIPT" "${REPO_ROOT}/ia/_create_ia_latex.R"
+  fi
+  LATEX_ROOT="${REPO_ROOT}/ia/output/paper/latex"
 fi
 
-cd "${REPO_ROOT}/ia/output/paper/latex"
+cd "$LATEX_ROOT"
 pdflatex -interaction=nonstopmode ia_main.tex
 pdflatex -interaction=nonstopmode ia_main.tex

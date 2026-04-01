@@ -16,6 +16,8 @@ Current coverage:
 - [docs/manifests/exhibits.csv](./docs/manifests/exhibits.csv): table, figure, and IA output map
 - [docs/manifests/manuscript_exhibits.csv](./docs/manifests/manuscript_exhibits.csv): full manuscript exhibit inventory with repo coverage status
 - [docs/manifests/paper_claims.csv](./docs/manifests/paper_claims.csv): headline claim-to-evidence map
+- [docs/acceptance/prompt_harness.csv](./docs/acceptance/prompt_harness.csv): canonical prompt acceptance rubric for Codex and Claude
+- [docs/validation/validated_runs.csv](./docs/validation/validated_runs.csv): source-of-truth ledger of validated runtime and build boundaries
 - [docs/agent-context/prompt-recipes.md](./docs/agent-context/prompt-recipes.md): canonical Codex and Claude prompts
 - [docs/agent-context/exhibits/README.md](./docs/agent-context/exhibits/README.md): exhibit-level explanation dossiers
 - [docs/paper/co-pricing-factor-zoo.ai-optimized.md](./docs/paper/co-pricing-factor-zoo.ai-optimized.md): canonical full paper for deep tracing
@@ -64,7 +66,9 @@ Quick smoke run after the doctor passes:
 Rscript _run_full_replication.R --quick
 ```
 
-Validated Windows host path as of March 31, 2026:
+Validated runtime and build boundaries are tracked in [docs/validation/validated_runs.csv](./docs/validation/validated_runs.csv).
+
+Recorded Windows host boundaries include:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools\run_conditional_smoke.ps1 -Draws 5000
@@ -76,7 +80,7 @@ Equivalent public wrappers now exist for Windows Command Prompt and macOS/Linux.
 The underlying R entrypoints remain the source of truth; the wrappers only handle
 platform-specific process and tool resolution.
 
-Validated IA host path as of April 1, 2026:
+Recorded IA Windows host boundaries include:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools\run_ia_smoke.ps1 -Draws 500
@@ -170,6 +174,7 @@ Claude-native surfaces:
 Codex and Claude are intended to work from the same shared core.
 
 Canonical public prompt recipes live in [docs/agent-context/prompt-recipes.md](./docs/agent-context/prompt-recipes.md).
+Prompt acceptance truth lives in [docs/acceptance/prompt_harness.csv](./docs/acceptance/prompt_harness.csv), and manual fresh-thread runs should be logged in [docs/validation/agent_acceptance_log.csv](./docs/validation/agent_acceptance_log.csv).
 
 Useful prompts:
 

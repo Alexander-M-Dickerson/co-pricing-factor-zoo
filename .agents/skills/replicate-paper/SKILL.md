@@ -12,9 +12,10 @@ Read these sources in order:
 3. `docs/manifests/data-files.csv`
 4. `docs/manifests/exhibits.csv`
 5. `docs/manifests/manuscript_exhibits.csv`
-6. `docs/agent-context/prompt-recipes.md`
-7. `docs/agent-context/paper-results-ia.md`
-8. `references/main-text-flow.md`
+6. `docs/validation/validated_runs.csv`
+7. `docs/agent-context/prompt-recipes.md`
+8. `docs/agent-context/paper-results-ia.md`
+9. `references/main-text-flow.md`
 
 ## Use When
 
@@ -52,6 +53,7 @@ Read these sources in order:
 6. Stop at the first failing stage and report the exact rerun boundary instead of restarting everything.
 7. Distinguish clearly between full main-paper coverage and the implemented IA subset.
 8. For an IA replication prompt, use `tools/run_ia_smoke.*` or `ia/_run_ia_full.R --ndraws=500` as the first acceptance boundary before scaling up.
+9. Use `docs/validation/validated_runs.csv` when you need to distinguish a maintainer-validated boundary from a merely documented command.
 
 ## Example Prompts
 
