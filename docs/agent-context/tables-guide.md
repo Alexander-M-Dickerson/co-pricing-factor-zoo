@@ -51,11 +51,19 @@ Trading-performance summary.
 
 ## Table A.1
 
-Full posterior inclusion probabilities across the factor zoo.
+Factor list for cross-sectional asset pricing.
+
+- canonical explanation surface: `docs/agent-context/factors-reference.md`
+- manuscript role: grouped list of the 54 traded bond, traded stock, and nontraded factors
+- this is a documentation/context surface, not a generated `.tex` artifact in the current repo
+
+## Table A.2
+
+Full posterior inclusion probabilities and posterior market prices of risk across the factor zoo.
 
 - helper path: `code_base/pp_figure_table.R`
 - output basename: `table_a1_posterior_probs_*`
-- manuscript numbering may differ across paper drafts; follow the output basename and manifest
+- manuscript numbering differs from the historical repo basename; use the manifest and dossier, not the filename stem, as the source of truth
 
 ## `IS_AP` Object Orientation
 

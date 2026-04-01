@@ -6,7 +6,8 @@ Table 4,main-table,implemented,Table 4,Table 4; Sec. 3.1,,Sharpe-ratio decomposi
 Table 5,main-table,implemented,Table 5,Table 5; Sec. 3.1.1,IA.1,Discount-rate versus cash-flow decomposition summary
 Table 6 Panel A,main-table,implemented,Table 6 Panel A,Table 6 Panel A; Sec. 3.4,,In-sample trading summary
 Table 6 Panel B,main-table,implemented,Table 6 Panel B,Table 6 Panel B; Sec. 3.4,,Conditional out-of-sample trading summary
-Table A.1,appendix-table,implemented,Table A.1 Posterior Probabilities,Appendix table linked to Figure 2,,Posterior probability appendix table; manuscript numbering may differ across drafts
+Table A.1,appendix-table,documented,Factors Reference,Table A.1; Appendix A,,Factor-list appendix table represented in the repo by docs/agent-context/factors-reference.md rather than a generated .tex artifact
+Table A.2,appendix-table,implemented,Table A.2 Posterior Probabilities,Table A.2; Figure 2; Sec. 3.1,,Posterior probability appendix table generated from code_base/pp_figure_table.R with a historical output basename starting table_a1_
 Figure 1,main-figure,implemented,Figure 1,Figure 1; Sec. 2.4,,Simulation figure generated from tracked paper-calibration fixtures with an optional explicit regeneration path
 Figure 2,main-figure,implemented,Figure 2,Figure 2; Sec. 3.1,,Posterior factor inclusion probabilities
 Figure 3,main-figure,implemented,Figure 3,Figure 3; Sec. 3.1,,Posterior dimensionality and SDF Sharpe-ratio distribution

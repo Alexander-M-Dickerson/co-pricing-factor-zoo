@@ -23,6 +23,14 @@ repo.
 
 `Fully explain Figure 1. Cover the simulation design, the six experiments, why noisy proxies matter in this paper, the default tracked panel-fixture path, the optional regeneration path, and the generated output files.`
 
+## Explain The Factor Zoo
+
+`Explain the traded bond factors, traded stock factors, and nontraded factors in this paper. Use the repo's Table A.1 factor map, group the factors correctly, and call out the recurring top factors.` 
+
+## Fully Explain Table A.1
+
+`Fully explain Table A.1. Treat it as the factor-list appendix table, not the posterior-probability table. Group the 54 factors into traded bond, traded stock, and nontraded blocks, and point me to the repo factor map.` 
+
 ## Replicate The Internet Appendix
 
 `Replicate the Internet Appendix. Bootstrap what is needed, run the 500-draw IA smoke boundary first, stop at the first failing model if anything breaks, and then tell me the exact next scale-up boundary.`

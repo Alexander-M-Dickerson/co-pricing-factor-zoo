@@ -14,6 +14,7 @@ Main and appendix dossiers in this folder:
 - `table-5.md`
 - `table-6.md`
 - `table-a1.md`
+- `table-a2.md`
 - `figure-1.md`
 - `figure-2.md`
 - `figure-3.md`
