@@ -7,6 +7,30 @@ Current coverage:
 - all main Appendix tables and figures
 - some Internet Appendix results
 
+## Use Claude Code Or Codex
+
+If you want an agent to drive setup or replication for you, open Claude Code or
+Codex in the repo root and use the repo skills below. These are prompts you
+type inside the agent session, not shell commands you run in PowerShell,
+Command Prompt, or bash.
+
+Claude Code:
+- `/onboard` to set up a fresh clone
+- `/replicate-paper` to run or resume the replication pipeline
+- `/explain-paper` to explain tables, figures, factors, and code paths
+
+Codex:
+- `$replication-onboard` to set up a fresh clone
+- `$replicate-paper` to run or resume the replication pipeline
+- `$explain-paper` to explain tables, figures, factors, and code paths
+
+Example prompt for either agent:
+
+`Replicate the main text. If packages or data are missing, bootstrap them automatically first. Use the smallest validated boundary before scaling up, and stop at the first failing step with the exact rerun boundary.`
+
+More agent prompts:
+- [docs/agent-context/prompt-recipes.md](./docs/agent-context/prompt-recipes.md)
+
 ## Run This Repo As A Human
 
 If you want to reproduce the paper yourself, start with the public wrapper

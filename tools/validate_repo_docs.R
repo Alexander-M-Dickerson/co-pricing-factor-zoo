@@ -348,6 +348,18 @@ pipeline_readme_text <- read_text(file.path(repo_root, "README_PAPER_PIPELINE.md
 agents_text <- read_text(file.path(repo_root, "AGENTS.md"))
 claude_text <- read_text(file.path(repo_root, "CLAUDE.md"))
 expect_true(
+  grepl("Use Claude Code Or Codex", readme_text, fixed = TRUE) &&
+    grepl("/onboard", readme_text, fixed = TRUE) &&
+    grepl("/replicate-paper", readme_text, fixed = TRUE) &&
+    grepl("/explain-paper", readme_text, fixed = TRUE) &&
+    grepl("$replication-onboard", readme_text, fixed = TRUE) &&
+    grepl("$replicate-paper", readme_text, fixed = TRUE) &&
+    grepl("$explain-paper", readme_text, fixed = TRUE) &&
+    grepl("docs/agent-context/prompt-recipes.md", readme_text, fixed = TRUE),
+  "README includes the Claude-first and Codex-second agent bridge block.",
+  "README is missing the Claude/Codex bridge block or one of the expected skill prompts."
+)
+expect_true(
   grepl("Run This Repo As A Human", readme_text, fixed = TRUE) &&
     grepl("Fastest Validated Main-Paper Path", readme_text, fixed = TRUE) &&
     grepl("Fastest Validated IA Path", readme_text, fixed = TRUE) &&
@@ -356,6 +368,13 @@ expect_true(
     grepl("For Codex / Claude", readme_text, fixed = TRUE),
   "README now exposes a balanced human-first front door plus a separate AI section.",
   "README is missing the human-first run path or the separate AI section."
+)
+agent_bridge_pos <- regexpr("## Use Claude Code Or Codex", readme_text, fixed = TRUE)[1]
+human_section_pos <- regexpr("## Run This Repo As A Human", readme_text, fixed = TRUE)[1]
+expect_true(
+  agent_bridge_pos > 0 && human_section_pos > 0 && agent_bridge_pos < human_section_pos,
+  "README places the agent bridge block before the human run section.",
+  "README does not place the Claude/Codex bridge block before the human run section."
 )
 expect_true(
   grepl("docs/acceptance/prompt_harness.csv", readme_text, fixed = TRUE) &&
