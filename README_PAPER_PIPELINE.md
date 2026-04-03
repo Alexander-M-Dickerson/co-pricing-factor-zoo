@@ -64,7 +64,7 @@ Build the PDF separately (only needed with the step-by-step path or `--skip-pdf`
 - macOS Terminal: `bash tools/build_paper.sh`
 
 Output:
-- [djm_main.pdf](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/output/paper/latex/djm_main.pdf)
+- [djm_main.pdf](output/paper/latex/djm_main.pdf)
 
 Figure 1 note:
 - normal paper replication publishes the tracked Figure 1 assets and does not
@@ -84,7 +84,7 @@ Rscript _run_full_replication.R --quick
 ```
 
 Output (PDF compiled automatically):
-- [djm_main.pdf](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/output/paper/latex/djm_main.pdf)
+- [djm_main.pdf](output/paper/latex/djm_main.pdf)
 
 ## IA Exact Boundary (Default 50,000 Draws)
 
@@ -123,7 +123,7 @@ Build the IA PDF separately (only needed with the step-by-step path or `--skip-p
 - macOS Terminal: `bash tools/build_ia_paper.sh`
 
 Output:
-- [ia_main.pdf](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/ia/output/paper/latex/ia_main.pdf)
+- [ia_main.pdf](ia/output/paper/latex/ia_main.pdf)
 
 ## IA Smoke Boundary (Validated 500-Draw Test)
 

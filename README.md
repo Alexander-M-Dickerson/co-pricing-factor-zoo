@@ -121,7 +121,7 @@ Posit/RStudio Terminal:
   boundaries from [QUICKSTART.md](./QUICKSTART.md)
 
 Expected output:
-- main PDF: [djm_main.pdf](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/output/paper/latex/djm_main.pdf)
+- main PDF: [djm_main.pdf](output/paper/latex/djm_main.pdf)
 
 If you want a reduced-draw setup check first, use the validated 5,000-draw main
 smoke path from [QUICKSTART.md](./QUICKSTART.md), then scale back to the no-flag
@@ -166,7 +166,7 @@ Posit/RStudio Terminal:
   IA boundaries from [QUICKSTART.md](./QUICKSTART.md)
 
 Expected output:
-- IA PDF: [ia_main.pdf](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/ia/output/paper/latex/ia_main.pdf)
+- IA PDF: [ia_main.pdf](ia/output/paper/latex/ia_main.pdf)
 
 ### Validated IA Smoke And Scale-Up Path
 
@@ -218,12 +218,12 @@ timings, and overall completeness status.
 
 ### Where Outputs Appear
 
-- main tables: [output/paper/tables](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/output/paper/tables)
-- main figures: [output/paper/figures](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/output/paper/figures)
-- main LaTeX tree and PDF: [output/paper/latex](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/output/paper/latex)
-- IA outputs: [ia/output/paper](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/ia/output/paper)
-- IA LaTeX tree and PDF: [ia/output/paper/latex](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/ia/output/paper/latex)
-- logs: [output/logs](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/output/logs) and [ia/output/logs](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/ia/output/logs)
+- main tables: [output/paper/tables](output/paper/tables)
+- main figures: [output/paper/figures](output/paper/figures)
+- main LaTeX tree and PDF: [output/paper/latex](output/paper/latex)
+- IA outputs: [ia/output/paper](ia/output/paper)
+- IA LaTeX tree and PDF: [ia/output/paper/latex](ia/output/paper/latex)
+- logs: [output/logs](output/logs) and [ia/output/logs](ia/output/logs)
 
 Figure 1 note:
 - ordinary paper replication publishes the tracked Figure 1 assets and does not

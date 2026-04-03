@@ -194,9 +194,9 @@ using the step-by-step path or if you passed `--skip-pdf`):
 - macOS Terminal: `bash tools/build_paper.sh`
 
 Success looks like:
-- main PDF at [djm_main.pdf](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/output/paper/latex/djm_main.pdf)
-- tables under [output/paper/tables](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/output/paper/tables)
-- figures under [output/paper/figures](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/output/paper/figures)
+- main PDF at [djm_main.pdf](output/paper/latex/djm_main.pdf)
+- tables under [output/paper/tables](output/paper/tables)
+- figures under [output/paper/figures](output/paper/figures)
 - Figure 1 published from the tracked paper fixtures in `misc/figure1_simulation/`
   rather than rerun as a Monte Carlo job
 
@@ -325,8 +325,8 @@ Then build the IA PDF with the wrapper for your shell:
 - macOS Terminal: `bash tools/build_ia_paper.sh`
 
 Success looks like:
-- IA PDF at [ia_main.pdf](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/ia/output/paper/latex/ia_main.pdf)
-- IA outputs under [ia/output/paper](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/ia/output/paper)
+- IA PDF at [ia_main.pdf](ia/output/paper/latex/ia_main.pdf)
+- IA outputs under [ia/output/paper](ia/output/paper)
 
 If something fails, rerun here:
 - rerun the same smoke boundary first
@@ -334,18 +334,18 @@ If something fails, rerun here:
 
 ## 9. Find Outputs
 
-- main tables: [output/paper/tables](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/output/paper/tables)
-- main figures: [output/paper/figures](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/output/paper/figures)
-- main LaTeX tree and PDF: [output/paper/latex](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/output/paper/latex)
-- Figure 1 simulation-regeneration outputs: [output/simulations/figure1](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/output/simulations/figure1)
-- IA outputs: [ia/output/paper](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/ia/output/paper)
-- IA LaTeX tree and PDF: [ia/output/paper/latex](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/ia/output/paper/latex)
-- logs: [output/logs](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/output/logs) and [ia/output/logs](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/ia/output/logs)
+- main tables: [output/paper/tables](output/paper/tables)
+- main figures: [output/paper/figures](output/paper/figures)
+- main LaTeX tree and PDF: [output/paper/latex](output/paper/latex)
+- Figure 1 simulation-regeneration outputs: [output/simulations/figure1](output/simulations/figure1)
+- IA outputs: [ia/output/paper](ia/output/paper)
+- IA LaTeX tree and PDF: [ia/output/paper/latex](ia/output/paper/latex)
+- logs: [output/logs](output/logs) and [ia/output/logs](ia/output/logs)
 
 Figure 1 note:
 - normal paper replication publishes the tracked Figure 1 assets and does not
   rerun the Monte Carlo simulation
-- use [run_figure1_simulation.R](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/tools/run_figure1_simulation.R)
+- use [run_figure1_simulation.R](tools/run_figure1_simulation.R)
   only if you explicitly want to regenerate Figure 1 from the simulation path
 
 Useful human references:
