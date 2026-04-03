@@ -6,10 +6,8 @@ Replication repository for [The Co-Pricing Factor Zoo](https://papers.ssrn.com/s
 
 ## Overview
 
-The code in this replication package estimates Bayesian spike-and-slab SDF models
-(Bryzgalova, Huang, and Julliard, 2023) for cross-sectional bond and equity asset
-pricing, and constructs all tables and figures in the main paper, Appendix, and
-Internet Appendix. Data are downloaded from a single public bundle hosted at
+The code in this replication package constructs all tables and figures in the
+main paper, Appendix, and Internet Appendix. Data are downloaded from a single public bundle hosted at
 [openbondassetpricing.com](https://openbondassetpricing.com). Two main scripts
 run all of the code: `_run_full_replication.R` (main paper, ~65 minutes) and
 `ia/_run_ia_full.R` (Internet Appendix, ~16 minutes), or the combined wrapper
@@ -20,7 +18,7 @@ Current coverage:
 
 - all main paper tables and figures
 - all main Appendix tables and figures
-- some Internet Appendix results
+- Internet Appendix results
 
 ## Data Availability and Provenance Statements
 
