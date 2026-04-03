@@ -114,7 +114,7 @@ This batch runner launches the seven main unconditional model specifications use
 
 When debugging estimation behavior, orient through:
 
-- `_run_unconditional_model.R`
+- `_run_all_unconditional.R`
 - `code_base/run_bayesian_mcmc.R`
 - the relevant sampler dispatch in `code_base/`
 

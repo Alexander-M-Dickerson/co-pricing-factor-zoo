@@ -51,6 +51,7 @@ The machine-readable repo maps live at:
 - `docs/manifests/exhibits.csv`
 - `docs/manifests/manuscript_exhibits.csv`
 - `docs/manifests/paper_claims.csv`
+- `docs/manifests/code-map.md`
 - `docs/acceptance/prompt_harness.csv`
 - `docs/validation/validated_runs.csv`
 - `docs/validation/agent_acceptance_log.csv`

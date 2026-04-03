@@ -89,6 +89,7 @@ Machine-readable manifests:
 - `docs/manifests/exhibits.csv`
 - `docs/manifests/manuscript_exhibits.csv`
 - `docs/manifests/paper_claims.csv`
+- `docs/manifests/code-map.md`
 - `docs/acceptance/prompt_harness.csv`
 - `docs/validation/validated_runs.csv`
 - `docs/validation/agent_acceptance_log.csv`
@@ -135,7 +136,7 @@ Replication coverage today:
 
 The core unconditional flow is:
 
-`_run_unconditional_model.R`
+`_run_all_unconditional.R`
 -> `code_base/run_bayesian_mcmc.R`
 -> data loading and date alignment
 -> factor/test-asset matrix construction

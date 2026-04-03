@@ -67,7 +67,7 @@ The paper argues that the bond factor zoo becomes much less special once Treasur
 When explaining how the paper maps to the repo:
 
 - estimation logic starts in `code_base/run_bayesian_mcmc.R`
-- unconditional orchestration starts in `_run_unconditional_model.R` and `_run_all_unconditional.R`
+- unconditional orchestration starts in `_run_all_unconditional.R`
 - conditional orchestration starts in `_run_all_conditional.R`
 - table and figure generation starts in `_run_paper_results.R` and `_run_paper_conditional_results.R`
 

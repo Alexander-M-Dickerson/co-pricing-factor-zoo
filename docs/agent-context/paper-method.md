@@ -77,7 +77,7 @@ The prior Sharpe-ratio scaling choices control how much room the posterior gives
 
 Use this map when translating the method into repo structure:
 
-- `_run_unconditional_model.R`
+- `_run_all_unconditional.R`
 - `code_base/run_bayesian_mcmc.R`
 - `code_base/run_bayesian_mcmc_time_varying.R`
 - `BayesianFactorZoo/R/continuous_ss_sdf.R`
