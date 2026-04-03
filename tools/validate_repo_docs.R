@@ -338,7 +338,7 @@ coverage_ok <- vapply(
     text <- read_text(path)
     grepl("all main paper tables and figures", text, ignore.case = TRUE) &&
       grepl("Appendix tables and figures", text, ignore.case = TRUE) &&
-      grepl("some IA results|some Internet Appendix results", text, ignore.case = TRUE)
+      grepl("(some )?IA results|(some )?Internet Appendix results", text, ignore.case = TRUE)
   },
   logical(1)
 )
@@ -354,7 +354,7 @@ pipeline_readme_text <- read_text(file.path(repo_root, "README_PAPER_PIPELINE.md
 agents_text <- read_text(file.path(repo_root, "AGENTS.md"))
 claude_text <- read_text(file.path(repo_root, "CLAUDE.md"))
 expect_true(
-  grepl("Use Claude Code Or Codex", readme_text, fixed = TRUE) &&
+  grepl("Use Claude Code [Oo]r Codex", readme_text) &&
     grepl("/onboard", readme_text, fixed = TRUE) &&
     grepl("/replicate-paper", readme_text, fixed = TRUE) &&
     grepl("/explain-paper", readme_text, fixed = TRUE) &&
@@ -366,24 +366,20 @@ expect_true(
   "README is missing the Claude/Codex bridge block or one of the expected skill prompts."
 )
 expect_true(
-  grepl("Run This Repo As A Human", readme_text, fixed = TRUE) &&
-    grepl("Exact Main-Paper Replication", readme_text, fixed = TRUE) &&
-    grepl("Exact IA Replication", readme_text, fixed = TRUE) &&
+  grepl("Instructions to Replicators", readme_text, fixed = TRUE) &&
     grepl("50,000", readme_text, fixed = TRUE) &&
-    grepl("setup-validation shortcuts", readme_text, fixed = TRUE) &&
-    grepl("Figure 1 note", readme_text, fixed = TRUE) &&
     grepl("output/paper/latex/djm_main.pdf", readme_text, fixed = TRUE) &&
     grepl("ia/output/paper/latex/ia_main.pdf", readme_text, fixed = TRUE) &&
     grepl("For Codex / Claude", readme_text, fixed = TRUE),
   "README now exposes a balanced human-first front door plus a separate AI section.",
   "README is missing the human-first run path or the separate AI section."
 )
-agent_bridge_pos <- regexpr("## Use Claude Code Or Codex", readme_text, fixed = TRUE)[1]
-human_section_pos <- regexpr("## Run This Repo As A Human", readme_text, fixed = TRUE)[1]
+overview_pos <- regexpr("## Overview", readme_text, fixed = TRUE)[1]
+instructions_pos <- regexpr("## Instructions to Replicators", readme_text, fixed = TRUE)[1]
 expect_true(
-  agent_bridge_pos > 0 && human_section_pos > 0 && agent_bridge_pos < human_section_pos,
-  "README places the agent bridge block before the human run section.",
-  "README does not place the Claude/Codex bridge block before the human run section."
+  overview_pos > 0 && instructions_pos > 0 && overview_pos < instructions_pos,
+  "README places the JFE-required overview before the instructions section.",
+  "README is missing the JFE-required overview or instructions section ordering."
 )
 expect_true(
   grepl("docs/acceptance/prompt_harness.csv", readme_text, fixed = TRUE) &&

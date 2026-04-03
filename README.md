@@ -101,7 +101,7 @@ these files.
 
 - C++ toolchain required for Rcpp compilation:
   - Windows: [Rtools](https://cran.r-project.org/bin/windows/Rtools/) (tested with Rtools 4.5)
-  - macOS: Xcode Command Line Tools plus the CRAN-recommended GNU Fortran matching the installed R version (see <https://cran.r-project.org/bin/macosx/tools/>)
+  - macOS: Xcode Command Line Tools plus the CRAN-recommended GNU Fortran matching the installed R version (see <https://cran.r-project.org/bin/macosx/tools/> and <https://mac.r-project.org/tools/>)
 
 - LaTeX distribution (for PDF compilation):
   - Any TeX Live, MiKTeX, or TinyTeX installation with `pdflatex` and `bibtex` on the system PATH
@@ -323,6 +323,8 @@ More agent prompts:
 - [docs/manifests/code-map.md](docs/manifests/code-map.md): complete code call graph
 - [docs/manifests/manuscript_exhibits.csv](docs/manifests/manuscript_exhibits.csv): full manuscript exhibit inventory
 - [docs/manifests/paper_claims.csv](docs/manifests/paper_claims.csv): claim-to-evidence map
+- [docs/acceptance/prompt_harness.csv](docs/acceptance/prompt_harness.csv): acceptance rubric for agent checks
+- [docs/validation/agent_acceptance_log.csv](docs/validation/agent_acceptance_log.csv): fresh-thread agent acceptance log
 
 ### For Codex / Claude
 
