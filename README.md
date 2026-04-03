@@ -43,7 +43,49 @@ it defaults to 50,000 draws for the main paper and the Internet Appendix.
 Reduced-draw quick or smoke paths are setup-validation shortcuts, not the paper
 setting.
 
+### Complete Replication: Main Paper + Internet Appendix
+
+To replicate both the main paper and Internet Appendix in a single command
+(~81 minutes total at 50,000 draws):
+
+Windows PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\run_complete_replication.ps1
+```
+
+Windows Command Prompt:
+
+```bat
+tools\run_complete_replication.cmd
+```
+
+macOS Terminal:
+
+```bash
+bash tools/run_complete_replication.sh
+```
+
+This produces both PDFs and a machine-readable replication manifest at
+`output/replication_manifest_both_<timestamp>.json` documenting every exhibit,
+engine, and timing.
+
 ### Exact Main-Paper Replication (50,000 Draws)
+
+Representative runtime: **~65 minutes total** on a 24-core desktop (Intel Core
+Ultra 9 275HX, 128 GB RAM). Step breakdown:
+
+| Step | Description | Time |
+|------|-------------|------|
+| 1 | Unconditional estimation (7 models) | ~8 min |
+| 2 | Conditional estimation (2 directions) | ~46 min |
+| 3 | Tables & figures (unconditional) | ~10 min |
+| 4 | Tables & figures (conditional) | <1 min |
+| 5 | LaTeX assembly | <1 min |
+| 6 | PDF compilation | <1 min |
+
+The full pipeline now compiles the PDF automatically as Step 6. A separate
+`build_paper` call is no longer required but remains available.
 
 Windows PowerShell:
 
@@ -52,7 +94,6 @@ powershell -ExecutionPolicy Bypass -File tools\bootstrap_data.ps1
 powershell -ExecutionPolicy Bypass -File tools\bootstrap_packages.ps1
 powershell -ExecutionPolicy Bypass -File tools\doctor.ps1 --check-only
 powershell -ExecutionPolicy Bypass -File tools\run_full_replication.ps1
-powershell -ExecutionPolicy Bypass -File tools\build_paper.ps1
 ```
 
 Windows Command Prompt:
@@ -62,7 +103,6 @@ tools\bootstrap_data.cmd
 tools\bootstrap_packages.cmd
 tools\doctor.cmd --check-only
 tools\run_full_replication.cmd
-tools\build_paper.cmd
 ```
 
 macOS Terminal:
@@ -72,7 +112,6 @@ bash tools/bootstrap_data.sh
 bash tools/bootstrap_packages.sh
 bash tools/doctor.sh --check-only
 bash tools/run_full_replication.sh
-bash tools/build_paper.sh
 ```
 
 Posit/RStudio Terminal:
@@ -90,29 +129,34 @@ smoke path from [QUICKSTART.md](./QUICKSTART.md), then scale back to the no-flag
 
 ### Exact IA Replication (50,000 Draws)
 
-Use the no-flag IA full pipeline for exact replication. On a new machine, you
-may still want to run the 500-draw IA smoke boundary first, but that smoke path
-is only a setup check.
+Representative runtime: **~16 minutes total** on the same 24-core desktop. Step
+breakdown:
+
+| Step | Description | Time |
+|------|-------------|------|
+| 1 | IA estimation (9 models, 2 parallel batches) | ~12 min |
+| 2 | IA tables & figures | ~4 min |
+| 3 | IA LaTeX assembly | <1 min |
+| 4 | IA PDF compilation | <1 min |
+
+The IA pipeline now compiles the PDF automatically as Step 4.
 
 Windows PowerShell:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools\run_ia_full.ps1
-powershell -ExecutionPolicy Bypass -File tools\build_ia_paper.ps1
 ```
 
 Windows Command Prompt:
 
 ```bat
 tools\run_ia_full.cmd
-tools\build_ia_paper.cmd
 ```
 
 macOS Terminal:
 
 ```bash
 bash tools/run_ia_full.sh
-bash tools/build_ia_paper.sh
 ```
 
 Posit/RStudio Terminal:
@@ -159,6 +203,18 @@ Posit/RStudio Terminal:
   `Rscript` IA boundaries from [QUICKSTART.md](./QUICKSTART.md)
 - on macOS, use the same `bash` wrapper commands shown above, or the raw `Rscript`
   IA boundaries from [QUICKSTART.md](./QUICKSTART.md)
+
+### Audit a Completed Run
+
+After any pipeline run, inspect the replication manifest:
+
+```bash
+Rscript tools/audit_run.R --pipeline=both
+Rscript tools/audit_run.R --list-runs --latest
+```
+
+The manifest records every exhibit produced, estimation engines used, per-model
+timings, and overall completeness status.
 
 ### Where Outputs Appear
 

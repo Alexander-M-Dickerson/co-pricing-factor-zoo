@@ -41,6 +41,8 @@ jobs:
           Rscript ia/_run_ia_results.R --help
           Rscript ia/_create_ia_latex.R --help
           Rscript ia/_run_ia_full.R --help
+          Rscript _run_complete_replication.R --help
+          Rscript tools/audit_run.R --help
 
       - name: Smoke Unix wrapper entrypoints
         if: runner.os != 'Windows'
@@ -57,6 +59,8 @@ jobs:
           bash tools/run_ia_smoke.sh --help
           bash tools/run_ia_full.sh --help
           bash tools/build_ia_paper.sh --help
+          bash tools/run_complete_replication.sh --help
+          bash tools/audit_run.sh --help
 
       - name: Smoke Windows PowerShell wrappers
         if: runner.os == 'Windows'
@@ -73,6 +77,8 @@ jobs:
           powershell -ExecutionPolicy Bypass -File tools\run_ia_smoke.ps1 -Help
           powershell -ExecutionPolicy Bypass -File tools\run_ia_full.ps1 -Help
           powershell -ExecutionPolicy Bypass -File tools\build_ia_paper.ps1 -Help
+          powershell -ExecutionPolicy Bypass -File tools\run_complete_replication.ps1 -Help
+          powershell -ExecutionPolicy Bypass -File tools\audit_run.ps1 -Help
 
       - name: Smoke Windows Command Prompt wrappers
         if: runner.os == 'Windows'
@@ -89,3 +95,5 @@ jobs:
           cmd /c tools\run_ia_smoke.cmd -Help
           cmd /c tools\run_ia_full.cmd -Help
           cmd /c tools\build_ia_paper.cmd -Help
+          cmd /c tools\run_complete_replication.cmd -Help
+          cmd /c tools\audit_run.cmd -Help

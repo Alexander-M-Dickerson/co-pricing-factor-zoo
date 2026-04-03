@@ -143,7 +143,13 @@ required_wrapper_files <- c(
   "tools/build_paper.sh",
   "tools/build_ia_paper.ps1",
   "tools/build_ia_paper.cmd",
-  "tools/build_ia_paper.sh"
+  "tools/build_ia_paper.sh",
+  "tools/run_complete_replication.ps1",
+  "tools/run_complete_replication.cmd",
+  "tools/run_complete_replication.sh",
+  "tools/audit_run.ps1",
+  "tools/audit_run.cmd",
+  "tools/audit_run.sh"
 )
 expect_true(
   all(file.exists(file.path(repo_root, required_wrapper_files))),
@@ -577,6 +583,24 @@ expect_true(
   "Factor interpretation guide and top-factor dossiers exist.",
   "One or more factor interpretation docs or top-factor dossiers are missing."
 )
+required_context_guides <- c(
+  "docs/agent-context/noisy-proxy-guide.md",
+  "docs/agent-context/treasury-component-guide.md",
+  "docs/agent-context/time-varying-guide.md",
+  "docs/agent-context/ia-robustness-guide.md"
+)
+expect_true(
+  all(file.exists(file.path(repo_root, required_context_guides))),
+  "Deep context guides exist (noisy-proxy, treasury, time-varying, IA robustness).",
+  "One or more deep context guides are missing."
+)
+expect_true(
+  file.exists(file.path(repo_root, "code_base", "audit_helpers.R")) &&
+    file.exists(file.path(repo_root, "tools", "audit_run.R")) &&
+    file.exists(file.path(repo_root, "_run_complete_replication.R")),
+  "Audit helpers, audit tool, and unified replication entrypoint exist.",
+  "One or more audit or unified replication files are missing."
+)
 prompt_recipes_text <- read_text(file.path(repo_root, "docs", "agent-context", "prompt-recipes.md"))
 expect_true(
   grepl("Replicate The Internet Appendix", prompt_recipes_text, fixed = TRUE) &&
@@ -801,7 +825,9 @@ entrypoints <- list(
   list(script = "ia/_run_ia_estimation.R", arg = "--list"),
   list(script = "ia/_run_ia_results.R", arg = "--help"),
   list(script = "ia/_create_ia_latex.R", arg = "--help"),
-  list(script = "ia/_run_ia_full.R", arg = "--help")
+  list(script = "ia/_run_ia_full.R", arg = "--help"),
+  list(script = "_run_complete_replication.R", arg = "--help"),
+  list(script = "tools/audit_run.R", arg = "--help")
 )
 
 for (entry in entrypoints) {

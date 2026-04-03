@@ -34,6 +34,19 @@ Prompt recipes:
 - `paper-method.md`
 - `paper-reading-guide.md`
 
+## If The User Asks Why The SDF Is Dense Or About Noisy Proxies
+
+- `noisy-proxy-guide.md`
+- `factor-interpretation.md`
+
+## If The User Asks About Treasury / Duration / Bond Redundancy
+
+- `treasury-component-guide.md`
+
+## If The User Asks About Time-Varying Results Or Expanding Windows
+
+- `time-varying-guide.md`
+
 ## If The User Wants A Main Result
 
 - `paper-results-main.md`
@@ -42,6 +55,7 @@ Prompt recipes:
 
 ## If The User Wants IA Robustness
 
+- `ia-robustness-guide.md`
 - `paper-results-ia.md`
 
 ## If The User Wants A Table, Figure, Or Factor Walkthrough

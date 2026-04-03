@@ -35,6 +35,10 @@ The detailed shared docs live in `docs/agent-context/`:
 - `factor-interpretation.md`
 - `factors-reference.md`
 - `factors/`
+- `noisy-proxy-guide.md`
+- `treasury-component-guide.md`
+- `time-varying-guide.md`
+- `ia-robustness-guide.md`
 
 The canonical full paper lives at:
 
@@ -61,7 +65,7 @@ Load the full paper only when exact equation, appendix, table, or figure wording
 
 ## Repo Notes For Claude
 
-- The main paper pipeline is the five-step root workflow under the repo root.
+- The main paper pipeline is the six-step root workflow under the repo root (including automatic PDF compilation).
 - On a fresh clone, Claude should bootstrap packages and the canonical public data bundle before telling the user to place files manually.
 - `ia/data/w_all.rds` is tracked required clone data for the weighted treasury IA branch and should not be treated as optional.
 - The Internet Appendix pipeline is separate and the source of truth for IA model

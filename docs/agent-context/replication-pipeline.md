@@ -31,19 +31,25 @@ Fresh-clone default:
 
 The main root script sequence is:
 
-1. `_run_all_unconditional.R`
-2. `_run_all_conditional.R`
-3. `_run_paper_results.R`
-4. `_run_paper_conditional_results.R`
-5. `_create_djm_tabs_figs.R` for LaTeX source assembly
-6. `tools/build_paper.*` for final PDF compilation
+1. `_run_all_unconditional.R`              ~8 min
+2. `_run_all_conditional.R`                ~46 min
+3. `_run_paper_results.R`                  ~10 min
+4. `_run_paper_conditional_results.R`      <1 min
+5. `_create_djm_tabs_figs.R`               <1 min
+6. PDF compilation (pdflatex + bibtex)     <1 min
+
+Representative total: **~65 min** at 50,000 draws on a 24-core desktop (Intel
+Core Ultra 9 275HX, 128 GB RAM).
+
+`_run_full_replication.R` now runs all six steps including PDF compilation.
+`tools/build_paper.*` remains available for standalone PDF builds.
 
 Figure 1 default behavior:
 
 - `_run_paper_results.R` builds Figure 1 from tracked fixtures under `misc/figure1_simulation/`
 - `tools/run_figure1_simulation.*` is the separate explicit regeneration path for the underlying Monte Carlo outputs
 
-`_run_full_replication.R` orchestrates the main five-step flow, but agents should still understand the underlying step boundaries for resume and debugging.
+`_run_full_replication.R` orchestrates the main six-step flow (including PDF compilation), but agents should still understand the underlying step boundaries for resume and debugging.
 
 Validated host path as of March 31, 2026:
 
@@ -61,6 +67,7 @@ Typical entrypoints from the repo root:
 
 ```bash
 Rscript tools/doctor.R --check-only
+Rscript _run_complete_replication.R --help
 Rscript _run_full_replication.R --help
 Rscript _run_all_unconditional.R --ndraws=5000
 Rscript _run_all_conditional.R --direction=both --ndraws=500
@@ -157,10 +164,14 @@ Canonical public IA wrappers:
 
 The high-level IA scripts are:
 
-1. `ia/_run_ia_estimation.R`
-2. `ia/_run_ia_results.R`
-3. `ia/_create_ia_latex.R`
-4. `ia/_run_ia_full.R`
+1. `ia/_run_ia_estimation.R`          ~12 min
+2. `ia/_run_ia_results.R`             ~4 min
+3. `ia/_create_ia_latex.R`            <1 min
+4. PDF compilation (pdflatex+bibtex)  <1 min
+
+Representative total: **~16 min** at 50,000 draws on a 24-core desktop.
+
+`ia/_run_ia_full.R` orchestrates all four steps including PDF compilation.
 
 Use `tools/run_ia_smoke.*` as the first IA validation boundary. The canonical IA
 smoke run is `500` draws and should complete all nine IA models before any scale-up.
@@ -233,6 +244,20 @@ Good resume boundaries:
 - Documentation-only changes: no runtime verification required.
 - Narrow pipeline changes: run the smallest affected script with reduced draws when possible.
 - Full replication recommendations: provide the exact script boundary and expected outputs, but do not claim completion without a real run.
+
+## Post-Run Audit
+
+After any pipeline run, a replication manifest is automatically written to
+`output/replication_manifest_<pipeline>_<timestamp>.json`. This records every
+exhibit produced vs. expected, estimation engines used, per-model timings, and
+overall completeness.
+
+Run the audit standalone:
+
+```bash
+Rscript tools/audit_run.R --pipeline=both
+Rscript tools/audit_run.R --list-runs --latest
+```
 
 ## Output Expectations
 

@@ -25,6 +25,10 @@ Read only the docs needed for the question:
 - `docs/agent-context/factor-interpretation.md`
 - `docs/agent-context/factors-reference.md`
 - `docs/agent-context/factors/`
+- `docs/agent-context/noisy-proxy-guide.md`
+- `docs/agent-context/treasury-component-guide.md`
+- `docs/agent-context/time-varying-guide.md`
+- `docs/agent-context/ia-robustness-guide.md`
 - `references/exhibit-routing.md`
 
 ## Use When

@@ -10,14 +10,18 @@
 ## Paper refs: Sec. 3; Tables 1-6; Figures 2-7; Appendix A tables/figures;
 ##   docs/paper/co-pricing-factor-zoo.ai-optimized.md
 ## Outputs: output/unconditional/, output/time_varying/, output/paper/,
-##   final LaTeX assembly via _create_djm_tabs_figs.R
+##   final LaTeX assembly via _create_djm_tabs_figs.R,
+##   compiled PDF at output/paper/latex/djm_main.pdf
 ##
-## It sequentially executes all 5 steps:
-##   1. Unconditional models (7 models, ~1-2 hours)
-##   2. Conditional models (2 models, ~30-40 min)
-##   3. Generate tables & figures (unconditional)
-##   4. Generate tables & figures (conditional)
-##   5. Assemble LaTeX source tree
+## It sequentially executes all 6 steps:
+##   1. Unconditional models (7 models)          ~8 min
+##   2. Conditional models (2 directions)         ~46 min
+##   3. Generate tables & figures (unconditional) ~10 min
+##   4. Generate tables & figures (conditional)   <1 min
+##   5. Assemble LaTeX source tree                <1 min
+##   6. Compile PDF (pdflatex + bibtex)           <1 min
+##
+## Representative total: ~65 min at 50,000 draws on a 24-core desktop.
 ##
 ## Coverage note: this repo replicates all main-text tables/figures, all main
 ## Appendix tables/figures, and a subset of Internet Appendix results.
@@ -30,6 +34,7 @@
 ##   --quick           Shortcut for --ndraws=5000 (reduced-draw smoke mode)
 ##   --sequential      Run models sequentially instead of parallel (default: parallel)
 ##   --skip-estimation Skip steps 1-2, only regenerate tables/figures and LaTeX sources
+##   --skip-pdf        Skip PDF compilation (step 6)
 ##   --help            Show this help message
 ##
 ## EXAMPLES:
@@ -49,6 +54,7 @@ args <- commandArgs(trailingOnly = TRUE)
 ndraws <- 50000
 parallel_mode <- TRUE
 skip_estimation <- FALSE
+skip_pdf <- FALSE
 show_help <- FALSE
 
 # Parse arguments
@@ -61,6 +67,8 @@ for (arg in args) {
     parallel_mode <- FALSE
   } else if (arg == "--skip-estimation") {
     skip_estimation <- TRUE
+  } else if (arg == "--skip-pdf") {
+    skip_pdf <- TRUE
   } else if (arg == "--help" || arg == "-h") {
     show_help <- TRUE
   }
@@ -79,6 +87,7 @@ OPTIONS:
   --quick           Reduced-draw smoke mode (--ndraws=5000)
   --sequential      Run models sequentially (default: parallel)
   --skip-estimation Skip estimation, only regenerate tables/figures and LaTeX sources
+  --skip-pdf        Skip PDF compilation (step 6)
   --help            Show this help message
 
 EXAMPLES:
@@ -92,6 +101,7 @@ EXAMPLES:
 
 source(file.path("code_base", "conditional_run_helpers.R"))
 source(file.path("code_base", "unconditional_run_helpers.R"))
+source(file.path("code_base", "audit_helpers.R"))
 
 ###############################################################################
 ## HELPER FUNCTION
@@ -151,16 +161,21 @@ cat("Configuration:\n")
 cat(sprintf("  MCMC draws:    %d\n", ndraws))
 cat(sprintf("  Parallel mode: %s\n", ifelse(parallel_mode, "YES", "NO")))
 cat(sprintf("  Skip estimation: %s\n", ifelse(skip_estimation, "YES", "NO")))
+cat(sprintf("  Skip PDF:      %s\n", ifelse(skip_pdf, "YES", "NO")))
 cat("\n")
 
 pipeline_start <- Sys.time()
+run_timestamp <- format(pipeline_start, "%Y%m%d_%H%M%S")
 step_times <- numeric()
 
 # Build parallel flag
 parallel_flag <- ifelse(parallel_mode, "", "--sequential")
 
+# Count steps: estimation (2) + outputs (2) + assembly (1) + pdf (1)
+pdf_step <- if (!skip_pdf) 1L else 0L
+
 if (!skip_estimation) {
-  total_steps <- 5
+  total_steps <- 5 + pdf_step
 
   # Step 1: Unconditional models
   step1_args <- c(sprintf("--ndraws=%d", ndraws))
@@ -241,7 +256,7 @@ if (!skip_estimation) {
 
   step_offset <- 2
 } else {
-  total_steps <- 3
+  total_steps <- 3 + pdf_step
   step_offset <- 0
   cat("Skipping estimation steps (--skip-estimation)\n")
 }
@@ -286,6 +301,56 @@ step_times[step_offset + 3] <- run_step(
   "_create_djm_tabs_figs.R"
 )$elapsed
 
+# Step 6: Compile PDF
+if (!skip_pdf) {
+  cat("\n")
+  cat(strrep("=", 70), "\n")
+  cat(sprintf("STEP %d/%d: %s\n", step_offset + 4, total_steps, "Compiling PDF (pdflatex + bibtex)"))
+  cat(strrep("=", 70), "\n\n")
+
+  pdf_start <- Sys.time()
+  latex_dir <- file.path(getwd(), "output", "paper", "latex")
+
+  pdflatex <- Sys.which("pdflatex")
+  bibtex <- Sys.which("bibtex")
+
+  if (!nzchar(pdflatex)) {
+    cat("WARNING: pdflatex not found on PATH. Skipping PDF compilation.\n")
+    cat("Install a TeX distribution (MiKTeX, TeX Live) to enable this step.\n")
+    step_times[step_offset + 4] <- 0
+  } else {
+    old_wd <- getwd()
+    setwd(latex_dir)
+    on.exit(setwd(old_wd), add = TRUE)
+
+    # pdflatex pass 1
+    rc <- system2(pdflatex, args = c("-interaction=nonstopmode", "djm_main.tex"))
+    if (rc != 0) stop("pdflatex pass 1 failed (exit ", rc, ")", call. = FALSE)
+
+    # bibtex
+    if (nzchar(bibtex)) {
+      rc <- system2(bibtex, args = "djm_main")
+      if (rc != 0) cat("WARNING: bibtex returned exit code ", rc, " (non-fatal)\n")
+    } else {
+      cat("WARNING: bibtex not found, skipping bibliography pass.\n")
+    }
+
+    # pdflatex passes 2-3
+    for (pass in 2:3) {
+      rc <- system2(pdflatex, args = c("-interaction=nonstopmode", "djm_main.tex"))
+      if (rc != 0) stop("pdflatex pass ", pass, " failed (exit ", rc, ")", call. = FALSE)
+    }
+
+    setwd(old_wd)
+
+    pdf_end <- Sys.time()
+    pdf_elapsed <- round(difftime(pdf_end, pdf_start, units = "mins"), 1)
+    step_times[step_offset + 4] <- pdf_elapsed
+    cat(sprintf("\nStep %d completed in %.1f minutes.\n", step_offset + 4, pdf_elapsed))
+    cat(sprintf("  PDF: %s\n", file.path(latex_dir, "djm_main.pdf")))
+  }
+}
+
 ###############################################################################
 ## SUMMARY
 ###############################################################################
@@ -306,11 +371,20 @@ cat("Output locations:\n")
 cat("  Tables:   output/paper/tables/\n")
 cat("  Figures:  output/paper/figures/\n")
 cat("  LaTeX:    output/paper/latex/\n")
+if (!skip_pdf && nzchar(Sys.which("pdflatex"))) {
+  cat("  PDF:      output/paper/latex/djm_main.pdf\n")
+}
 cat("  Logs:     output/logs/\n")
 cat("\n")
 
-cat("To compile the PDF:\n")
-cat("  powershell -ExecutionPolicy Bypass -File tools\\build_paper.ps1\n")
-cat("  cmd /c tools\\build_paper.cmd\n")
-cat("  bash tools/build_paper.sh\n")
-cat("\n")
+# Generate replication manifest
+generate_replication_manifest(
+  repo_root      = getwd(),
+  pipeline       = "main",
+  ndraws         = ndraws,
+  step_times     = step_times,
+  run_timestamp  = run_timestamp,
+  pipeline_start = pipeline_start,
+  pipeline_end   = pipeline_end,
+  min_mtime      = if (!skip_estimation) pipeline_start else NULL
+)

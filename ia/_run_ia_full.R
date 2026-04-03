@@ -4,11 +4,12 @@
 ## ---------------------------------------------------------------------------
 ##
 ## This script runs the complete implemented IA pipeline:
-##   1. Estimate the 9 IA-related models defined in ia/_run_ia_estimation.R
-##   2. Generate the implemented IA tables and figures
-##   3. Assemble the IA LaTeX tree
+##   1. Estimate the 9 IA-related models       ~12 min
+##   2. Generate the implemented IA tables/figs ~4 min
+##   3. Assemble the IA LaTeX tree              <1 min
+##   4. Compile PDF (pdflatex + bibtex)         <1 min
 ##
-## PDF compilation is a separate public step via tools/build_ia_paper.*.
+## Representative total: ~16 min at 50,000 draws on a 24-core desktop.
 ## The no-flag path is the exact IA replication setting and defaults to 50,000
 ## draws.
 ###############################################################################
@@ -20,6 +21,7 @@ parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
     skip_estim = FALSE,
     skip_results = FALSE,
     skip_assembly = FALSE,
+    skip_pdf = FALSE,
     cores = NULL,
     cores_per_model = 4L,
     self_pricing_engine = "fast"
@@ -36,6 +38,8 @@ parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
       opts$skip_results <- TRUE
     } else if (identical(arg, "--skip-assembly")) {
       opts$skip_assembly <- TRUE
+    } else if (identical(arg, "--skip-pdf")) {
+      opts$skip_pdf <- TRUE
     } else if (grepl("^--cores=", arg)) {
       opts$cores <- as.integer(sub("^--cores=", "", arg))
     } else if (grepl("^--cores-per-model=", arg)) {
@@ -51,6 +55,7 @@ parse_args <- function(args = commandArgs(trailingOnly = TRUE)) {
         "  --skip-estim                Skip IA estimation and use existing IA results\n",
         "  --skip-results              Skip IA tables/figures generation\n",
         "  --skip-assembly             Skip IA LaTeX assembly\n",
+        "  --skip-pdf                  Skip PDF compilation (step 4)\n",
         "  --cores=N                   Total available cores for IA estimation\n",
         "  --cores-per-model=N         Cores per IA model (default: 4)\n",
         "  --self-pricing-engine=NAME  fast or reference (default: fast)\n",
@@ -89,6 +94,7 @@ if (basename(getwd()) == "ia") {
 main_path <- normalizePath(getwd(), winslash = "/", mustWork = TRUE)
 opts <- parse_args()
 rscript <- resolve_rscript()
+source(file.path(main_path, "code_base", "audit_helpers.R"))
 
 cat("\n========================================\n")
 cat("INTERNET APPENDIX FULL REPLICATION\n")
@@ -147,6 +153,47 @@ if (!opts$skip_assembly) {
   cat("STEP 3: Skipped (--skip-assembly)\n\n")
 }
 
+if (!opts$skip_pdf) {
+  cat("STEP 4: Compile IA PDF\n")
+  cat("----------------------\n")
+
+  latex_dir <- file.path(main_path, "ia", "output", "paper", "latex")
+  pdflatex <- Sys.which("pdflatex")
+  bibtex <- Sys.which("bibtex")
+
+  if (!nzchar(pdflatex)) {
+    cat("WARNING: pdflatex not found on PATH. Skipping PDF compilation.\n")
+    cat("Install a TeX distribution (MiKTeX, TeX Live) to enable this step.\n\n")
+  } else {
+    old_wd <- getwd()
+    setwd(latex_dir)
+    on.exit(setwd(old_wd), add = TRUE)
+
+    # pdflatex pass 1
+    rc <- system2(pdflatex, args = c("-interaction=nonstopmode", "ia_main.tex"))
+    if (rc != 0) stop("pdflatex pass 1 failed (exit ", rc, ")", call. = FALSE)
+
+    # bibtex
+    if (nzchar(bibtex)) {
+      rc <- system2(bibtex, args = "ia_main")
+      if (rc != 0) cat("WARNING: bibtex returned exit code ", rc, " (non-fatal)\n")
+    } else {
+      cat("WARNING: bibtex not found, skipping bibliography pass.\n")
+    }
+
+    # pdflatex passes 2-3
+    for (pass in 2:3) {
+      rc <- system2(pdflatex, args = c("-interaction=nonstopmode", "ia_main.tex"))
+      if (rc != 0) stop("pdflatex pass ", pass, " failed (exit ", rc, ")", call. = FALSE)
+    }
+
+    setwd(old_wd)
+    cat("  PDF: ", file.path(latex_dir, "ia_main.pdf"), "\n\n", sep = "")
+  }
+} else {
+  cat("STEP 4: Skipped (--skip-pdf)\n\n")
+}
+
 elapsed <- difftime(Sys.time(), started_at, units = "mins")
 cat("========================================\n")
 cat("INTERNET APPENDIX PIPELINE COMPLETE\n")
@@ -157,5 +204,19 @@ cat("  Estimation: ia/output/unconditional/\n")
 cat("  Tables:     ia/output/paper/tables/\n")
 cat("  Figures:    ia/output/paper/figures/\n")
 cat("  LaTeX:      ia/output/paper/latex/\n")
-cat("\nNext step for PDF compilation:\n")
-cat("  tools/build_ia_paper.*\n")
+if (!opts$skip_pdf && nzchar(Sys.which("pdflatex"))) {
+  cat("  PDF:        ia/output/paper/latex/ia_main.pdf\n")
+}
+cat("\n")
+
+# Generate replication manifest
+ia_end <- Sys.time()
+generate_replication_manifest(
+  repo_root      = main_path,
+  pipeline       = "ia",
+  ndraws         = opts$ndraws,
+  run_timestamp  = format(started_at, "%Y%m%d_%H%M%S"),
+  pipeline_start = started_at,
+  pipeline_end   = ia_end,
+  min_mtime      = if (!opts$skip_estim) started_at else NULL
+)

@@ -11,7 +11,31 @@ The no-flag full pipelines are the exact paper replication path. They default to
 50,000 draws. The smoke boundaries below are reduced-draw setup-validation
 checks.
 
+## Complete Replication: Main + IA (Default 50,000 Draws)
+
+Single command for both pipelines (~81 minutes):
+- Windows PowerShell: `powershell -ExecutionPolicy Bypass -File tools\run_complete_replication.ps1`
+- Windows Command Prompt: `tools\run_complete_replication.cmd`
+- macOS Terminal: `bash tools/run_complete_replication.sh`
+
+Raw `Rscript` equivalent: `Rscript _run_complete_replication.R`
+
+Produces both PDFs and a replication manifest at `output/replication_manifest_both_<timestamp>.json`.
+
 ## Main Exact Boundary (Default 50,000 Draws)
+
+Representative runtime: **~65 minutes** on a 24-core desktop (Intel Core Ultra 9
+275HX, 128 GB RAM). The pipeline compiles the PDF automatically as its final
+step.
+
+| Step | Description | Time |
+|------|-------------|------|
+| 1 | Unconditional estimation (7 models) | ~8 min |
+| 2 | Conditional estimation (2 directions) | ~46 min |
+| 3 | Tables & figures (unconditional) | ~10 min |
+| 4 | Tables & figures (conditional) | <1 min |
+| 5 | LaTeX assembly | <1 min |
+| 6 | PDF compilation | <1 min |
 
 Wrapper path:
 - Windows PowerShell: `powershell -ExecutionPolicy Bypass -File tools\run_full_replication.ps1`
@@ -34,7 +58,7 @@ Rscript _run_paper_conditional_results.R
 Rscript _create_djm_tabs_figs.R
 ```
 
-Build the PDF with:
+Build the PDF separately (only needed with the step-by-step path or `--skip-pdf`):
 - Windows PowerShell: `powershell -ExecutionPolicy Bypass -File tools\build_paper.ps1`
 - Windows Command Prompt: `tools\build_paper.cmd`
 - macOS Terminal: `bash tools/build_paper.sh`
@@ -59,15 +83,20 @@ Raw `Rscript` equivalent:
 Rscript _run_full_replication.R --quick
 ```
 
-Build the PDF with:
-- Windows PowerShell: `powershell -ExecutionPolicy Bypass -File tools\build_paper.ps1`
-- Windows Command Prompt: `tools\build_paper.cmd`
-- macOS Terminal: `bash tools/build_paper.sh`
-
-Output:
+Output (PDF compiled automatically):
 - [djm_main.pdf](C:/Users/alexm/OneDrive/Documents/GitHub/co-pricing-factor-zoo/output/paper/latex/djm_main.pdf)
 
 ## IA Exact Boundary (Default 50,000 Draws)
+
+Representative runtime: **~16 minutes** on a 24-core desktop. The IA pipeline
+now compiles the PDF automatically as its final step.
+
+| Step | Description | Time |
+|------|-------------|------|
+| 1 | IA estimation (9 models, 2 parallel batches) | ~12 min |
+| 2 | IA tables & figures | ~4 min |
+| 3 | IA LaTeX assembly | <1 min |
+| 4 | IA PDF compilation | <1 min |
 
 Wrapper path:
 - Windows PowerShell: `powershell -ExecutionPolicy Bypass -File tools\run_ia_full.ps1`
@@ -88,7 +117,7 @@ Rscript ia/_run_ia_results.R
 Rscript ia/_create_ia_latex.R
 ```
 
-Build the IA PDF with:
+Build the IA PDF separately (only needed with the step-by-step path or `--skip-pdf`):
 - Windows PowerShell: `powershell -ExecutionPolicy Bypass -File tools\build_ia_paper.ps1`
 - Windows Command Prompt: `tools\build_ia_paper.cmd`
 - macOS Terminal: `bash tools/build_ia_paper.sh`

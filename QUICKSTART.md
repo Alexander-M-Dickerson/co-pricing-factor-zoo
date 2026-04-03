@@ -118,30 +118,57 @@ macOS toolchain note:
 - install the CRAN-recommended GNU Fortran that matches your installed CRAN R version
 - official references: <https://cran.r-project.org/bin/macosx/tools/> and <https://mac.r-project.org/tools/>
 
-## 5. Exact Main-Paper Replication (50,000 Draws)
+## 5. Complete Replication: Main + IA (50,000 Draws)
+
+To replicate everything in a single command (~81 minutes):
+
+```bash
+Rscript _run_complete_replication.R
+```
+
+Or via platform wrappers:
+- Windows PowerShell: `powershell -ExecutionPolicy Bypass -File tools\run_complete_replication.ps1`
+- Windows Command Prompt: `tools\run_complete_replication.cmd`
+- macOS Terminal: `bash tools/run_complete_replication.sh`
+
+This runs the main paper (6 steps) then the IA (4 steps), compiles both PDFs,
+and writes a replication manifest to `output/`. If you prefer to run them
+separately, use Sections 5a and 7 below.
+
+## 5a. Exact Main-Paper Replication (50,000 Draws)
 
 This is the proper paper setting. The no-flag main pipeline defaults to 50,000
-draws, which is the exact replication path.
+draws, which is the exact replication path. The pipeline compiles the PDF
+automatically as its final step.
+
+Representative runtime: **~65 minutes total** on a 24-core desktop (Intel Core
+Ultra 9 275HX, 128 GB RAM). Step breakdown:
+
+| Step | Description | Time |
+|------|-------------|------|
+| 1 | Unconditional estimation (7 models) | ~8 min |
+| 2 | Conditional estimation (2 directions) | ~46 min |
+| 3 | Tables & figures (unconditional) | ~10 min |
+| 4 | Tables & figures (conditional) | <1 min |
+| 5 | LaTeX assembly | <1 min |
+| 6 | PDF compilation | <1 min |
 
 Windows PowerShell:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools\run_full_replication.ps1
-powershell -ExecutionPolicy Bypass -File tools\build_paper.ps1
 ```
 
 Windows Command Prompt:
 
 ```bat
 tools\run_full_replication.cmd
-tools\build_paper.cmd
 ```
 
 macOS Terminal:
 
 ```bash
 bash tools/run_full_replication.sh
-bash tools/build_paper.sh
 ```
 
 Raw `Rscript` equivalent:
@@ -160,7 +187,8 @@ Rscript _run_paper_conditional_results.R
 Rscript _create_djm_tabs_figs.R
 ```
 
-Then build the PDF with the platform wrapper for your shell:
+Then build the PDF with the platform wrapper for your shell (only needed if
+using the step-by-step path or if you passed `--skip-pdf`):
 - Windows PowerShell: `powershell -ExecutionPolicy Bypass -File tools\build_paper.ps1`
 - Windows Command Prompt: `tools\build_paper.cmd`
 - macOS Terminal: `bash tools/build_paper.sh`
@@ -179,27 +207,24 @@ If something fails, rerun here:
 ## 6. Validated Main Smoke Boundary (5,000 Draws)
 
 Use this only to validate setup on a new machine before scaling back to the
-no-flag 50,000-draw path in Section 5.
+no-flag 50,000-draw path in Section 5. The PDF is compiled automatically.
 
 Windows PowerShell:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools\run_full_replication.ps1 -Quick
-powershell -ExecutionPolicy Bypass -File tools\build_paper.ps1
 ```
 
 Windows Command Prompt:
 
 ```bat
 tools\run_full_replication.cmd -Quick
-tools\build_paper.cmd
 ```
 
 macOS Terminal:
 
 ```bash
 bash tools/run_full_replication.sh --quick
-bash tools/build_paper.sh
 ```
 
 Raw `Rscript` equivalent:
@@ -211,7 +236,16 @@ Rscript _run_full_replication.R --quick
 ## 7. Exact IA Replication (50,000 Draws)
 
 This is the proper IA replication setting. The no-flag IA full pipeline defaults
-to 50,000 draws.
+to 50,000 draws and compiles the PDF automatically.
+
+Representative runtime: **~16 minutes** on a 24-core desktop. Step breakdown:
+
+| Step | Description | Time |
+|------|-------------|------|
+| 1 | IA estimation (9 models, 2 parallel batches) | ~12 min |
+| 2 | IA tables & figures | ~4 min |
+| 3 | IA LaTeX assembly | <1 min |
+| 4 | IA PDF compilation | <1 min |
 
 Wrapper path:
 
@@ -219,21 +253,18 @@ Windows PowerShell:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools\run_ia_full.ps1
-powershell -ExecutionPolicy Bypass -File tools\build_ia_paper.ps1
 ```
 
 Windows Command Prompt:
 
 ```bat
 tools\run_ia_full.cmd
-tools\build_ia_paper.cmd
 ```
 
 macOS Terminal:
 
 ```bash
 bash tools/run_ia_full.sh
-bash tools/build_ia_paper.sh
 ```
 
 Raw `Rscript` equivalent:

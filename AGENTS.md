@@ -73,6 +73,10 @@ High-value shared docs under `docs/agent-context/`:
 - `factor-interpretation.md`
 - `factors-reference.md`
 - `factors/`
+- `noisy-proxy-guide.md`
+- `treasury-component-guide.md`
+- `time-varying-guide.md`
+- `ia-robustness-guide.md`
 
 Canonical full-paper source:
 
@@ -92,7 +96,8 @@ Machine-readable manifests:
 ## High-Value File Map
 
 - Root runner scripts:
-  - `_run_full_replication.R`: main five-step replication entrypoint ending in LaTeX source assembly
+  - `_run_complete_replication.R`: unified main + IA replication (~81 min at 50k draws on a 24-core desktop)
+  - `_run_full_replication.R`: main six-step replication entrypoint (~65 min)
   - `_run_all_unconditional.R`: batch unconditional estimation across model specs
   - `_run_all_conditional.R`: batch time-varying estimation
   - `_run_paper_results.R`: unconditional tables and figures
@@ -110,6 +115,7 @@ Machine-readable manifests:
 - `tools/doctor.R`: public readiness check for packages, data, toolchain, and fast backends
 - `tools/run_figure1_simulation.R`: explicit regeneration path for the paper Figure 1 simulation outputs
 - `tools/*.ps1`, `tools/*.cmd`, `tools/*.sh`: public platform wrappers for setup, smoke runs, full replication, and paper build
+- `tools/audit_run.R`: post-run replication audit and manifest generation
 - `tools/validate_repo_docs.R`: doc and context drift check
 - `docs/manifests/`: source-of-truth CSV manifests for inputs and exhibits
 - `data/`: input data and cached intermediate data. Files here are gitignored.
