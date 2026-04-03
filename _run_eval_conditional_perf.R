@@ -18,7 +18,7 @@ gc()
 
 #### 1.1 Results Location -----------------------------------------------------
 # Root path where time-varying results are saved
-output_root    <- "C:/Users/ASUS/Documents/GitHub/co-pricing-factor-zoo/output/time_varying" 
+output_root    <- file.path(getwd(), "output", "time_varying")
 
 #### 1.2 Path Override --------------------------------------------------------
 # When TRUE, use the paths below instead of those stored in the metadata.
@@ -26,10 +26,10 @@ output_root    <- "C:/Users/ASUS/Documents/GitHub/co-pricing-factor-zoo/output/t
 path_override  <- FALSE
 
 # These paths are ONLY used when path_override = TRUE
-override_main_path     <- "C:/Users/ASUS/Documents/GitHub/co-pricing-factor-zoo"
-override_data_folder   <- "C:/Users/ASUS/Documents/GitHub/co-pricing-factor-zoo/data"
-override_code_folder   <- "C:/Users/ASUS/Documents/GitHub/co-pricing-factor-zoo/code_base"
-override_output_folder <- "C:/Users/ASUS/Documents/GitHub/co-pricing-factor-zoo/output"
+override_main_path     <- getwd()
+override_data_folder   <- file.path(getwd(), "data")
+override_code_folder   <- file.path(getwd(), "code_base")
+override_output_folder <- file.path(getwd(), "output")
 
 #### 1.3 Model Specification --------------------------------------------------
 # These parameters identify which results file to load
