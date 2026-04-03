@@ -6,6 +6,22 @@ Replication repository for [The Co-Pricing Factor Zoo](https://papers.ssrn.com/s
 
 ## Overview
 
+### AI-Assisted Workflows
+
+This repository is fully augmented for AI coding agents (Claude Code,
+Codex). Instead of reading docs and running scripts manually, you can
+drive the entire workflow conversationally:
+
+1. **Clone** the repo
+2. **`/onboard`** — the agent verifies R, compilers, packages, and data; fixes anything missing
+3. **`/replicate-paper`** — the agent runs the full pipeline, resumes on failure, and reports results
+4. **`/explain-paper`** — ask the agent to explain any table, figure, factor, or method in the paper
+
+No prior knowledge of the codebase is required. See
+[Additional Resources](#additional-resources) for full agent setup details.
+
+### Replication Summary
+
 The code in this replication package constructs all tables and figures in the
 main paper, Appendix, and Internet Appendix. Data are downloaded from a single public bundle hosted at
 [openbondassetpricing.com](https://openbondassetpricing.com). Two main scripts
