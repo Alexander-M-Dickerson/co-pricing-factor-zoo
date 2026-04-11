@@ -7,6 +7,7 @@
 | **Journal** | *Journal of Financial Economics* (Forthcoming) |
 | **SSRN** | <https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4589786> |
 | **ArXiv** | <https://arxiv.org/html/2604.04430v1> |
+| **Sample** | Bond and equity factors, 1986:01–2022:12 (*T* = 444 months) |
 | **Data** | [Open Source Bond Asset Pricing](https://openbondassetpricing.com/) |
 
 ## Overview
@@ -17,7 +18,7 @@ This repository is fully augmented for AI coding agents (Claude Code,
 Codex). Instead of reading docs and running scripts manually, you can
 drive the entire workflow conversationally:
 
-1. **Clone** the repo
+1. **Clone**: `git clone https://github.com/Alexander-M-Dickerson/co-pricing-factor-zoo.git && cd co-pricing-factor-zoo`
 2. **`/onboard`** — the agent verifies R, compilers, packages, and data; fixes anything missing
 3. **`/replicate-paper`** — the agent runs the full pipeline, resumes on failure, and reports results
 4. **`/explain-paper`** — ask the agent to explain any table, figure, factor, or method in the paper
@@ -257,7 +258,7 @@ The code is licensed under a Creative Commons Attribution-NonCommercial-ShareAli
 
 ## Instructions to Replicators
 
-1. Clone the repository: `git clone https://github.com/Alexander-M-Dickerson/co-pricing-factor-zoo.git`
+1. Clone the repository: `git clone https://github.com/Alexander-M-Dickerson/co-pricing-factor-zoo.git && cd co-pricing-factor-zoo`
 2. Run `tools/bootstrap_data.*` to download and extract the public data bundle into `data/`.
 3. Run `tools/bootstrap_packages.*` to install all required R packages.
 4. Run `tools/doctor.*` to verify the environment is ready.
