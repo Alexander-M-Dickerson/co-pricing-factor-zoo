@@ -173,6 +173,7 @@ pp_figure_table <- function(results,
   ## ---- 5.  Save figure -----------------------------------------------------
   save_file <- file.path(main_path, output_folder, fig_name)
   dir.create(dirname(save_file), recursive = TRUE, showWarnings = FALSE)
+  # @exhibit Figure 2 | IA posterior probability figures
   ggsave(save_file, g, width = width, height = height, units = "in")
   if (verbose) message("Plot exported → ", normalizePath(save_file))
 
@@ -288,6 +289,7 @@ pp_figure_table <- function(results,
   # ---- ensure target folder exists -----------------------------------------
   dir.create(dirname(tex_path), recursive = TRUE, showWarnings = FALSE)
 
+  # @exhibit Table A.2 | IA posterior probability tables
   writeLines(latex_lines, tex_path)
   if (verbose) message("LaTeX table exported → ", normalizePath(tex_path))
 

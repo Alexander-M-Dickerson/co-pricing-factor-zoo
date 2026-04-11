@@ -367,6 +367,7 @@ plot_cumulative_sr <- function(
   file_out <- file.path(main_path, output_folder, fig_name)
   dir.create(dirname(file_out), recursive = TRUE, showWarnings = FALSE)
 
+  # @exhibit Figure 13
   ggplot2::ggsave(file_out, plot = p,
                   width = width, height = height, units = units)
 

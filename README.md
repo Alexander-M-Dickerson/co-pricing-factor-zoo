@@ -261,30 +261,38 @@ The provided code reproduces:
 The complete exhibit-to-program mapping is in
 [docs/manifests/exhibits.csv](docs/manifests/exhibits.csv). Summary:
 
-| Figure/Table | Program | Generator | Output |
-|---|---|---|---|
-| Table 1 | `_run_paper_results.R` | `code_base/sr_tables.R` | `output/paper/tables/table_1_top5_factors.tex` |
-| Table 2 | `_run_paper_results.R` | `code_base/pricing_tables.R` | `output/paper/tables/table_2_is_pricing.tex` |
-| Table 3 | `_run_paper_results.R` | `code_base/pricing_tables.R` | `output/paper/tables/table_3_os_pricing.tex` |
-| Table 4 | `_run_paper_results.R` | `code_base/sr_tables.R` | `output/paper/tables/table_4_sr_by_factor_type.tex` |
-| Table 5 | `_run_paper_results.R` | `code_base/sr_tables.R` | `output/paper/tables/table_5_dr_vs_cf.tex` |
-| Table 6 | `_run_paper_results.R` + `_run_paper_conditional_results.R` | `code_base/trading_table.R` + `code_base/evaluate_performance_paper.R` | `output/paper/tables/table_6_trading.tex` |
-| Figure 1 | `_run_paper_results.R` | `code_base/figure1_simulation.R` | `output/paper/figures/Fig_01_*.jpeg` |
-| Figure 2 | `_run_paper_results.R` | `code_base/pp_figure_table.R` | `output/paper/figures/figure_2_posterior_probs_*.pdf` |
-| Figure 3 | `_run_paper_results.R` | `code_base/plot_nfac_sr.R` | `output/paper/figures/figure_3_nfac_sr_*.pdf` |
-| Figure 4 | `_run_paper_results.R` | `code_base/pp_bar_plots.R` | `output/paper/figures/figure_4_posterior_bars_*.pdf` |
-| Figure 5 | `_run_paper_results.R` | `code_base/plot_thousands_oos_densities.R` | `output/paper/figures/fig5_*.pdf` |
-| Figure 6 | `_run_paper_results.R` | `code_base/expanding_runs_plots.R` | `output/paper/figures/fig6a_*.pdf`, `fig6b_*.pdf` |
-| Figure 7 | `_run_paper_conditional_results.R` | `code_base/evaluate_performance_paper.R` | `output/paper/figures/fig7_oos_cumret.pdf` |
-| Figure 8 | `_run_paper_results.R` | `code_base/plot_thousands_oos_densities.R` | `output/paper/figures/fig8_*.pdf` |
-| Figure 9 | `_run_paper_results.R` | `code_base/plot_mean_vs_cov.R` | `output/paper/figures/fig9_*.pdf` |
-| Figure 10 | `_run_paper_results.R` | `code_base/fit_sdf_models.R` | `output/paper/figures/fig10_sdf_time_series_bma.pdf` |
-| Figure 11 | `_run_paper_results.R` | `code_base/fit_sdf_models.R` | `output/paper/figures/fig11_sdf_volatility_*.pdf` |
-| Figure 12 | `_run_paper_results.R` | `code_base/fit_sdf_models.R` | `output/paper/figures/fig12a_*.pdf`, `fig12b_*.pdf` |
-| Figure 13 | `_run_paper_results.R` | `code_base/plot_cumulative_sr.R` | `output/paper/figures/fig13_cum_sr_80pct.pdf` |
-| Table A.2 | `_run_paper_results.R` | `code_base/pp_figure_table.R` | `output/paper/tables/table_a1_posterior_probs_*.tex` |
-| IA Tables 1-7 | `ia/_run_ia_results.R` | Various `code_base/` helpers | `ia/output/paper/tables/table_ia_*.tex` |
-| IA Figures | `ia/_run_ia_results.R` | Various `code_base/` helpers | `ia/output/paper/figures/*.pdf` |
+| Figure/Table | Program | Generator | Line | Output |
+|---|---|---|---|---|
+| Table 1 | `_run_paper_results.R` | `code_base/sr_tables.R` | 191 | `output/paper/tables/table_1_top5_factors.tex` |
+| Table 2 | `_run_paper_results.R` | `code_base/pricing_tables.R` | 366 | `output/paper/tables/table_2_is_pricing.tex` |
+| Table 3 | `_run_paper_results.R` | `code_base/pricing_tables.R` | 462 | `output/paper/tables/table_3_os_pricing.tex` |
+| Table 4 | `_run_paper_results.R` | `code_base/sr_tables.R` | 318 | `output/paper/tables/table_4_sr_by_factor_type.tex` |
+| Table 5 | `_run_paper_results.R` | `code_base/sr_tables.R` | 436 | `output/paper/tables/table_5_dr_vs_cf.tex` |
+| Table 6 Panel A | `_run_paper_results.R` | `code_base/trading_table.R` | 272, 278 | `output/paper/tables/table_6_panel_a_trading.{csv,tex}` |
+| Table 6 Panel B | `_run_paper_conditional_results.R` | `code_base/evaluate_performance_paper.R` | 601 | `output/paper/tables/table_6_trading.tex` |
+| Figure 1 | `_run_paper_results.R` | `code_base/figure1_simulation.R` | 500, 510, 520 | `output/paper/figures/Fig_01_*.jpeg` |
+| Figure 2 | `_run_paper_results.R` | `code_base/pp_figure_table.R` | 177 | `output/paper/figures/figure_2_posterior_probs_*.pdf` |
+| Figure 3 | `_run_paper_results.R` | `code_base/plot_nfac_sr.R` | 243 | `output/paper/figures/figure_3_nfac_sr_*.pdf` |
+| Figure 4 | `_run_paper_results.R` | `code_base/pp_bar_plots.R` | 239 | `output/paper/figures/figure_4_posterior_bars_*.pdf` |
+| Figure 5 | `_run_paper_results.R` | `code_base/plot_thousands_oos_densities.R` | 238 | `output/paper/figures/fig5_*.pdf` |
+| Figure 6 Panel A | `_run_paper_results.R` | `code_base/expanding_runs_plots.R` | 187 | `output/paper/figures/fig6a_*.pdf` |
+| Figure 6 Panel B | `_run_paper_results.R` | `code_base/expanding_runs_plots.R` | 655 | `output/paper/figures/fig6b_*.pdf` |
+| Figure 7 | `_run_paper_conditional_results.R` | `code_base/evaluate_performance_paper.R` | 621 | `output/paper/figures/fig7_oos_cumret.pdf` |
+| Figure 8 | `_run_paper_results.R` | `code_base/plot_thousands_oos_densities.R` | 238 | `output/paper/figures/fig8_*.pdf` |
+| Figure 9 | `_run_paper_results.R` | `code_base/plot_mean_vs_cov.R` | 253 | `output/paper/figures/fig9_*.pdf` |
+| Figure 10 | `_run_paper_results.R` | `code_base/fit_sdf_models.R` | 295 | `output/paper/figures/fig10_sdf_time_series_bma.pdf` |
+| Figure 11 | `_run_paper_results.R` | `code_base/fit_sdf_models.R` | 387 | `output/paper/figures/fig11_sdf_volatility_*.pdf` |
+| Figure 12 Panel A | `_run_paper_results.R` | `code_base/fit_sdf_models.R` | 514 | `output/paper/figures/fig12a_*.pdf` |
+| Figure 12 Panel B | `_run_paper_results.R` | `code_base/fit_sdf_models.R` | 637 | `output/paper/figures/fig12b_*.pdf` |
+| Figure 13 | `_run_paper_results.R` | `code_base/plot_cumulative_sr.R` | 371 | `output/paper/figures/fig13_cum_sr_80pct.pdf` |
+| Table A.2 | `_run_paper_results.R` | `code_base/pp_figure_table.R` | 293 | `output/paper/tables/table_a1_posterior_probs_*.tex` |
+| Figure IA.17a | `_run_paper_results.R` | `code_base/expanding_runs_plots.R` | 433 | `output/paper/figures/fig_ia_17a_*.pdf` |
+| Figure IA.17b | `_run_paper_results.R` | `code_base/expanding_runs_plots.R` | 874 | `output/paper/figures/fig_ia_17b_*.pdf` |
+
+Line numbers refer to the `# @exhibit` tagged output statements in each generator
+script. Figures 5 and 8 share the same code path (called with different data).
+The complete IA exhibit-to-program mapping (with line numbers) is in
+[docs/manifests/exhibits.csv](docs/manifests/exhibits.csv).
 
 ## References
 

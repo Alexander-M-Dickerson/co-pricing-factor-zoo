@@ -362,6 +362,7 @@ generate_table_2 <- function(pricing_results,
   if (!is.null(output_path)) {
     tex_file <- file.path(output_path, "table_2_is_pricing.tex")
     dir.create(dirname(tex_file), recursive = TRUE, showWarnings = FALSE)
+    # @exhibit Table 2
     writeLines(latex_lines, tex_file)
     if (verbose) message("  Saved: ", tex_file)
   }
@@ -457,6 +458,7 @@ generate_table_3 <- function(pricing_results,
   if (!is.null(output_path)) {
     tex_file <- file.path(output_path, "table_3_os_pricing.tex")
     dir.create(dirname(tex_file), recursive = TRUE, showWarnings = FALSE)
+    # @exhibit Table 3
     writeLines(latex_lines, tex_file)
     if (verbose) message("  Saved: ", tex_file)
   }

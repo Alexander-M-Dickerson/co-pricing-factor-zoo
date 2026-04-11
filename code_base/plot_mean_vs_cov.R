@@ -249,6 +249,7 @@ plot_mean_vs_cov <- function(
   export_plot <- function(pg, suffix) {
     fname <- paste0(figure_prefix, "_", suffix, ".pdf")
     fpath <- file.path(output_path, fname)
+    # @exhibit Figure 9
     ggsave(fpath,
            plot   = pg,
            device = function(filename, ...) {

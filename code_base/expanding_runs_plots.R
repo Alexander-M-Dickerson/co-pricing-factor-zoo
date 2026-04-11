@@ -183,6 +183,7 @@ expanding_runs_plots <- function(
   output_file <- file.path(output_path,
                            paste0(figure_prefix, "_top", top_n, "_prob_psi", psi_label, ".pdf"))
 
+  # @exhibit Figure 6 Panel A
   suppressWarnings({
     ggsave(output_file, plot = p,
            width = plot_width, height = plot_height, units = plot_units)
@@ -428,6 +429,7 @@ expanding_runs_plots_lambda <- function(
   output_file <- file.path(output_path,
                            paste0(figure_prefix, "_top", top_n, "_lambda_psi", psi_label, ".pdf"))
 
+  # @exhibit Figure IA.17a
   suppressWarnings({
     ggsave(output_file, plot = p,
            width = plot_width, height = plot_height, units = plot_units)
@@ -649,6 +651,7 @@ expanding_runs_plots_reverse <- function(
   output_file <- file.path(output_path,
                            paste0(figure_prefix, "_top", top_n, "_prob_psi", psi_label, ".pdf"))
 
+  # @exhibit Figure 6 Panel B
   suppressWarnings({
     ggsave(output_file, plot = p,
            width = plot_width, height = plot_height, units = plot_units)
@@ -867,6 +870,7 @@ expanding_runs_plots_lambda_reverse <- function(
   output_file <- file.path(output_path,
                            paste0(figure_prefix, "_top", top_n, "_lambda_psi", psi_label, ".pdf"))
 
+  # @exhibit Figure IA.17b
   suppressWarnings({
     ggsave(output_file, plot = p,
            width = plot_width, height = plot_height, units = plot_units)

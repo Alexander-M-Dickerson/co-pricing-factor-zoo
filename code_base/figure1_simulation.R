@@ -496,6 +496,7 @@ save_figure1_panel_plots <- function(plots, output_dir, file_stub) {
   # directory: the BMA panels were saved at 6 x 4 inches and the factor
   # panels at 6 x 3.5 inches. With dpi = 300 that yields the 1800 x 1200
   # and 1800 x 1050 JPEGs the manuscript TeX expects.
+  # @exhibit Figure 1 Panel A (BMA MPR)
   ggplot2::ggsave(
     output_paths$bma_mpr,
     plot = plots$bma_mpr,
@@ -505,6 +506,7 @@ save_figure1_panel_plots <- function(plots, output_dir, file_stub) {
     dpi = 300,
     device = "jpeg"
   )
+  # @exhibit Figure 1 Panel B (factor probs)
   ggplot2::ggsave(
     output_paths$factor_probs,
     plot = plots$factor_probs,
@@ -514,6 +516,7 @@ save_figure1_panel_plots <- function(plots, output_dir, file_stub) {
     dpi = 300,
     device = "jpeg"
   )
+  # @exhibit Figure 1 Panel C (factor MPRs)
   ggplot2::ggsave(
     output_paths$factor_mprs,
     plot = plots$factor_mprs,
@@ -724,6 +727,7 @@ publish_figure1_assets <- function(source_mode = c("fixed", "generated"),
   }
 
   tex_path <- file.path(latex_dir, "fig1_simulation.tex")
+  # @exhibit Figure 1 (LaTeX assembly)
   writeLines(build_figure1_tex(graphics_prefix = "../figures"), tex_path)
 
   list(

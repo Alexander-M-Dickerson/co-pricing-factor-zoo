@@ -187,6 +187,7 @@ generate_table_1 <- function(res_tbl_top,
   if (!is.null(output_path)) {
     tex_file <- file.path(output_path, "table_1_top5_factors.tex")
     dir.create(dirname(tex_file), recursive = TRUE, showWarnings = FALSE)
+    # @exhibit Table 1
     writeLines(latex_lines, tex_file)
     if (verbose) message("  Saved: ", tex_file)
   }
@@ -313,6 +314,7 @@ generate_table_4 <- function(res_tbl_top,
   if (!is.null(output_path)) {
     tex_file <- file.path(output_path, "table_4_sr_by_factor_type.tex")
     dir.create(dirname(tex_file), recursive = TRUE, showWarnings = FALSE)
+    # @exhibit Table 4
     writeLines(latex_lines, tex_file)
     if (verbose) message("  Saved: ", tex_file)
   }
@@ -430,6 +432,7 @@ generate_table_5 <- function(res_tbl_top,
   if (!is.null(output_path)) {
     tex_file <- file.path(output_path, "table_5_dr_vs_cf.tex")
     dir.create(dirname(tex_file), recursive = TRUE, showWarnings = FALSE)
+    # @exhibit Table 5
     writeLines(latex_lines, tex_file)
     if (verbose) message("  Saved: ", tex_file)
   }
@@ -592,6 +595,7 @@ Test assets are the Treasury components of the 50 corporate bond portfolios in t
   if (!is.null(output_path)) {
     tex_file <- file.path(output_path, table_name)
     dir.create(dirname(tex_file), recursive = TRUE, showWarnings = FALSE)
+    # @exhibit Treasury SR Decomposition
     writeLines(latex_lines, tex_file)
     if (verbose) message("  Saved: ", tex_file)
   }

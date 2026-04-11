@@ -291,6 +291,7 @@ fit_sdf_models <- function(
   }
 
   p_fig10 <- plot_ts_bma()
+  # @exhibit Figure 10
   ggplot2::ggsave(
     file.path(output_path, "fig10_sdf_time_series_bma.pdf"),
     p_fig10, width = ts_width, height = ts_height, units = "in"
@@ -382,6 +383,7 @@ fit_sdf_models <- function(
       ggplot2::annotate("text", x = sq_x + 200, y = sq_y,
                         hjust = 0, size = 4.2, label = "NBER recessions")
 
+    # @exhibit Figure 11
     ggplot2::ggsave(
       file.path(output_path, "fig11_sdf_volatility_bma_capmb_ff5.pdf"),
       p_fig11, width = ts_width, height = ts_height, units = "in"
@@ -508,6 +510,7 @@ fit_sdf_models <- function(
           legend.box.background = ggplot2::element_blank()
         )
 
+      # @exhibit Figure 12 Panel A
       suppressWarnings(
         ggplot2::ggsave(
           file.path(output_path, paste0("fig12a_predictability1m_", tolower(label), ".pdf")),
@@ -630,6 +633,7 @@ fit_sdf_models <- function(
           legend.box.background = ggplot2::element_blank()
         )
 
+      # @exhibit Figure 12 Panel B
       suppressWarnings(
         ggplot2::ggsave(
           file.path(output_path, paste0("fig12b_predictability12m_", tolower(label), ".pdf")),

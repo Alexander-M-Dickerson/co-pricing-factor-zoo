@@ -499,6 +499,7 @@ if (length(is_pricing_results) > 0) {
                    "\\end{table}")
 
   is_tex_path <- file.path(tables_dir, "table_ia_6_is_pricing.tex")
+  # @exhibit Table IA.6
   writeLines(latex_lines, is_tex_path)
   if (verbose) message("  Saved: ", is_tex_path)
 }
@@ -741,6 +742,7 @@ if (all(sapply(os_pricing_collected, is.null))) {
                       "\\end{table}")
 
   os_tex_path <- file.path(tables_dir, "table_ia_7_os_pricing.tex")
+  # @exhibit Table IA.7
   writeLines(os_latex_lines, os_tex_path)
   if (verbose) message("  Saved: ", os_tex_path)
 }
@@ -1189,6 +1191,7 @@ if (!has_dur_results) {
 
   # Write output
   dur_tex_path <- file.path(tables_dir, "table_duration_pricing.tex")
+  # @exhibit Duration Pricing
   writeLines(dur_latex_lines, dur_tex_path)
   if (verbose) message("  Saved: ", dur_tex_path)
 }
@@ -1983,6 +1986,7 @@ if (!file.exists(sparse_rdata_path)) {
                                 "\\end{table}")
 
         sparse_tex_path <- file.path(tables_dir, "table_sparse_pricing.tex")
+        # @exhibit Sparse Pricing
         writeLines(sparse_latex_lines, sparse_tex_path)
         if (verbose) message("  Saved: ", sparse_tex_path)
       } else {
@@ -2292,6 +2296,7 @@ if (!file.exists(isos_rdata_path)) {
                               "\\end{table}")
 
         isos_tex_path <- file.path(tables_dir, "table_isos_switch_pricing.tex")
+        # @exhibit ISOS Switch Pricing
         writeLines(isos_latex_lines, isos_tex_path)
         if (verbose) message("  Saved: ", isos_tex_path)
       } else {

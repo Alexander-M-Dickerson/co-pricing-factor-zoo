@@ -235,6 +235,7 @@ pp_bar_plots <- function(results,
   fig_path <- file.path(main_path, output_folder, fig_name)
   dir.create(dirname(fig_path), recursive = TRUE, showWarnings = FALSE)
 
+  # @exhibit Figure 4 | IA treasury/weighted analogues
   ggsave(fig_path, combined, width = width, height = height, units = "in")
 
   if (verbose) {

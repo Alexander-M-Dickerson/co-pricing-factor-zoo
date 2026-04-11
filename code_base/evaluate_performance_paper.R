@@ -597,6 +597,7 @@ evaluate_performance_paper <- function(
   }
 
   table_file <- file.path(tables_dir, "table_6_trading.tex")
+  # @exhibit Table 6 Panel B
   writeLines(latex_table, table_file)
   if (verbose) cat("Table 6 (combined) saved to: ", table_file, "\n")
 
@@ -616,6 +617,7 @@ evaluate_performance_paper <- function(
 
       figures_base <- file.path(output_base, "paper")
 
+      # @exhibit Figure 7
       cumret_plot <- plot_cumret(
         df_scaled          = oos_returns_scaled,
         factor_vec         = factor_vec,

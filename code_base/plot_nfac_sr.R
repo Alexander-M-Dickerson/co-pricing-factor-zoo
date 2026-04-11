@@ -239,6 +239,7 @@ plot_nfac_sr <- function(results,
   }
 
   save_file <- file.path(out_path, fig_name)
+  # @exhibit Figure 3 | IA treasury analogue
   ggplot2::ggsave(save_file, combined,
                   width = width, height = height, units = "in")
 

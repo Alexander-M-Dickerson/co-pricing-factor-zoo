@@ -268,11 +268,13 @@ generate_table_6_panel_a <- function(IS_AP,
 
   # Save CSV
   csv_path <- file.path(output_path, "table_6_panel_a_trading.csv")
+  # @exhibit Table 6 Panel A (CSV)
   write.csv(stats_df, csv_path, row.names = TRUE)
   if (verbose) message("  Saved: ", csv_path)
 
   # Save LaTeX
   tex_path <- file.path(output_path, "table_6_panel_a_trading.tex")
+  # @exhibit Table 6 Panel A (LaTeX)
   writeLines(latex_table, tex_path)
   if (verbose) message("  Saved: ", tex_path)
 

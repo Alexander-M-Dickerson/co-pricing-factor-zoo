@@ -234,6 +234,7 @@ plot_thousands_oos_densities <- function(thousands_oos_results,
       filepath <- file.path(output_path, filename)
 
       # Suppress warnings about removed rows or scale issues
+      # @exhibit Figure 5 | Figure 8 (same code path, different data)
       suppressWarnings(
         ggplot2::ggsave(filepath, plot = p, width = width, height = height, device = "pdf")
       )
