@@ -16,6 +16,7 @@ Read these sources in order:
 6. `tools/bootstrap_packages.R`
 7. `tools/bootstrap_data.R`
 8. `tools/doctor.R`
+9. `tools/rebuild_fast_backends.*` (platform wrappers that compile the C++ backends)
 
 ## Use When
 
@@ -48,7 +49,7 @@ Read these sources in order:
 ## Workflow
 
 1. Print `Scanning your environment...` before starting.
-2. Resolve the full `Rscript` path before assuming `Rscript` is callable.
+2. Resolve the full `Rscript` path before assuming `Rscript` is callable. On Windows, prefer the platform wrappers (`tools/*.ps1`, `tools/*.cmd`) which implement robust Rscript fallback discovery; on macOS/Linux, ensure `Rscript` is on the shell PATH.
 3. Use `tools/bootstrap_packages.R --check` or the platform wrapper to determine package gaps, and install them when the task is setup rather than audit-only.
 4. Use `docs/manifests/data-files.csv` and `docs/manifests/data-sources.csv` to determine whether missing required files are covered by the canonical public bundle.
 5. If bundle-managed required files are missing, run `tools/bootstrap_data.R` or the platform wrapper instead of telling the user to place files manually.

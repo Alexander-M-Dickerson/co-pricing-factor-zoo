@@ -1,8 +1,13 @@
 # README for "The Co-Pricing Factor Zoo"
 
-(Dickerson, Julliard, and Mueller, *Journal of Financial Economics*, Forthcoming)
-
-Replication repository for [The Co-Pricing Factor Zoo](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4589786).
+| | |
+|---|---|
+| **Paper** | [*The Co-Pricing Factor Zoo*](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4589786) |
+| **Authors** | [Alexander Dickerson](https://alexdickerson.com/), [Christian Julliard](https://christianjulliard.net/), and [Philippe Mueller](https://sites.google.com/view/philippemueller) |
+| **Journal** | *Journal of Financial Economics* (Forthcoming) |
+| **SSRN** | <https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4589786> |
+| **ArXiv** | <https://arxiv.org/html/2604.04430v1> |
+| **Data** | [Open Source Bond Asset Pricing](https://openbondassetpricing.com/) |
 
 ## Overview
 
