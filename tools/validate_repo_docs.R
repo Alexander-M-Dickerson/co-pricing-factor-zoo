@@ -833,6 +833,47 @@ for (entry in entrypoints) {
   expect_true(check$status == 0, success, failure)
 }
 
+# ---- MANIFEST.md vs git ls-files cross-check ----------------------------
+manifest_path <- file.path(repo_root, "MANIFEST.md")
+if (file.exists(manifest_path)) {
+  manifest_lines <- readLines(manifest_path, warn = FALSE, encoding = "UTF-8")
+
+  # Extract file paths: lines inside ``` blocks that look like paths
+  in_block <- FALSE
+  manifest_files <- character()
+  for (ln in manifest_lines) {
+    if (grepl("^```", ln)) { in_block <- !in_block; next }
+    if (!in_block) next
+    # Strip trailing comment (# ...) and whitespace
+    path <- sub("\\s*#.*$", "", ln)
+    path <- trimws(path)
+    if (nzchar(path)) manifest_files <- c(manifest_files, path)
+  }
+
+  # Get tracked files via git
+  tracked <- system2("git", c("-C", repo_root, "ls-files"), stdout = TRUE, stderr = FALSE)
+  tracked <- sort(tracked)
+  manifest_files <- sort(manifest_files)
+
+  in_manifest_not_tracked <- setdiff(manifest_files, tracked)
+  tracked_not_in_manifest <- setdiff(tracked, manifest_files)
+
+  expect_true(
+    length(in_manifest_not_tracked) == 0,
+    "All MANIFEST.md entries are tracked in git.",
+    paste0("MANIFEST.md lists files not tracked in git: ",
+           paste(head(in_manifest_not_tracked, 10), collapse = ", "))
+  )
+  expect_true(
+    length(tracked_not_in_manifest) == 0,
+    "All tracked files are listed in MANIFEST.md.",
+    paste0("Tracked files missing from MANIFEST.md (accidental addition?): ",
+           paste(head(tracked_not_in_manifest, 10), collapse = ", "))
+  )
+} else {
+  expect_true(FALSE, "MANIFEST.md exists.", "MANIFEST.md is missing from repo root.")
+}
+
 if (length(problems) > 0) {
   cat("\nValidation failed with ", length(problems), " problem(s).\n", sep = "")
   quit(save = "no", status = 1)

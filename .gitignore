@@ -56,6 +56,18 @@ logs/
 __pycache__/
 .cache/
 
+# Internal maintainer notes
+TODO.md
+code_review.md
+
+# Stale drafts and snippets
+rep_example.txt
+create_cum_sr.txt
+
+# Generated IA LaTeX snippets (not used by ia/_create_ia_latex.R)
+ia/dur_table.txt
+ia/figures.txt
+
 # Maintainer scratch scripts
 testing/inspect_dr_cf.R
 testing/inspect_dr_cf2.R
