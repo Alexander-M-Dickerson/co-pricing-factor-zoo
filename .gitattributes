@@ -1,0 +1,41 @@
+# Auto-detect text files and normalize line endings
+* text=auto
+
+# R source files — always LF
+*.R text eol=lf
+*.Rmd text eol=lf
+*.Rproj text eol=lf
+
+# Data and config — always LF
+*.csv text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+
+# Documentation — always LF
+*.md text eol=lf
+*.txt text eol=lf
+*.tex text eol=lf
+*.bib text eol=lf
+*.bst text eol=lf
+
+# Shell scripts — always LF
+*.sh text eol=lf
+
+# Windows scripts — always CRLF
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# Binary files — no normalization
+*.RData binary
+*.Rdata binary
+*.rds binary
+*.rda binary
+*.jpeg binary
+*.jpg binary
+*.png binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.tar binary

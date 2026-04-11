@@ -27,12 +27,13 @@
 args <- commandArgs(trailingOnly = TRUE)
 
 ndraws    <- 50000
-quick     <- FALSE
-skip_main <- FALSE
-skip_ia   <- FALSE
-skip_pdf  <- FALSE
-fail_fast <- FALSE
-show_help <- FALSE
+quick          <- FALSE
+skip_main      <- FALSE
+skip_ia        <- FALSE
+skip_pdf       <- FALSE
+fail_fast      <- FALSE
+skip_preflight <- FALSE
+show_help      <- FALSE
 
 for (arg in args) {
   if (grepl("^--ndraws=", arg)) {
@@ -48,6 +49,8 @@ for (arg in args) {
     skip_pdf <- TRUE
   } else if (identical(arg, "--fail-fast")) {
     fail_fast <- TRUE
+  } else if (identical(arg, "--skip-preflight")) {
+    skip_preflight <- TRUE
   } else if (arg %in% c("--help", "-h")) {
     show_help <- TRUE
   }
@@ -67,6 +70,7 @@ OPTIONS:
   --skip-ia         Skip the Internet Appendix pipeline
   --skip-pdf        Skip PDF compilation in both pipelines
   --fail-fast       Stop immediately if the main pipeline fails (default: continue to IA)
+  --skip-preflight  Skip the pre-flight environment check
   --help            Show this help message
 
 EXAMPLES:
@@ -99,6 +103,28 @@ cat(sprintf("  Main paper:  %s\n", if (skip_main) "SKIP" else "YES"))
 cat(sprintf("  IA:          %s\n", if (skip_ia) "SKIP" else "YES"))
 cat(sprintf("  PDF:         %s\n", if (skip_pdf) "SKIP" else "YES"))
 cat("\n")
+
+# ---- Pre-flight environment check ----
+if (!skip_preflight) {
+  cat("Pre-flight check ...\n")
+  doctor_exit <- system2(
+    repo_rscript,
+    args = c(file.path("tools", "doctor.R"), "--check-only"),
+    stdout = FALSE, stderr = FALSE
+  )
+  if (doctor_exit != 0) {
+    cat("\n")
+    cat("*** Pre-flight check FAILED. ***\n")
+    cat("Run the following to diagnose:\n")
+    cat("  Rscript tools/doctor.R --check-only\n\n")
+    cat("Common fixes:\n")
+    cat("  Rscript tools/bootstrap_data.R       # download data\n")
+    cat("  Rscript tools/bootstrap_packages.R    # install packages\n\n")
+    cat("To bypass this check: --skip-preflight\n")
+    quit(status = 1)
+  }
+  cat("Pre-flight check passed.\n\n")
+}
 
 overall_start <- Sys.time()
 main_time <- NA_real_
