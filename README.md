@@ -36,6 +36,29 @@ Current coverage:
 - all main Appendix tables and figures
 - Internet Appendix results
 
+### Quick Start
+
+```bash
+# 1. Clone
+git clone https://github.com/Alexander-M-Dickerson/co-pricing-factor-zoo.git
+cd co-pricing-factor-zoo
+
+# 2. Bootstrap data and packages
+Rscript tools/bootstrap_data.R
+Rscript tools/bootstrap_packages.R
+
+# 3. Verify environment
+Rscript tools/doctor.R --check-only
+
+# 4. Reproduce all tables and figures (~81 min on 24 cores)
+Rscript _run_complete_replication.R
+```
+
+Output: `output/paper/latex/djm_main.pdf` (main paper) and
+`ia/output/paper/latex/ia_main.pdf` (Internet Appendix).
+See [QUICKSTART.md](QUICKSTART.md) for platform wrappers, reduced-draw
+smoke paths, and troubleshooting.
+
 ## Data Availability and Provenance Statements
 
 ### Statement about Rights
@@ -88,6 +111,11 @@ inventory of every file, its purpose, and its source is provided in
 Figure 1 simulation fixtures under `misc/figure1_simulation/` are tracked in
 the repository and ship with the clone. No separate download is needed for
 these files.
+
+**Format and size.** All data files are flat CSV (UTF-8, first column = date
+in YYYY-MM-DD format) except `variance_decomp_results_vuol.rds` and
+`ia/data/w_all.rds` which are R-native binary (RDS). The complete data bundle
+is ~15 MB compressed.
 
 ## Computational Requirements
 
@@ -179,21 +207,40 @@ files) is under 1 GB.
 
 ## Description of Programs/Code
 
-- `_run_complete_replication.R`: unified entry point that runs both main and IA pipelines
-- `_run_full_replication.R`: main six-step replication (estimation, tables/figures, LaTeX, PDF)
-- `_run_all_unconditional.R`: batch unconditional estimation across 7 model specifications
-- `_run_all_conditional.R`: batch time-varying estimation (forward and backward directions)
-- `_run_paper_results.R`: generates all unconditional tables and figures
-- `_run_paper_conditional_results.R`: generates conditional paper outputs (Table 6 Panel B, Figure 7)
-- `_create_djm_tabs_figs.R`: assembles final LaTeX document tree
-- `ia/_run_ia_full.R`: unified IA pipeline (estimation, outputs, LaTeX, PDF)
-- `ia/_run_ia_estimation.R`: estimates 9 IA robustness models
-- `ia/_run_ia_results.R`: generates IA tables and figures
-- `ia/_create_ia_latex.R`: assembles IA LaTeX document tree
-- `code_base/`: reusable local implementation modules (MCMC estimation, pricing, plotting)
-- `BayesianFactorZoo/`: local copy of the upstream BHJ (2023) R package
-- `tools/`: setup, bootstrap, and maintenance utilities
-- `testing/`: targeted validation and benchmark scripts
+### Repository Layout
+
+```
+co-pricing-factor-zoo/
+├── _run_complete_replication.R       # Single-command full replication
+├── _run_full_replication.R           # Main paper pipeline (Steps 1-6)
+├── _run_all_unconditional.R          # Step 1: batch unconditional estimation (7 models)
+├── _run_all_conditional.R            # Step 2: batch time-varying estimation
+├── _run_paper_results.R              # Step 3: generate all unconditional tables & figures
+├── _run_paper_conditional_results.R  # Step 4: conditional outputs (Table 6B, Figure 7)
+├── _create_djm_tabs_figs.R           # Step 5: LaTeX assembly
+├── code_base/                        # Reusable modules (MCMC, pricing, plotting)
+├── BayesianFactorZoo/                # Local copy of BHJ (2023) R package
+├── data/                             # Input data (CSV, bootstrapped from public bundle)
+├── ia/                               # Internet Appendix pipeline and outputs
+│   ├── _run_ia_full.R                # IA unified pipeline
+│   ├── _run_ia_estimation.R          # IA estimation (9 models)
+│   ├── _run_ia_results.R             # IA tables & figures
+│   └── _create_ia_latex.R            # IA LaTeX assembly
+├── output/                           # Generated outputs
+│   └── paper/
+│       ├── tables/                   # LaTeX tables (.tex)
+│       ├── figures/                  # PDF/JPEG figures
+│       └── latex/                    # Assembled LaTeX → djm_main.pdf
+├── tools/                            # Setup, bootstrap, and maintenance utilities
+├── testing/                          # Validation and benchmark scripts
+├── docs/                             # Manifests, agent context, paper text
+│   ├── manifests/                    # exhibits.csv, data-files.csv, code-map.md
+│   └── agent-context/                # Structured context for AI agents
+├── misc/                             # Figure 1 simulation fixtures
+├── QUICKSTART.md                     # Detailed human setup guide
+├── AGENTS.md                         # AI agent onboarding
+└── CLAUDE.md                         # Claude-specific project context
+```
 
 A complete call graph mapping every script to its sourced dependencies is
 provided in [docs/manifests/code-map.md](docs/manifests/code-map.md).
