@@ -76,7 +76,7 @@ get_environment_info <- function() {
 
   required_packages <- c(
     # Data manipulation
-    "lubridate", "dplyr", "tidyr", "purrr", "tibble", "data.table", "rlang",
+    "lubridate", "dplyr", "tidyr", "purrr", "tibble", "data.table",
     # Visualization
     "ggplot2", "RColorBrewer", "scales", "patchwork",
     # Parallel processing

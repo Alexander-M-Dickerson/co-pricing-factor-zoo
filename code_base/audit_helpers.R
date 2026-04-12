@@ -17,7 +17,7 @@
 
 audit_environment_info <- function() {
   pkgs <- c(
-    "lubridate", "dplyr", "tidyr", "purrr", "tibble", "data.table", "rlang",
+    "lubridate", "dplyr", "tidyr", "purrr", "tibble", "data.table",
     "ggplot2", "RColorBrewer", "scales", "patchwork",
     "parallel", "doParallel", "foreach", "doRNG",
     "MASS", "Matrix", "matrixStats", "Hmisc", "proxyC",
