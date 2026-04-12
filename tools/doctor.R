@@ -341,10 +341,14 @@ main <- function() {
   print_section("Fast Backends")
   print(backend_status, row.names = FALSE)
   if (!all(backend_status$loaded)) {
-    cat(
-      "\nBackend note: if compilation fails in a managed or sandboxed terminal, retry the doctor in a normal PowerShell or shell before changing repo code.\n",
-      sep = ""
-    )
+    cat("\nBackend note: compilation requires a C++ toolchain.\n")
+    if (.Platform$OS.type != "windows") {
+      cat("  Linux: sudo apt install build-essential r-base-dev\n")
+      cat("  macOS: xcode-select --install\n")
+    } else {
+      cat("  Windows: Install Rtools from https://cran.r-project.org/bin/windows/Rtools/\n")
+    }
+    cat("If compilation fails in a sandboxed terminal, retry from a normal shell.\n")
   }
 
   print_section("Execution Surface")

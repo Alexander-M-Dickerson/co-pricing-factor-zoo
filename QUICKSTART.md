@@ -9,6 +9,7 @@ Recommended human shells:
 - Windows Command Prompt: fully supported
 - Posit/RStudio Terminal: supported if you prefer staying inside Posit
 - macOS Terminal (`zsh` or `bash`): best default on macOS
+- Linux Terminal (`bash`): best default on Linux
 
 Human default:
 - use the public wrappers first
@@ -74,8 +75,8 @@ This stage should leave you with:
 Windows PowerShell:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File tools\bootstrap_data.ps1
 powershell -ExecutionPolicy Bypass -File tools\bootstrap_packages.ps1
+powershell -ExecutionPolicy Bypass -File tools\bootstrap_data.ps1
 powershell -ExecutionPolicy Bypass -File tools\doctor.ps1 --check-only
 powershell -ExecutionPolicy Bypass -File tools\rebuild_fast_backends.ps1
 ```
@@ -83,17 +84,17 @@ powershell -ExecutionPolicy Bypass -File tools\rebuild_fast_backends.ps1
 Windows Command Prompt:
 
 ```bat
-tools\bootstrap_data.cmd
 tools\bootstrap_packages.cmd
+tools\bootstrap_data.cmd
 tools\doctor.cmd --check-only
 tools\rebuild_fast_backends.cmd
 ```
 
-macOS Terminal:
+macOS or Linux Terminal:
 
 ```bash
-bash tools/bootstrap_data.sh
 bash tools/bootstrap_packages.sh
+bash tools/bootstrap_data.sh
 bash tools/doctor.sh --check-only
 bash tools/rebuild_fast_backends.sh
 ```
@@ -101,8 +102,8 @@ bash tools/rebuild_fast_backends.sh
 Raw `Rscript` equivalent for the setup checks:
 
 ```bash
-Rscript tools/bootstrap_data.R
 Rscript tools/bootstrap_packages.R
+Rscript tools/bootstrap_data.R
 Rscript tools/doctor.R --check-only
 ```
 

@@ -192,7 +192,7 @@ run_bayesian_mcmc <- function(
   
   ## ---- 1. Dependencies ------------------------------------------------------
   pkgs <- c("BayesianFactorZoo", "MASS", "doParallel", "doRNG",
-            "foreach", "compiler", "parallel", "lubridate", "PerformanceAnalytics")
+            "foreach", "compiler", "parallel", "lubridate")
   missing_pkgs <- pkgs[!sapply(pkgs, requireNamespace, quietly = TRUE)]
   if (length(missing_pkgs) > 0) {
     stop("Required packages not installed: ", paste(missing_pkgs, collapse = ", "),

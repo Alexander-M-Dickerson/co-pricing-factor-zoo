@@ -29,7 +29,6 @@ purrr                  1.0.2
 tibble                 3.2.1
 data.table             1.16.2
 reshape2               1.4.4
-rlang                  1.1.4
 lubridate              1.9.3
 
 # Visualization
@@ -46,9 +45,7 @@ doRNG                  1.8.6.1
 processx               3.8.6
 
 # Time-Series and Volatility
-PerformanceAnalytics   2.0.8
 rugarch                1.5.1
-rmgarch                1.0.9
 forecast               8.23.0
 
 # Output Formatting

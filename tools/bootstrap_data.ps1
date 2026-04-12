@@ -40,6 +40,12 @@ function Resolve-Rscript {
 }
 
 $rscript = Resolve-Rscript
+Write-Host "Using Rscript: $rscript"
+& $rscript --version 2>&1 | Out-Null
+if ($LASTEXITCODE -ne 0) {
+  throw "Rscript found but failed to run. Check your R installation."
+}
+
 $scriptPath = Join-Path $PSScriptRoot "bootstrap_data.R"
 
 & $rscript $scriptPath @ForwardArgs

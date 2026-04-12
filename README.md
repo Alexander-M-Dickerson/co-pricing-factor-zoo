@@ -49,9 +49,10 @@ Current coverage:
 git clone https://github.com/Alexander-M-Dickerson/co-pricing-factor-zoo.git
 cd co-pricing-factor-zoo
 
-# 2. Bootstrap data and packages
-Rscript tools/bootstrap_data.R
+# 2. Bootstrap packages and data
+#    Use the platform wrappers in QUICKSTART.md if Rscript is not on PATH.
 Rscript tools/bootstrap_packages.R
+Rscript tools/bootstrap_data.R
 
 # 3. Verify environment
 Rscript tools/doctor.R --check-only
@@ -140,12 +141,11 @@ is ~15 MB compressed.
   - `processx` (subprocess management)
   - `ggplot2`, `ggtext`, `patchwork`, `RColorBrewer`, `scales` (plotting)
   - `reshape2`, `dplyr`, `tidyr`, `purrr`, `tibble`, `data.table` (data manipulation)
-  - `rlang`, `lubridate` (tidyverse utilities)
+  - `lubridate` (date utilities)
   - `Hmisc` (statistical utilities)
   - `xtable` (LaTeX table export)
   - `proxyC` (sparse similarity)
-  - `PerformanceAnalytics` (return analytics)
-  - `rugarch`, `rmgarch` (GARCH modeling)
+  - `rugarch` (GARCH modeling)
   - `forecast` (time-series forecasting)
   - The script `tools/bootstrap_packages.R` will install all dependencies and should be run once prior to running other programs.
 
@@ -259,8 +259,8 @@ The code is licensed under a Creative Commons Attribution-NonCommercial-ShareAli
 ## Instructions to Replicators
 
 1. Clone the repository: `git clone https://github.com/Alexander-M-Dickerson/co-pricing-factor-zoo.git && cd co-pricing-factor-zoo`
-2. Run `tools/bootstrap_data.*` to download and extract the public data bundle into `data/`.
-3. Run `tools/bootstrap_packages.*` to install all required R packages.
+2. Run `tools/bootstrap_packages.*` to install all required R packages.
+3. Run `tools/bootstrap_data.*` to download and extract the public data bundle into `data/`.
 4. Run `tools/doctor.*` to verify the environment is ready.
 5. Run `tools/run_complete_replication.*` to replicate both the main paper and Internet Appendix.
 
@@ -269,17 +269,17 @@ Prompt (`.cmd`), and macOS/Linux bash (`.sh`). For example, on Windows
 PowerShell:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File tools\bootstrap_data.ps1
 powershell -ExecutionPolicy Bypass -File tools\bootstrap_packages.ps1
+powershell -ExecutionPolicy Bypass -File tools\bootstrap_data.ps1
 powershell -ExecutionPolicy Bypass -File tools\doctor.ps1 --check-only
 powershell -ExecutionPolicy Bypass -File tools\run_complete_replication.ps1
 ```
 
-On macOS Terminal:
+On macOS or Linux Terminal:
 
 ```bash
-bash tools/bootstrap_data.sh
 bash tools/bootstrap_packages.sh
+bash tools/bootstrap_data.sh
 bash tools/doctor.sh --check-only
 bash tools/run_complete_replication.sh
 ```
@@ -294,8 +294,8 @@ troubleshooting, see [QUICKSTART.md](QUICKSTART.md).
 
 ### Details on Various Programs
 
-- `tools/bootstrap_data.*`: downloads the canonical public data bundle and extracts CSV files into `data/`. No registration or authentication required.
 - `tools/bootstrap_packages.*`: installs all R package dependencies listed in `tools/bootstrap_packages.R`. Should be run once on a new system.
+- `tools/bootstrap_data.*`: downloads the canonical public data bundle and extracts CSV files into `data/`. No registration or authentication required.
 - `tools/doctor.*`: verifies that all packages, data files, C++ toolchain, and LaTeX are available. Reports any missing components.
 - `tools/run_full_replication.*`: runs the main paper pipeline end-to-end (Steps 1-6). Accepts `--quick` for a 5,000-draw setup validation.
 - `tools/run_ia_full.*`: runs the IA pipeline end-to-end (Steps 1-4). Accepts `-Draws N` to override the default 50,000 draws.

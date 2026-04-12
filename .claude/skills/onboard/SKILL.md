@@ -49,8 +49,8 @@ Read these sources in order:
 ## Workflow
 
 1. Print `Scanning your environment...` before starting.
-2. Resolve the full `Rscript` path before assuming `Rscript` is callable. On Windows, prefer the platform wrappers (`tools/*.ps1`, `tools/*.cmd`) which implement robust Rscript fallback discovery; on macOS/Linux, ensure `Rscript` is on the shell PATH.
-3. Use `tools/bootstrap_packages.R --check` or the platform wrapper to determine package gaps, and install them when the task is setup rather than audit-only.
+2. Resolve the full `Rscript` path before assuming `Rscript` is callable. On Windows, prefer the platform wrappers (`tools/*.ps1`, `tools/*.cmd`); on macOS/Linux, ensure `Rscript` is on the shell PATH. Run `Rscript --version` to confirm it works. If Rscript cannot be found or `--version` fails, **stop immediately** with an actionable error — do NOT proceed to package bootstrap.
+3. Use `tools/bootstrap_packages.R --check` or the platform wrapper to determine package gaps, and install them when the task is setup rather than audit-only. The bootstrap script prints per-package progress with `[N/total]` format — read stdout directly for progress updates. Do NOT spawn monitor agents, background watchers, or Monitor tool calls. The script outputs one structured line per package and a summary at the end. Wait for the script to complete. On Linux, the script auto-detects Posit Package Manager (PPM) for pre-compiled binaries — if PPM is unreachable, packages compile from source (slower but functional if build tools are present).
 4. Use `docs/manifests/data-files.csv` and `docs/manifests/data-sources.csv` to determine whether missing required files are covered by the canonical public bundle.
 5. If bundle-managed required files are missing, run `tools/bootstrap_data.R` or the platform wrapper instead of telling the user to place files manually.
 6. Treat `ia/data/w_all.rds` as required tracked clone data; if it is missing, report an incomplete checkout rather than optional external data.
@@ -69,7 +69,10 @@ Read these sources in order:
 ## Failure Boundaries
 
 - stop if R itself is missing or cannot be resolved
+- stop if Rscript `--version` fails after resolution
+- stop if no writable R library is available
 - stop if the compiler toolchain is missing and backend compilation is blocked
 - stop if required data files are missing rather than guessing substitutes
 - stop if tracked required clone data such as `ia/data/w_all.rds` is missing
+- if multiple packages fail with compilation errors on Linux, the user likely needs system development packages: `sudo apt install build-essential gfortran libcurl4-openssl-dev libssl-dev libxml2-dev libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype-dev libpng-dev libtiff-dev libjpeg-dev`
 - do not hardcode machine-local paths into repo files

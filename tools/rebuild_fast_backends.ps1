@@ -48,6 +48,12 @@ function Resolve-Rscript {
 
 $repoRoot = Split-Path $PSScriptRoot -Parent
 $rscript = Resolve-Rscript
+Write-Host "Using Rscript: $rscript"
+& $rscript --version 2>&1 | Out-Null
+if ($LASTEXITCODE -ne 0) {
+  throw "Rscript found but failed to run. Check your R installation."
+}
+
 $doctorScript = Join-Path $PSScriptRoot "doctor.R"
 $args = @($doctorScript, "--force-rebuild")
 if ($CheckOnly) {

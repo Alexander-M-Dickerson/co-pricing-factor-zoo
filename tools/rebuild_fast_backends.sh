@@ -15,15 +15,29 @@ resolve_rscript() {
     return
   fi
 
+  for p in /usr/bin/Rscript /usr/local/bin/Rscript /opt/homebrew/bin/Rscript; do
+    if [[ -x "$p" ]]; then
+      printf '%s\n' "$p"
+      return
+    fi
+  done
+
   if [[ -x "/Library/Frameworks/R.framework/Resources/bin/Rscript" ]]; then
     printf '%s\n' "/Library/Frameworks/R.framework/Resources/bin/Rscript"
     return
   fi
 
-  printf 'Could not locate Rscript. Install R or add it to PATH.\n' >&2
+  cat >&2 <<'ERRMSG'
+Could not locate Rscript.
+  Ubuntu/Debian: sudo apt install r-base
+  macOS:         Download from https://cran.r-project.org/bin/macosx/
+  Windows:       Download from https://cran.r-project.org/bin/windows/
+ERRMSG
   exit 1
 }
 
 RSCRIPT="$(resolve_rscript)"
+echo "Using Rscript: $RSCRIPT"
+"$RSCRIPT" --version 2>&1 || { echo "Rscript found but failed to run. Check your R installation." >&2; exit 1; }
 cd "$REPO_ROOT"
 exec "$RSCRIPT" "${SCRIPT_DIR}/doctor.R" --force-rebuild "$@"

@@ -30,6 +30,42 @@ jobs:
       - name: Validate repo docs and manifests
         run: Rscript tools/validate_repo_docs.R
 
+      - name: Bootstrap packages with Unix wrapper
+        if: runner.os != 'Windows'
+        shell: bash
+        run: bash tools/bootstrap_packages.sh
+
+      - name: Bootstrap packages with Windows PowerShell wrapper
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: powershell -ExecutionPolicy Bypass -File tools\bootstrap_packages.ps1
+
+      - name: Validate package bootstrap check mode
+        run: Rscript tools/bootstrap_packages.R --check
+
+      - name: Bootstrap data with Unix wrapper
+        if: runner.os != 'Windows'
+        shell: bash
+        run: bash tools/bootstrap_data.sh
+
+      - name: Bootstrap data with Windows PowerShell wrapper
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: powershell -ExecutionPolicy Bypass -File tools\bootstrap_data.ps1
+
+      - name: Validate data bootstrap check mode
+        run: Rscript tools/bootstrap_data.R --check
+
+      - name: Verify doctor with Unix wrapper
+        if: runner.os != 'Windows'
+        shell: bash
+        run: bash tools/doctor.sh --check-only
+
+      - name: Verify doctor with Windows PowerShell wrapper
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: powershell -ExecutionPolicy Bypass -File tools\doctor.ps1 --check-only
+
       - name: Smoke main entrypoints
         run: |
           Rscript tools/bootstrap_data.R --help

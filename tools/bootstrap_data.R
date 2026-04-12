@@ -97,11 +97,52 @@ download_bundle <- function(url, archive_type) {
   bundle_path
 }
 
+copy_extracted_entries <- function(source_dir, target_dir) {
+  entries <- list.files(source_dir, all.files = TRUE, no.. = TRUE, full.names = TRUE)
+  if (length(entries) == 0) {
+    stop("Downloaded bundle extracted successfully but contained no usable files.", call. = FALSE)
+  }
+
+  copied <- file.copy(entries, target_dir, recursive = TRUE, overwrite = TRUE)
+  if (!all(copied)) {
+    stop(
+      "Failed to copy extracted bundle contents into ",
+      target_dir,
+      ": ",
+      paste(basename(entries[!copied]), collapse = ", "),
+      call. = FALSE
+    )
+  }
+}
+
 extract_bundle <- function(bundle_path, archive_type, target_dir) {
   dir.create(target_dir, recursive = TRUE, showWarnings = FALSE)
+  staging_dir <- tempfile(pattern = "djm-data-extract-")
+  dir.create(staging_dir, recursive = TRUE, showWarnings = FALSE)
+  on.exit(unlink(staging_dir, recursive = TRUE, force = TRUE), add = TRUE)
 
   if (identical(tolower(archive_type), "zip")) {
-    utils::unzip(bundle_path, exdir = target_dir, overwrite = TRUE)
+    utils::unzip(bundle_path, exdir = staging_dir, overwrite = TRUE)
+    top_entries <- list.files(staging_dir, all.files = FALSE, no.. = TRUE, full.names = TRUE)
+    top_entries <- top_entries[basename(top_entries) != "__MACOSX"]
+    if (length(top_entries) == 0) {
+      stop("Downloaded zip extracted successfully but did not contain any bundle files.", call. = FALSE)
+    }
+
+    source_dir <- staging_dir
+    if (length(top_entries) == 1 && dir.exists(top_entries[[1]])) {
+      cat(
+        "Bundle extracted into nested top-level directory ",
+        basename(top_entries[[1]]),
+        "; flattening into ",
+        target_dir,
+        ".\n",
+        sep = ""
+      )
+      source_dir <- top_entries[[1]]
+    }
+
+    copy_extracted_entries(source_dir, target_dir)
     return(invisible(TRUE))
   }
 
