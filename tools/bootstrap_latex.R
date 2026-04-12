@@ -26,16 +26,18 @@ get_required_tex_packages <- function() {
   # CTAN package names required by base_document.txt and ia/_create_ia_latex.R.
   #
   # Mapping notes (LaTeX name -> CTAN name when different):
-  #   \usepackage{tikz}        -> pgf
-  #   \usepackage{pifont}      -> psnfss
-  #   \usepackage{amsthm}      -> amscls
-  #   \usepackage{graphicx}    -> graphics (bundle: also provides color, lscape)
-  #   \usepackage{longtable}   -> tools    (bundle: also provides array)
-  #   \usepackage{xparse}      -> l3packages
-  #   \usepackage[utf8x]{...}  -> ucs
+  #   \usepackage{tikz}            -> pgf
+  #   \usepackage{pifont}          -> psnfss
+  #   \usepackage{amsthm}          -> amscls
+  #   \usepackage{mathrsfs}        -> jknapltx (sty) + rsfs (fonts)
+  #   \usepackage{graphicx}        -> graphics (bundle: also provides color, lscape)
+  #   \usepackage{longtable}       -> tools    (bundle: also provides array)
+  #   \usepackage{xparse}          -> l3packages
+  #   \usepackage[utf8x]{...}      -> ucs
+  #   \usepackage[table]{xcolor}   -> xcolor + colortbl (table option loads colortbl)
   c(
     # AMS mathematics
-    "amsmath", "amsfonts", "amscls", "mathrsfs", "bm",
+    "amsmath", "amsfonts", "amscls", "jknapltx", "rsfs", "bm",
     # Fonts and encoding (cm-super for T1 Computer Modern, ucs for utf8x)
     "cm-super", "lmodern", "ucs", "psnfss",
     # Document structure
@@ -44,7 +46,7 @@ get_required_tex_packages <- function() {
     # Tables
     "booktabs", "multirow", "makecell",
     # Figures and graphics
-    "pgf", "tikz-3dplot", "xcolor", "float", "wrapfig", "caption",
+    "pgf", "tikz-3dplot", "xcolor", "colortbl", "float", "wrapfig", "caption",
     # Text formatting
     "hyperref", "natbib", "ulem", "soul", "ragged2e",
     "dirtytalk", "quoting", "alphalph",
