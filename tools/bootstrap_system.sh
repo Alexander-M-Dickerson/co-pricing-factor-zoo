@@ -46,6 +46,8 @@ elif [[ "$OS" == "Darwin" ]]; then
   DISTRO="macos"
   if command -v brew >/dev/null 2>&1; then
     PKG_MANAGER="brew"
+  else
+    PKG_MANAGER="brew_missing"
   fi
 fi
 
@@ -132,10 +134,41 @@ install_dnf() {
 }
 
 # ---------------------------------------------------------------------------
+# Install Homebrew if missing on macOS
+# ---------------------------------------------------------------------------
+install_homebrew() {
+  echo "Homebrew not found. Installing Homebrew..."
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+  # Add brew to PATH for this session (Apple Silicon vs Intel)
+  if [[ -x "/opt/homebrew/bin/brew" ]]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+  elif [[ -x "/usr/local/bin/brew" ]]; then
+    eval "$(/usr/local/bin/brew shellenv)"
+  fi
+
+  if ! command -v brew >/dev/null 2>&1; then
+    echo "ERROR: Homebrew installation failed." >&2
+    exit 1
+  fi
+  echo "Homebrew installed successfully."
+}
+
+# ---------------------------------------------------------------------------
 # Install on macOS via Homebrew
 # ---------------------------------------------------------------------------
 install_brew() {
   echo "=== Installing system dependencies via Homebrew ==="
+
+  # Install Xcode Command Line Tools if not present
+  if ! xcode-select -p >/dev/null 2>&1; then
+    echo "Installing Xcode Command Line Tools..."
+    xcode-select --install 2>/dev/null || true
+    echo "If a dialog appeared, please accept it and wait for installation."
+    echo "Then re-run this script."
+    exit 0
+  fi
+
   brew install r gcc gfortran
   echo ""
   echo "=== Homebrew installation complete ==="
@@ -152,9 +185,13 @@ case "$PKG_MANAGER" in
     install_dnf
     ;;
   brew) install_brew ;;
+  brew_missing)
+    install_homebrew
+    install_brew
+    ;;
   *)
-    echo "ERROR: No supported package manager found." >&2
-    echo "Install R (>= 4.5) and a C++ build toolchain manually, then re-run /onboard." >&2
+    echo "ERROR: No supported package manager found ($(uname -s))." >&2
+    echo "Supported: apt (Debian/Ubuntu), dnf/yum (Fedora/RHEL), brew (macOS)." >&2
     exit 1
     ;;
 esac
@@ -175,6 +212,17 @@ done
 if command -v Rscript >/dev/null 2>&1; then
   echo ""
   Rscript --version 2>&1
+
+  # Check R version is >= 4.5
+  r_version=$(Rscript -e 'cat(paste(R.version$major, R.version$minor, sep="."))' 2>/dev/null || echo "unknown")
+  r_major=$(echo "$r_version" | cut -d. -f1)
+  r_minor=$(echo "$r_version" | cut -d. -f2)
+  if [[ "$r_major" =~ ^[0-9]+$ ]] && [[ "$r_major" -lt 4 || ("$r_major" -eq 4 && "${r_minor%%.*}" -lt 5) ]]; then
+    echo ""
+    echo "WARNING: R $r_version is installed but this repo recommends R >= 4.5." >&2
+    echo "Some packages may fail to compile. Consider upgrading R." >&2
+  fi
+
   echo ""
   echo "System bootstrap complete. Ready for R-based setup."
 else

@@ -111,6 +111,9 @@ expect_true(
   "tools/doctor.R is missing."
 )
 required_wrapper_files <- c(
+  "tools/bootstrap_system.sh",
+  "tools/bootstrap_system.ps1",
+  "tools/bootstrap_system.cmd",
   "tools/bootstrap_packages.ps1",
   "tools/bootstrap_packages.cmd",
   "tools/bootstrap_packages.sh",

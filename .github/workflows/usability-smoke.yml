@@ -30,6 +30,16 @@ jobs:
       - name: Validate repo docs and manifests
         run: Rscript tools/validate_repo_docs.R
 
+      - name: Smoke system bootstrap check mode
+        if: runner.os != 'Windows'
+        shell: bash
+        run: bash tools/bootstrap_system.sh --check
+
+      - name: Smoke system bootstrap check mode (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: powershell -ExecutionPolicy Bypass -File tools\bootstrap_system.ps1 -CheckOnly
+
       - name: Bootstrap packages with Unix wrapper
         if: runner.os != 'Windows'
         shell: bash

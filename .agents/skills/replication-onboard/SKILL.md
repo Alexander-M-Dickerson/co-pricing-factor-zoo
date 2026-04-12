@@ -12,10 +12,16 @@ Read these sources in order:
 3. `docs/manifests/data-files.csv`
 4. `docs/manifests/data-sources.csv`
 5. `docs/validation/validated_runs.csv`
-6. `tools/bootstrap_packages.R`
-7. `tools/bootstrap_data.R`
-8. `tools/doctor.R`
-9. `references/bootstrap-sequence.md`
+6. `tools/bootstrap_system.sh` (installs R, build tools, system libraries)
+7. `tools/bootstrap_packages.R`
+8. `tools/bootstrap_data.R`
+9. `tools/bootstrap_latex.R`
+10. `tools/doctor.R`
+11. `tools/rebuild_fast_backends.*` (platform wrappers that compile the C++ backends)
+
+## Critical Principle
+
+**Never tell the user to install something manually if it can be installed automatically.** The onboarding flow must exhaust all automated options before asking the user to act. The user approving a sudo prompt is acceptable; the user copy-pasting install commands is not.
 
 ## Use When
 
@@ -47,15 +53,19 @@ Read these sources in order:
 
 ## Workflow
 
-1. Resolve the full `Rscript` path before assuming `Rscript` is callable. On Windows, prefer the platform wrappers (`tools/*.ps1`, `tools/*.cmd`); on macOS/Linux, ensure `Rscript` is on the shell PATH. Run `Rscript --version` to confirm it works. If Rscript cannot be found or `--version` fails, stop immediately with an actionable error.
-2. Use `tools/bootstrap_packages.R --check` or the platform wrapper to determine package gaps, and install them when the task is setup rather than audit-only. Read the bootstrap stdout directly for `[N/total]` progress updates rather than relying on background monitors.
-3. Use `docs/manifests/data-files.csv` and `docs/manifests/data-sources.csv` to determine whether missing required files are covered by the canonical public bundle.
-4. If bundle-managed required files are missing, run `tools/bootstrap_data.R` or the platform wrapper instead of telling the user to place files manually.
-5. Treat `ia/data/w_all.rds` as required tracked clone data; if it is missing, report an incomplete checkout rather than optional external data.
-6. Run `tools/doctor.R` or `tools/doctor.ps1` to verify packages, data, toolchain visibility, and fast backend readiness.
-7. Rebuild the fast backends when the doctor reports a backend problem or when this is the first setup on a new machine.
-8. Use `docs/validation/validated_runs.csv` to distinguish maintainer-validated boundaries from commands that are merely documented.
-9. Summarize whether the repo is ready for the main paper pipeline, the IA smoke boundary, and final PDF builds.
+Steps must be executed in order. Each step depends on the previous one completing successfully. Do not skip ahead.
+
+1. Print `Scanning your environment...` before starting.
+2. Check whether `Rscript` is on PATH. **If R is not found, install it automatically** — do NOT stop and tell the user to install it manually. On Linux/macOS, run `bash tools/bootstrap_system.sh` which installs R, build tools, and system libraries via the native package manager. On Windows, run `powershell -ExecutionPolicy Bypass -File tools/bootstrap_system.ps1` which installs R and Rtools via `winget`. After the script completes, verify `Rscript --version` works before proceeding.
+3. Use `tools/bootstrap_packages.R` or the platform wrapper to determine package gaps and install them. The bootstrap script prints per-package progress with `[N/total]` format — read stdout directly for progress updates. Do NOT spawn monitor agents or background watchers. Wait for the script to complete.
+4. Use `docs/manifests/data-files.csv` and `docs/manifests/data-sources.csv` to determine whether missing required files are covered by the canonical public bundle.
+5. If bundle-managed required files are missing, run `tools/bootstrap_data.R` or the platform wrapper instead of telling the user to place files manually.
+6. Treat `ia/data/w_all.rds` as required tracked clone data; if it is missing, report an incomplete checkout rather than optional external data.
+7. If the task is full setup (not audit-only), run `tools/bootstrap_latex.R` to ensure LaTeX is available for PDF compilation. The script installs TinyTeX automatically if no system LaTeX is found.
+8. Run `tools/doctor.R` or `tools/doctor.ps1` to verify packages, data, toolchain visibility, and fast backend readiness.
+9. Rebuild the fast backends when the doctor reports a backend problem or when this is the first setup on a new machine.
+10. Use `docs/validation/validated_runs.csv` to distinguish maintainer-validated boundaries from commands that are merely documented.
+11. Summarize whether the repo is ready for the main paper pipeline, the IA smoke boundary, and final PDF builds.
 
 ## Example Prompts
 
@@ -66,11 +76,11 @@ Read these sources in order:
 
 ## Failure Boundaries
 
-- stop if R itself is missing or cannot be resolved
-- stop if Rscript `--version` fails after resolution
-- stop if no writable R library is available
-- stop if the compiler toolchain is missing and backend compilation is blocked
+- if R is missing: run `bash tools/bootstrap_system.sh` (Linux/macOS) or `tools/bootstrap_system.ps1` (Windows) to install it automatically
+- if R is missing AND the bootstrap script fails: report the exact error from the script output
+- if the compiler toolchain is missing on Linux: `bootstrap_system.sh` installs build-essential, gfortran, and system libraries automatically
+- if no writable R library is available: `bootstrap_packages.R` creates one automatically
 - stop if required data files are missing rather than guessing substitutes
 - stop if tracked required clone data such as `ia/data/w_all.rds` is missing
-- if multiple packages fail with compilation errors on Linux, the user likely needs system development packages: `sudo apt install build-essential gfortran libcurl4-openssl-dev libssl-dev libxml2-dev libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype-dev libpng-dev libtiff-dev libjpeg-dev`
+- on Windows: if `winget` is not available AND R cannot be found, inform the user to download from CRAN as a last resort
 - do not hardcode machine-local paths into repo files
