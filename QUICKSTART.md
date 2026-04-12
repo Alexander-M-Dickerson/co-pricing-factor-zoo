@@ -75,6 +75,7 @@ This stage should leave you with:
 Windows PowerShell:
 
 ```powershell
+powershell -ExecutionPolicy Bypass -File tools\bootstrap_system.ps1  # install R + Rtools via winget
 powershell -ExecutionPolicy Bypass -File tools\bootstrap_packages.ps1
 powershell -ExecutionPolicy Bypass -File tools\bootstrap_data.ps1
 powershell -ExecutionPolicy Bypass -File tools\bootstrap_latex.ps1
@@ -85,6 +86,7 @@ powershell -ExecutionPolicy Bypass -File tools\rebuild_fast_backends.ps1
 Windows Command Prompt:
 
 ```bat
+tools\bootstrap_system.cmd
 tools\bootstrap_packages.cmd
 tools\bootstrap_data.cmd
 tools\bootstrap_latex.cmd
