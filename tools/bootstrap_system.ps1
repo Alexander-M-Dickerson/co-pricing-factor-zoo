@@ -126,6 +126,6 @@ if ($rscriptPath) {
 } else {
   Write-Host ""
   Write-Host "ERROR: R is still not available after installation." -ForegroundColor Red
-  Write-Host "You may need to restart your terminal for PATH changes to take effect."
+  Write-Host "PATH was refreshed in this session. Other terminal windows may need to be restarted."
   exit 1
 }

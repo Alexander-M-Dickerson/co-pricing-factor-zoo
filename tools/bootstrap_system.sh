@@ -164,9 +164,9 @@ install_brew() {
   if ! xcode-select -p >/dev/null 2>&1; then
     echo "Installing Xcode Command Line Tools..."
     xcode-select --install 2>/dev/null || true
-    echo "If a dialog appeared, please accept it and wait for installation."
-    echo "Then re-run this script."
-    exit 0
+    echo "Xcode Command Line Tools installation started (GUI dialog)."
+    echo "Accept the dialog, wait for installation to finish, then re-run this script."
+    exit 1
   fi
 
   brew install r gcc gfortran

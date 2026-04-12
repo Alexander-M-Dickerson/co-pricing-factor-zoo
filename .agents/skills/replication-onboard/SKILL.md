@@ -53,10 +53,12 @@ Read these sources in order:
 
 ## Workflow
 
-Steps must be executed in order. Each step depends on the previous one completing successfully. Do not skip ahead.
+Steps must be executed in order. Each step depends on the previous one completing successfully. Do not skip ahead — for example, do not attempt `Rscript` commands before step 2 confirms R is installed.
+
+**Audit-only shortcut:** If the user only wants to verify readiness (not install), skip to step 8 and run `tools/doctor.R --check-only`.
 
 1. Print `Scanning your environment...` before starting.
-2. Check whether `Rscript` is on PATH. **If R is not found, install it automatically** — do NOT stop and tell the user to install it manually. On Linux/macOS, run `bash tools/bootstrap_system.sh` which installs R, build tools, and system libraries via the native package manager. On Windows, run `powershell -ExecutionPolicy Bypass -File tools/bootstrap_system.ps1` which installs R and Rtools via `winget`. After the script completes, verify `Rscript --version` works before proceeding.
+2. Check whether `Rscript` is on PATH. **If R is not found, install it automatically** — do NOT stop and tell the user to install it manually. On Linux/macOS, run `bash tools/bootstrap_system.sh` which installs R, build tools, and system libraries via the native package manager. On Windows, run `powershell -ExecutionPolicy Bypass -File tools/bootstrap_system.ps1` which installs R and Rtools via `winget`. After the script completes, run `hash -r` (bash) to refresh PATH, then verify `Rscript --version` works before proceeding. On macOS, if the script exits with status 1 mentioning Xcode Command Line Tools, wait for the user to accept the GUI dialog, then re-run the script.
 3. Use `tools/bootstrap_packages.R` or the platform wrapper to determine package gaps and install them. The bootstrap script prints per-package progress with `[N/total]` format — read stdout directly for progress updates. Do NOT spawn monitor agents or background watchers. Wait for the script to complete.
 4. Use `docs/manifests/data-files.csv` and `docs/manifests/data-sources.csv` to determine whether missing required files are covered by the canonical public bundle.
 5. If bundle-managed required files are missing, run `tools/bootstrap_data.R` or the platform wrapper instead of telling the user to place files manually.
