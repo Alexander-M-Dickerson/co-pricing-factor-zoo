@@ -95,6 +95,7 @@ tools\rebuild_fast_backends.cmd
 macOS or Linux Terminal:
 
 ```bash
+bash tools/bootstrap_system.sh          # install R, build tools, system libs
 bash tools/bootstrap_packages.sh
 bash tools/bootstrap_data.sh
 bash tools/bootstrap_latex.sh
@@ -102,7 +103,7 @@ bash tools/doctor.sh --check-only
 bash tools/rebuild_fast_backends.sh
 ```
 
-Raw `Rscript` equivalent for the setup checks:
+Raw `Rscript` equivalent for the setup checks (requires R already installed):
 
 ```bash
 Rscript tools/bootstrap_packages.R

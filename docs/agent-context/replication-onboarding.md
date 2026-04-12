@@ -2,13 +2,21 @@
 
 Use this runbook when setting up a new machine to run the replication package.
 
+**Core principle: automate everything.** If a dependency is missing, install it
+automatically. Never tell the user to install something manually if a script can
+do it. The user approving a sudo prompt is acceptable; the user copy-pasting
+install commands is not.
+
 Public setup surfaces:
 
+- `tools/bootstrap_system.sh` (installs R, build tools, system libraries)
 - `tools/bootstrap_packages.R`
 - `tools/bootstrap_data.R`
+- `tools/bootstrap_latex.R`
 - `tools/doctor.R`
 - `tools/bootstrap_packages.ps1`, `tools/bootstrap_packages.cmd`, `tools/bootstrap_packages.sh`
 - `tools/bootstrap_data.ps1`, `tools/bootstrap_data.cmd`, `tools/bootstrap_data.sh`
+- `tools/bootstrap_latex.ps1`, `tools/bootstrap_latex.cmd`, `tools/bootstrap_latex.sh`
 - `tools/doctor.ps1`, `tools/doctor.cmd`, `tools/doctor.sh`
 - `docs/manifests/data-files.csv`
 - `docs/manifests/data-sources.csv`
@@ -52,11 +60,12 @@ coverage, and optional versus required status.
 Use `docs/manifests/data-sources.csv` as the source of truth for the canonical
 public data bundle. The default onboarding path is:
 
-1. `tools/bootstrap_packages.*`
-2. `tools/bootstrap_data.*`
-3. `tools/bootstrap_latex.*` (installs TinyTeX if no system LaTeX found)
-4. `tools/doctor.*`
-5. `tools/rebuild_fast_backends.*` if backend rebuild is required
+1. `tools/bootstrap_system.sh` (installs R, build tools, system `-dev` libraries)
+2. `tools/bootstrap_packages.*`
+3. `tools/bootstrap_data.*`
+4. `tools/bootstrap_latex.*` (installs TinyTeX if no system LaTeX found)
+5. `tools/doctor.*`
+6. `tools/rebuild_fast_backends.*` if backend rebuild is required
 
 `ia/data/w_all.rds` is required tracked clone data for the weighted-treasury IA
 branch. It is not part of the canonical bundle because it ships with the repo.
@@ -105,8 +114,9 @@ callable or let `tools/doctor.R` report it as optional.
 
 ## Recommended Agent Behavior
 
+- **Never tell the user to install something manually.** If R is missing, run `bash tools/bootstrap_system.sh`. If packages are missing, run `bootstrap_packages.R`. If LaTeX is missing, run `bootstrap_latex.R`. Exhaust all automated options before asking the user to act.
 - Prefer the smallest setup or verification step that proves progress.
-- On a fresh clone, bootstrap missing packages and bundle-managed main data before asking the user to place files manually.
+- On a fresh clone, run the full bootstrap chain: system → packages → data → LaTeX → doctor → backends.
 - Treat `ia/data/w_all.rds` as required tracked clone data; if it is missing, report it as an incomplete checkout rather than as optional external data.
 - If a toolchain dependency is missing, report the exact missing component and stop short of speculative fixes.
 - Do not hardcode machine-local paths into repo-tracked files while onboarding.

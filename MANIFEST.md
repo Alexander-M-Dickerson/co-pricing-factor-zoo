@@ -286,6 +286,7 @@ tools/bootstrap_data.R                 # Download canonical data bundle
 tools/bootstrap_data.cmd
 tools/bootstrap_data.ps1
 tools/bootstrap_data.sh
+tools/bootstrap_system.sh              # Install R, build tools, system libraries
 tools/bootstrap_latex.R                # Install TinyTeX and LaTeX packages
 tools/bootstrap_latex.cmd
 tools/bootstrap_latex.ps1

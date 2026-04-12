@@ -13,10 +13,12 @@ Read these sources in order:
 3. `docs/manifests/data-files.csv`
 4. `docs/manifests/data-sources.csv`
 5. `docs/validation/validated_runs.csv`
-6. `tools/bootstrap_packages.R`
-7. `tools/bootstrap_data.R`
-8. `tools/doctor.R`
-9. `tools/rebuild_fast_backends.*` (platform wrappers that compile the C++ backends)
+6. `tools/bootstrap_system.sh` (installs R, build tools, system libraries)
+7. `tools/bootstrap_packages.R`
+8. `tools/bootstrap_data.R`
+9. `tools/bootstrap_latex.R`
+10. `tools/doctor.R`
+11. `tools/rebuild_fast_backends.*` (platform wrappers that compile the C++ backends)
 
 ## Use When
 
@@ -49,7 +51,7 @@ Read these sources in order:
 ## Workflow
 
 1. Print `Scanning your environment...` before starting.
-2. Resolve the full `Rscript` path before assuming `Rscript` is callable. On Windows, prefer the platform wrappers (`tools/*.ps1`, `tools/*.cmd`); on macOS/Linux, ensure `Rscript` is on the shell PATH. Run `Rscript --version` to confirm it works. If Rscript cannot be found or `--version` fails, **stop immediately** with an actionable error — do NOT proceed to package bootstrap.
+2. Check whether `Rscript` is on PATH by running `which Rscript && Rscript --version` (Unix) or the PowerShell resolver. **If R is not found, install it automatically** — do NOT stop and tell the user to install it manually. Run `bash tools/bootstrap_system.sh` which detects the platform and installs R, build tools, and system libraries via the native package manager (apt on Ubuntu/Debian, dnf on Fedora, brew on macOS). The user only needs to approve sudo prompts. After the script completes, verify `Rscript --version` works before proceeding. On Windows, if R is not found via PATH or Program Files, inform the user that R must be downloaded from https://cran.r-project.org/bin/windows/ — Windows lacks a native package manager for unattended R installation.
 3. Use `tools/bootstrap_packages.R --check` or the platform wrapper to determine package gaps, and install them when the task is setup rather than audit-only. The bootstrap script prints per-package progress with `[N/total]` format — read stdout directly for progress updates. Do NOT spawn monitor agents, background watchers, or Monitor tool calls. The script outputs one structured line per package and a summary at the end. Wait for the script to complete. On Linux, the script auto-detects Posit Package Manager (PPM) for pre-compiled binaries — if PPM is unreachable, packages compile from source (slower but functional if build tools are present).
 4. Use `docs/manifests/data-files.csv` and `docs/manifests/data-sources.csv` to determine whether missing required files are covered by the canonical public bundle.
 5. If bundle-managed required files are missing, run `tools/bootstrap_data.R` or the platform wrapper instead of telling the user to place files manually.
@@ -67,13 +69,17 @@ Read these sources in order:
 - "Why does this repo fail before estimation starts?"
 - "Check whether my machine is ready to run the paper."
 
+## Critical Principle
+
+**Never tell the user to install something manually if it can be installed automatically.** The onboarding flow must exhaust all automated options before asking the user to act. The user approving a sudo prompt is acceptable; the user copy-pasting install commands is not.
+
 ## Failure Boundaries
 
-- stop if R itself is missing or cannot be resolved
-- stop if Rscript `--version` fails after resolution
-- stop if no writable R library is available
-- stop if the compiler toolchain is missing and backend compilation is blocked
+- if R is missing: run `bash tools/bootstrap_system.sh` to install it automatically (do NOT tell the user to install it)
+- if R is missing AND `bootstrap_system.sh` fails: report the exact error from the script output, not generic advice
+- if the compiler toolchain is missing on Linux: `bootstrap_system.sh` installs build-essential, gfortran, and all `-dev` libraries automatically
+- if no writable R library is available: `bootstrap_packages.R` creates one automatically
 - stop if required data files are missing rather than guessing substitutes
 - stop if tracked required clone data such as `ia/data/w_all.rds` is missing
-- if multiple packages fail with compilation errors on Linux, the user likely needs system development packages: `sudo apt install build-essential gfortran libcurl4-openssl-dev libssl-dev libxml2-dev libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype-dev libpng-dev libtiff-dev libjpeg-dev`
+- on Windows only: if R cannot be found via PATH or Program Files scan, inform the user to download from CRAN (Windows lacks a CLI package manager for R)
 - do not hardcode machine-local paths into repo files
