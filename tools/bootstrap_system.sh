@@ -108,13 +108,14 @@ install_apt() {
     sudo apt-get update -qq
   fi
 
-  # Install R and build tools in one pass
+  # Install R, build tools, and all system libraries needed by R packages
   sudo apt-get install -y -qq \
     r-base r-base-dev \
-    build-essential gfortran \
+    build-essential gfortran cmake \
     libcurl4-openssl-dev libssl-dev libxml2-dev \
     libfontconfig1-dev libharfbuzz-dev libfribidi-dev \
-    libfreetype-dev libpng-dev libtiff-dev libjpeg-dev
+    libfreetype-dev libpng-dev libtiff-dev libjpeg-dev \
+    libfftw3-dev libnlopt-dev libuv1-dev
 
   echo ""
   echo "=== apt installation complete ==="
@@ -125,10 +126,11 @@ install_apt() {
 # ---------------------------------------------------------------------------
 install_dnf() {
   echo "=== Installing system dependencies via dnf ==="
-  sudo dnf install -y R gcc gcc-c++ make gcc-gfortran \
+  sudo dnf install -y R gcc gcc-c++ make gcc-gfortran cmake \
     libcurl-devel openssl-devel libxml2-devel \
     fontconfig-devel harfbuzz-devel fribidi-devel \
-    freetype-devel libpng-devel libtiff-devel libjpeg-turbo-devel
+    freetype-devel libpng-devel libtiff-devel libjpeg-turbo-devel \
+    fftw-devel NLopt-devel libuv-devel
   echo ""
   echo "=== dnf installation complete ==="
 }

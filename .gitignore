@@ -56,6 +56,9 @@ logs/
 __pycache__/
 .cache/
 
+# Bootstrap diagnostic logs
+tools/bootstrap_packages.log
+
 # Internal maintainer notes
 TODO.md
 code_review.md

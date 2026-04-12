@@ -190,7 +190,7 @@ preflight_checks <- function(check_only = FALSE) {
   }
 }
 
-install_cran_packages <- function(packages, repos) {
+install_cran_packages <- function(packages, repos, log_file = NULL) {
   if (length(packages) == 0) {
     return(invisible(list(success = 0L, failed = character(0))))
   }
@@ -239,6 +239,37 @@ install_cran_packages <- function(packages, repos) {
   cat(sprintf("\nInstalled %d/%d packages in %ss\n", success, n, total_elapsed))
   if (length(failed) > 0) {
     cat("Failed: ", paste(failed, collapse = ", "), "\n")
+  }
+
+  # Log verbose output for failed packages so the agent can diagnose
+  if (length(failed) > 0 && !is.null(log_file)) {
+    cat("\nCapturing verbose output for failed packages...\n")
+    writeLines(c(
+      paste("# bootstrap_packages.R failure log"),
+      paste("# Date:", Sys.time()),
+      paste("# Platform:", R.version$platform),
+      paste("# R version:", R.version.string),
+      ""
+    ), log_file)
+
+    for (pkg in failed) {
+      cat(sprintf("  Diagnosing %s...\n", pkg))
+      flush.console()
+      pkg_output <- tryCatch({
+        out <- utils::capture.output(
+          utils::install.packages(pkg, dependencies = NA, quiet = FALSE),
+          type = "message"
+        )
+        out
+      }, error = function(e) conditionMessage(e))
+
+      cat(c(
+        paste0("=== ", pkg, " ==="),
+        pkg_output,
+        ""
+      ), file = log_file, sep = "\n", append = TRUE)
+    }
+    cat("Failure log: ", log_file, "\n", sep = "")
   }
 
   invisible(list(success = success, failed = failed))
@@ -352,9 +383,11 @@ main <- function() {
     quit(save = "no", status = 0)
   }
 
+  log_file <- file.path(repo_root, "tools", "bootstrap_packages.log")
+
   cran_missing <- setdiff(missing_before, "BayesianFactorZoo")
   if (length(cran_missing) > 0) {
-    install_cran_packages(cran_missing, repos)
+    install_cran_packages(cran_missing, repos, log_file = log_file)
   }
 
   if ("BayesianFactorZoo" %in% missing_before) {
@@ -374,12 +407,21 @@ main <- function() {
       "\n",
       sep = ""
     )
+    if (file.exists(log_file)) {
+      cat("\nDiagnostic log: ", log_file, "\n", sep = "")
+      cat("Read this log to identify missing system libraries.\n")
+    }
     if (Sys.info()[["sysname"]] == "Linux") {
       cat(
-        "\nIf packages failed due to compilation errors, install system libraries:\n",
-        "  sudo apt install build-essential gfortran libcurl4-openssl-dev \\\n",
-        "    libssl-dev libxml2-dev libfontconfig1-dev libharfbuzz-dev \\\n",
-        "    libfribidi-dev libfreetype-dev libpng-dev libtiff-dev libjpeg-dev\n",
+        "\nIf packages failed due to compilation errors, try:\n",
+        "  bash tools/bootstrap_system.sh\n",
+        "Or install system libraries manually:\n",
+        "  sudo apt install build-essential gfortran cmake \\\n",
+        "    libcurl4-openssl-dev libssl-dev libxml2-dev \\\n",
+        "    libfontconfig1-dev libharfbuzz-dev libfribidi-dev \\\n",
+        "    libfreetype-dev libpng-dev libtiff-dev libjpeg-dev \\\n",
+        "    libfftw3-dev libnlopt-dev libuv1-dev\n",
+        "Then re-run: Rscript tools/bootstrap_packages.R\n",
         sep = ""
       )
     }
