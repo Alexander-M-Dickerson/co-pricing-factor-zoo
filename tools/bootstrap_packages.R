@@ -44,6 +44,10 @@ get_required_packages <- function() {
     "proxyC",
     "rugarch",
     "forecast",
+    "car",
+    "sandwich",
+    "ggrepel",
+    "moments",
     "tinytex"
   )
 }
