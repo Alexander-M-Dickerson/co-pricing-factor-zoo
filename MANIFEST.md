@@ -236,6 +236,7 @@ ia/data/w_all.rds                      # Tracked: DR-tilt kappa weights
 ## misc/ — Tracked Fixtures
 
 ```
+misc/BMAs_bond_R2_legend.pdf           # Static legend asset for paper figures
 misc/figure1_simulation/Fig_01_0_sim_legend.jpeg
 misc/figure1_simulation/Fig_01_1_OLS_60_400_BMA_MPR.jpeg
 misc/figure1_simulation/Fig_01_2_OLS_60_1600_BMA_MPR.jpeg

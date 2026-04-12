@@ -24,4 +24,5 @@ misc/figure1_simulation/Fig_01_3_OLS_60_400_factor_MPRs.jpeg,Figure 1 default bu
 misc/figure1_simulation/Fig_01_4_OLS_60_1600_factor_MPRs.jpeg,Figure 1 default build,yes,Tracked repo file,Published Figure 1 factor-MPR panel for T = 1600,,Tracked paper panel fixture used by the default Figure 1 builder
 misc/figure1_simulation/Fig_01_5_OLS_60_400_factor_probs.jpeg,Figure 1 default build,yes,Tracked repo file,Published Figure 1 posterior-probability panel for T = 400,,Tracked paper panel fixture used by the default Figure 1 builder
 misc/figure1_simulation/Fig_01_6_OLS_60_1600_factor_probs.jpeg,Figure 1 default build,yes,Tracked repo file,Published Figure 1 posterior-probability panel for T = 1600,,Tracked paper panel fixture used by the default Figure 1 builder
+misc/BMAs_bond_R2_legend.pdf,PDF figure assembly,yes,Tracked repo file,Static BMA R-squared legend used by figures.txt in paper LaTeX assembly,,Required tracked asset referenced by figures.txt lines 71 and 169
 ia/data/w_all.rds,IA treasury_weighted branch,yes,Tracked repo file,DR-tilt kappa weights for the weighted treasury IA branch,,Required tracked IA input that ships with the clone

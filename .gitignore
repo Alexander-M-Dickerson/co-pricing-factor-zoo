@@ -51,6 +51,7 @@ logs/
 *.html
 *.pdf
 !README.pdf
+!misc/BMAs_bond_R2_legend.pdf
 
 # Cache directories
 __pycache__/
