@@ -372,6 +372,10 @@ main <- function() {
 
   print_section("LaTeX")
   cat("pdflatex: ", if (nzchar(pdflatex_path)) pdflatex_path else "not found", "\n", sep = "")
+  if (!nzchar(pdflatex_path)) {
+    cat("Run `Rscript tools/bootstrap_latex.R` to install TinyTeX automatically,\n")
+    cat("or install TeX Live / MiKTeX / MacTeX manually.\n")
+  }
 
   print_section("Readiness Summary")
   summary_targets <- c("Main paper estimation and outputs")

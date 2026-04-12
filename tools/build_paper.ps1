@@ -59,7 +59,17 @@ function Resolve-CommandPath {
     return $command.Source
   }
 
-  throw "Could not locate $Name. Install it and add it to PATH."
+  # Try TinyTeX standard location on Windows
+  $tinyTexDir = Join-Path $env:APPDATA "TinyTeX\bin\windows"
+  if (Test-Path $tinyTexDir) {
+    $candidate = Get-ChildItem $tinyTexDir -Filter $Name -Recurse -ErrorAction SilentlyContinue |
+      Select-Object -First 1
+    if ($candidate) {
+      return $candidate.FullName
+    }
+  }
+
+  throw "Could not locate $Name. Run 'Rscript tools/bootstrap_latex.R' or install a TeX distribution."
 }
 
 $repoRoot = Split-Path $PSScriptRoot -Parent

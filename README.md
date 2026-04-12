@@ -154,7 +154,8 @@ is ~15 MB compressed.
   - macOS: Xcode Command Line Tools plus the CRAN-recommended GNU Fortran matching the installed R version (see <https://cran.r-project.org/bin/macosx/tools/> and <https://mac.r-project.org/tools/>)
 
 - LaTeX distribution (for PDF compilation):
-  - Any TeX Live, MiKTeX, or TinyTeX installation with `pdflatex` and `bibtex` on the system PATH
+  - The script `tools/bootstrap_latex.R` will install TinyTeX automatically if no LaTeX distribution is found
+  - Alternatively, any TeX Live, MiKTeX, or MacTeX installation with `pdflatex` and `bibtex` on the system PATH will work
   - If LaTeX is not installed, pass `--skip-pdf` to skip PDF compilation; all tables and figures are still generated
 
 - Portions of the code use PowerShell scripting (Windows) or bash scripting (macOS/Linux).

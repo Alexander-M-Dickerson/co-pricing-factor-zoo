@@ -43,7 +43,8 @@ get_required_packages <- function() {
     "xtable",
     "proxyC",
     "rugarch",
-    "forecast"
+    "forecast",
+    "tinytex"
   )
 }
 

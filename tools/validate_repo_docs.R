@@ -117,6 +117,9 @@ required_wrapper_files <- c(
   "tools/bootstrap_data.ps1",
   "tools/bootstrap_data.cmd",
   "tools/bootstrap_data.sh",
+  "tools/bootstrap_latex.ps1",
+  "tools/bootstrap_latex.cmd",
+  "tools/bootstrap_latex.sh",
   "tools/doctor.ps1",
   "tools/doctor.cmd",
   "tools/doctor.sh",
@@ -278,9 +281,10 @@ expect_true(
 if (file.exists(latex_smoke_workflow_path)) {
   latex_smoke_workflow_text <- read_text(latex_smoke_workflow_path)
   expect_true(
-    grepl("r-lib/actions/setup-tinytex@v2", latex_smoke_workflow_text, fixed = TRUE),
-    "LaTeX smoke workflow installs TinyTeX.",
-    "LaTeX smoke workflow does not install TinyTeX."
+    grepl("bootstrap_latex", latex_smoke_workflow_text, fixed = TRUE) ||
+      grepl("r-lib/actions/setup-tinytex", latex_smoke_workflow_text, fixed = TRUE),
+    "LaTeX smoke workflow bootstraps TinyTeX.",
+    "LaTeX smoke workflow does not bootstrap TinyTeX (expected bootstrap_latex.R or setup-tinytex action)."
   )
   expect_true(
     grepl("bash tools/build_paper.sh --fixture-dir=testing/latex_smoke/main", latex_smoke_workflow_text, fixed = TRUE) &&

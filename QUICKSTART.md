@@ -77,6 +77,7 @@ Windows PowerShell:
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools\bootstrap_packages.ps1
 powershell -ExecutionPolicy Bypass -File tools\bootstrap_data.ps1
+powershell -ExecutionPolicy Bypass -File tools\bootstrap_latex.ps1
 powershell -ExecutionPolicy Bypass -File tools\doctor.ps1 --check-only
 powershell -ExecutionPolicy Bypass -File tools\rebuild_fast_backends.ps1
 ```
@@ -86,6 +87,7 @@ Windows Command Prompt:
 ```bat
 tools\bootstrap_packages.cmd
 tools\bootstrap_data.cmd
+tools\bootstrap_latex.cmd
 tools\doctor.cmd --check-only
 tools\rebuild_fast_backends.cmd
 ```
@@ -95,6 +97,7 @@ macOS or Linux Terminal:
 ```bash
 bash tools/bootstrap_packages.sh
 bash tools/bootstrap_data.sh
+bash tools/bootstrap_latex.sh
 bash tools/doctor.sh --check-only
 bash tools/rebuild_fast_backends.sh
 ```
@@ -104,6 +107,7 @@ Raw `Rscript` equivalent for the setup checks:
 ```bash
 Rscript tools/bootstrap_packages.R
 Rscript tools/bootstrap_data.R
+Rscript tools/bootstrap_latex.R
 Rscript tools/doctor.R --check-only
 ```
 

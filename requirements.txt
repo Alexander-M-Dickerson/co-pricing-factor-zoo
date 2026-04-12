@@ -51,3 +51,6 @@ forecast               8.23.0
 # Output Formatting
 xtable                 1.8.4
 Hmisc                  5.2.2
+
+# LaTeX Bootstrap
+tinytex                0.54

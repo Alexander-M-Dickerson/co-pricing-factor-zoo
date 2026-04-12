@@ -54,8 +54,9 @@ public data bundle. The default onboarding path is:
 
 1. `tools/bootstrap_packages.*`
 2. `tools/bootstrap_data.*`
-3. `tools/doctor.*`
-4. `tools/rebuild_fast_backends.*` if backend rebuild is required
+3. `tools/bootstrap_latex.*` (installs TinyTeX if no system LaTeX found)
+4. `tools/doctor.*`
+5. `tools/rebuild_fast_backends.*` if backend rebuild is required
 
 `ia/data/w_all.rds` is required tracked clone data for the weighted-treasury IA
 branch. It is not part of the canonical bundle because it ships with the repo.

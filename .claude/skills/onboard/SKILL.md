@@ -54,10 +54,11 @@ Read these sources in order:
 4. Use `docs/manifests/data-files.csv` and `docs/manifests/data-sources.csv` to determine whether missing required files are covered by the canonical public bundle.
 5. If bundle-managed required files are missing, run `tools/bootstrap_data.R` or the platform wrapper instead of telling the user to place files manually.
 6. Treat `ia/data/w_all.rds` as required tracked clone data; if it is missing, report an incomplete checkout rather than optional external data.
-7. Run `tools/doctor.R` or `tools/doctor.ps1` to verify packages, data, toolchain visibility, and fast backend readiness.
-8. Rebuild the fast backends when the doctor reports a backend problem or when this is the first setup on a new machine.
-9. Use `docs/validation/validated_runs.csv` to distinguish maintainer-validated boundaries from commands that are merely documented.
-10. Summarize whether the repo is ready for the main paper pipeline, the IA smoke boundary, and final PDF builds.
+7. If the task is full setup (not audit-only), run `tools/bootstrap_latex.R` to ensure LaTeX is available for PDF compilation. If the user indicates they don't need PDF output, skip this step. The script installs TinyTeX automatically if no system LaTeX is found, and pre-installs all required LaTeX packages.
+8. Run `tools/doctor.R` or `tools/doctor.ps1` to verify packages, data, toolchain visibility, and fast backend readiness.
+9. Rebuild the fast backends when the doctor reports a backend problem or when this is the first setup on a new machine.
+10. Use `docs/validation/validated_runs.csv` to distinguish maintainer-validated boundaries from commands that are merely documented.
+11. Summarize whether the repo is ready for the main paper pipeline, the IA smoke boundary, and final PDF builds.
 
 ## Example Prompts
 

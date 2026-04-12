@@ -70,8 +70,20 @@ for arg in "$@"; do
   esac
 done
 
+# Try TinyTeX if pdflatex is not on PATH
 if ! command -v pdflatex >/dev/null 2>&1; then
-  printf 'Could not locate pdflatex. Install a LaTeX distribution and add it to PATH.\n' >&2
+  for d in "$HOME/.TinyTeX/bin/"* "$HOME/Library/TinyTeX/bin/"*; do
+    if [[ -x "$d/pdflatex" ]]; then
+      export PATH="$d:$PATH"
+      break
+    fi
+  done
+fi
+
+if ! command -v pdflatex >/dev/null 2>&1; then
+  printf 'Could not locate pdflatex.\n' >&2
+  printf '  Run: Rscript tools/bootstrap_latex.R\n' >&2
+  printf '  Or install TeX Live / MiKTeX / MacTeX manually.\n' >&2
   exit 1
 fi
 
