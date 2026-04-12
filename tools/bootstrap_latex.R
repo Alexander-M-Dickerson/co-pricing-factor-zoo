@@ -1,5 +1,13 @@
 #!/usr/bin/env Rscript
 
+`%||%` <- function(x, y) {
+  if (is.null(x) || length(x) == 0 || is.na(x)) {
+    y
+  } else {
+    x
+  }
+}
+
 get_script_dir <- function() {
   args <- commandArgs(trailingOnly = FALSE)
   file_arg <- grep("^--file=", args, value = TRUE)
@@ -103,33 +111,188 @@ print_status <- function(status) {
       if (status$is_tinytex) "installed" else "not installed", "\n", sep = "")
 }
 
+dir_has_command <- function(path, command_name) {
+  any(file.exists(file.path(path, c(command_name, paste0(command_name, ".exe")))))
+}
+
+prepend_path_entries <- function(paths) {
+  paths <- unique(paths[nzchar(paths)])
+  paths <- paths[file.exists(paths)]
+  if (length(paths) == 0) {
+    return(invisible(FALSE))
+  }
+
+  current_path <- Sys.getenv("PATH", unset = "")
+  current_entries <- strsplit(current_path, .Platform$path.sep, fixed = TRUE)[[1]]
+  current_entries <- current_entries[nzchar(current_entries)]
+  new_entries <- paths[!paths %in% current_entries]
+  if (length(new_entries) == 0) {
+    return(invisible(FALSE))
+  }
+
+  Sys.setenv(PATH = paste(c(new_entries, current_entries), collapse = .Platform$path.sep))
+  invisible(TRUE)
+}
+
+find_tinytex_bin_dirs <- function() {
+  appdata_dir <- Sys.getenv("APPDATA", unset = "")
+  patterns <- c(
+    file.path(path.expand("~"), ".TinyTeX", "bin", "*"),
+    file.path(path.expand("~"), "Library", "TinyTeX", "bin", "*"),
+    if (nzchar(appdata_dir)) file.path(appdata_dir, "TinyTeX", "bin", "windows")
+  )
+  dirs <- unlist(lapply(patterns[nzchar(patterns)], Sys.glob), use.names = FALSE)
+
+  if (requireNamespace("tinytex", quietly = TRUE)) {
+    tinytex_root <- tryCatch(tinytex::tinytex_root(), error = function(e) "")
+    if (nzchar(tinytex_root)) {
+      dirs <- c(dirs, Sys.glob(file.path(tinytex_root, "bin", "*")))
+    }
+  }
+
+  unique(dirs[vapply(dirs, dir_has_command, logical(1), command_name = "pdflatex")])
+}
+
+prepend_tinytex_to_path <- function() {
+  prepend_path_entries(find_tinytex_bin_dirs())
+}
+
+copy_smoke_fixture <- function(repo_root) {
+  smoke_dir <- file.path(repo_root, "testing", "latex_smoke", "main")
+  if (!dir.exists(smoke_dir)) {
+    stop("LaTeX smoke fixture is missing: ", smoke_dir, call. = FALSE)
+  }
+
+  target_dir <- tempfile("latex-smoke-")
+  dir.create(target_dir, recursive = TRUE, showWarnings = FALSE)
+  fixture_files <- list.files(smoke_dir, all.files = TRUE, no.. = TRUE, full.names = TRUE)
+  copied <- file.copy(fixture_files, target_dir, recursive = TRUE)
+  if (!all(copied)) {
+    stop("Failed to copy the LaTeX smoke fixture into a temporary directory.", call. = FALSE)
+  }
+
+  target_dir
+}
+
+tail_output <- function(text, n = 12L) {
+  if (!nzchar(text)) {
+    return("")
+  }
+
+  lines <- strsplit(text, "\n", fixed = TRUE)[[1]]
+  paste(utils::tail(lines[nzchar(lines)], n), collapse = "\n")
+}
+
+run_latex_command <- function(command, args, working_dir) {
+  old_wd <- getwd()
+  on.exit(setwd(old_wd), add = TRUE)
+  setwd(working_dir)
+
+  output <- tryCatch(
+    system2(command, args = args, stdout = TRUE, stderr = TRUE),
+    error = function(e) structure(conditionMessage(e), status = 1L)
+  )
+  status <- as.integer(attr(output, "status") %||% 0L)
+  list(
+    ok = identical(status, 0L),
+    status = status,
+    output = paste(output, collapse = "\n")
+  )
+}
+
+compile_smoke_fixture <- function(repo_root, status) {
+  if (!status$has_pdflatex || !status$has_bibtex) {
+    missing <- c(
+      if (!status$has_pdflatex) "pdflatex",
+      if (!status$has_bibtex) "bibtex"
+    )
+    return(list(
+      ok = FALSE,
+      detail = paste("Missing required LaTeX command(s):", paste(missing, collapse = ", "))
+    ))
+  }
+
+  target_dir <- copy_smoke_fixture(repo_root)
+  on.exit(unlink(target_dir, recursive = TRUE, force = TRUE), add = TRUE)
+
+  steps <- list(
+    list(name = "pdflatex", command = status$pdflatex, args = c("-interaction=nonstopmode", "-halt-on-error", "djm_main.tex")),
+    list(name = "bibtex", command = status$bibtex, args = "djm_main"),
+    list(name = "pdflatex", command = status$pdflatex, args = c("-interaction=nonstopmode", "-halt-on-error", "djm_main.tex")),
+    list(name = "pdflatex", command = status$pdflatex, args = c("-interaction=nonstopmode", "-halt-on-error", "djm_main.tex"))
+  )
+
+  for (step in steps) {
+    result <- run_latex_command(step$command, step$args, target_dir)
+    if (!result$ok) {
+      detail <- paste0(
+        step$name, " failed with status ", result$status, "."
+      )
+      output_tail <- tail_output(result$output)
+      if (nzchar(output_tail)) {
+        detail <- paste(detail, output_tail, sep = "\n")
+      }
+      return(list(ok = FALSE, detail = detail))
+    }
+  }
+
+  pdf_path <- file.path(target_dir, "djm_main.pdf")
+  if (!file.exists(pdf_path)) {
+    return(list(
+      ok = FALSE,
+      detail = "The LaTeX smoke fixture finished without producing djm_main.pdf."
+    ))
+  }
+
+  list(ok = TRUE, detail = "Smoke test compiled successfully.")
+}
+
 main <- function() {
   opts <- parse_args()
   repo_root <- get_repo_root()
+
+  prepend_tinytex_to_path()
 
   cat("LaTeX bootstrap for The Co-Pricing Factor Zoo\n")
   cat("Repo root: ", repo_root, "\n\n", sep = "")
 
   # ---- 1. Detect current LaTeX status ----------------------------------------
   status <- detect_latex()
+  smoke_result <- compile_smoke_fixture(repo_root, status)
   cat("Current LaTeX status:\n")
   print_status(status)
+  cat("smoke test:", if (smoke_result$ok) "passed" else "failed", "\n")
 
   if (opts$check_only) {
-    if (status$has_pdflatex) {
-      cat("\nLaTeX is available.\n")
+    if (smoke_result$ok) {
+      cat("\nLaTeX is available and passed the smoke compile.\n")
       quit(save = "no", status = 0)
     }
-    cat("\nLaTeX is not available.\n")
-    cat("Run `Rscript tools/bootstrap_latex.R` to install TinyTeX.\n")
+    cat("\nLaTeX is not ready for final PDF assembly.\n")
+    if (nzchar(smoke_result$detail)) {
+      cat(smoke_result$detail, "\n", sep = "")
+    }
+    cat("Run `Rscript tools/bootstrap_latex.R` to install or repair TinyTeX.\n")
     quit(save = "no", status = 1)
   }
 
   # ---- 2. Skip if system LaTeX exists (unless --force) -----------------------
-  if (status$has_pdflatex && !opts$force) {
-    cat("\nSystem LaTeX found. TinyTeX installation skipped.\n")
-    cat("Use --force to install TinyTeX alongside your system LaTeX.\n")
+  if (smoke_result$ok && !opts$force) {
+    cat("\nWorking LaTeX installation found. TinyTeX installation skipped.\n")
+    if (status$is_tinytex) {
+      cat("Use --force to reinstall TinyTeX.\n")
+    } else {
+      cat("Use --force to install TinyTeX alongside your system LaTeX.\n")
+    }
     quit(save = "no", status = 0)
+  }
+
+  if ((status$has_pdflatex || status$has_bibtex) && !smoke_result$ok) {
+    cat("\nDetected LaTeX commands, but the smoke compile failed.\n")
+    if (nzchar(smoke_result$detail)) {
+      cat(smoke_result$detail, "\n", sep = "")
+    }
+    cat("Installing TinyTeX alongside the existing LaTeX distribution.\n")
   }
 
   # ---- 3. Verify tinytex R package is available ------------------------------
@@ -158,7 +321,7 @@ main <- function() {
     cat("\nInstalling TinyTeX (~150MB download)...\n")
     tryCatch(
       tinytex::install_tinytex(
-        force = opts$force,
+        force = opts$force || (status$has_pdflatex || status$has_bibtex),
         extra_packages = tex_packages,
         add_path = TRUE
       ),
@@ -171,10 +334,17 @@ main <- function() {
     )
   }
 
-  # ---- 5. Verify pdflatex is now available -----------------------------------
+  prepend_tinytex_to_path()
+
+  # ---- 5. Verify pdflatex and bibtex are now available -----------------------
   status_after <- detect_latex()
-  if (!status_after$has_pdflatex) {
-    cat("\nERROR: TinyTeX installed but pdflatex not found on PATH.\n")
+  if (!status_after$has_pdflatex || !status_after$has_bibtex) {
+    missing <- c(
+      if (!status_after$has_pdflatex) "pdflatex",
+      if (!status_after$has_bibtex) "bibtex"
+    )
+    cat("\nERROR: TinyTeX installed but required command(s) were not found on PATH: ",
+        paste(missing, collapse = ", "), "\n", sep = "")
     cat("You may need to restart your terminal for PATH changes to take effect.\n")
     sysname <- Sys.info()[["sysname"]]
     if (identical(sysname, "Linux")) {
@@ -188,40 +358,16 @@ main <- function() {
   }
 
   # ---- 6. Compile smoke test to verify everything works ----------------------
-  smoke_tex <- file.path(repo_root, "testing", "latex_smoke", "main", "djm_main.tex")
-  if (file.exists(smoke_tex)) {
-    cat("\nVerifying: compiling smoke test...\n")
-    smoke_dir <- dirname(smoke_tex)
-    smoke_pdf <- file.path(smoke_dir, "djm_main.pdf")
-
-    # Clean stale auxiliary files before compiling
-    aux_patterns <- c("*.aux", "*.bbl", "*.blg", "*.log", "*.out", "*.pdf")
-    for (pat in aux_patterns) {
-      stale <- Sys.glob(file.path(smoke_dir, pat))
-      if (length(stale) > 0) unlink(stale)
+  cat("\nVerifying: compiling smoke test...\n")
+  smoke_after <- compile_smoke_fixture(repo_root, status_after)
+  if (!smoke_after$ok) {
+    cat("ERROR: The LaTeX smoke compile failed after bootstrap.\n")
+    if (nzchar(smoke_after$detail)) {
+      cat(smoke_after$detail, "\n", sep = "")
     }
-
-    compile_ok <- tryCatch({
-      tinytex::latexmk(
-        smoke_tex,
-        engine = "pdflatex",
-        bib_engine = "bibtex",
-        install_packages = TRUE,
-        clean = TRUE
-      )
-      file.exists(smoke_pdf)
-    }, error = function(e) {
-      cat("  Compile error: ", conditionMessage(e), "\n", sep = "")
-      FALSE
-    })
-
-    if (compile_ok) {
-      cat("  Smoke test compiled successfully.\n")
-    } else {
-      cat("  WARNING: Smoke test compilation failed.\n")
-      cat("  The full paper may still compile. Run tools/build_paper.sh to test.\n")
-    }
+    quit(save = "no", status = 1)
   }
+  cat("Smoke test compiled successfully.\n")
 
   # ---- 7. Report success -----------------------------------------------------
   cat("\nLaTeX bootstrap complete.\n")

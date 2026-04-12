@@ -14,7 +14,7 @@ resolve_rscript() {
     return
   fi
 
-  for p in /usr/bin/Rscript /usr/local/bin/Rscript; do
+  for p in /usr/bin/Rscript /usr/local/bin/Rscript /opt/homebrew/bin/Rscript; do
     if [[ -x "$p" ]]; then
       printf '%s\n' "$p"
       return

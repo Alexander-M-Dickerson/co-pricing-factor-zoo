@@ -257,6 +257,27 @@ check_macos_toolchain <- function() {
   )
 }
 
+check_latex_surface <- function(repo_root) {
+  helper_env <- new.env(parent = baseenv())
+  sys.source(file.path(repo_root, "tools", "bootstrap_latex.R"), envir = helper_env)
+
+  helper_env$prepend_tinytex_to_path()
+  status <- helper_env$detect_latex()
+  smoke_result <- tryCatch(
+    helper_env$compile_smoke_fixture(repo_root, status),
+    error = function(e) {
+      list(ok = FALSE, detail = conditionMessage(e))
+    }
+  )
+
+  list(
+    pdflatex_path = status$pdflatex,
+    bibtex_path = status$bibtex,
+    smoke_ok = isTRUE(smoke_result$ok),
+    detail = smoke_result$detail %||% ""
+  )
+}
+
 print_section <- function(title) {
   cat("\n", title, "\n", strrep("=", nchar(title)), "\n", sep = "")
 }
@@ -278,7 +299,7 @@ main <- function() {
   rscript_path <- file.path(R.home("bin"), rscript_name)
   execution_surface <- check_execution_surface(repo_root, rscript_path)
   macos_toolchain <- check_macos_toolchain()
-  pdflatex_path <- Sys.which("pdflatex")
+  latex_status <- check_latex_surface(repo_root)
 
   required_data_missing <- subset(data_status, required == "yes" & !exists)
   bundle_managed_missing <- subset(required_data_missing, nzchar(bootstrap_source_id))
@@ -291,7 +312,7 @@ main <- function() {
     all(backend_status$loaded) &&
     macos_toolchain_ready
   current_shell_parallel_ready <- main_ready && all(execution_surface$ready)
-  latex_ready <- main_ready && nzchar(pdflatex_path)
+  latex_ready <- main_ready && isTRUE(latex_status$smoke_ok)
   ia_ready <- main_ready
 
   cat("Repo doctor for The Co-Pricing Factor Zoo\n")
@@ -371,10 +392,15 @@ main <- function() {
   }
 
   print_section("LaTeX")
-  cat("pdflatex: ", if (nzchar(pdflatex_path)) pdflatex_path else "not found", "\n", sep = "")
-  if (!nzchar(pdflatex_path)) {
+  cat("pdflatex: ", if (nzchar(latex_status$pdflatex_path)) latex_status$pdflatex_path else "not found", "\n", sep = "")
+  cat("bibtex: ", if (nzchar(latex_status$bibtex_path)) latex_status$bibtex_path else "not found", "\n", sep = "")
+  cat("smoke test: ", if (latex_status$smoke_ok) "passed" else "failed", "\n", sep = "")
+  if (!latex_status$smoke_ok) {
+    if (nzchar(latex_status$detail)) {
+      cat(latex_status$detail, "\n", sep = "")
+    }
     cat("Run `Rscript tools/bootstrap_latex.R` to install TinyTeX automatically,\n")
-    cat("or install TeX Live / MiKTeX / MacTeX manually.\n")
+    cat("repair TinyTeX, or install TeX Live / MiKTeX / MacTeX manually.\n")
   }
 
   print_section("Readiness Summary")
