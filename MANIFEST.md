@@ -25,6 +25,7 @@ figures.txt                           # LaTeX figures template for document asse
 requirements.txt                      # Human-readable R package reference
 README.md                             # Primary documentation
 QUICKSTART.md                         # Detailed human setup guide
+AWS_SETUP_README.md                   # AWS EC2 setup guide (cross-platform)
 README_PAPER_PIPELINE.md              # Short human boundary map
 IS_AP_README.md                       # IS_AP object specification
 AGENTS.md                             # AI agent onboarding (Codex / Copilot)
